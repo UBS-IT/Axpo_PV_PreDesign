@@ -394,6 +394,7 @@ const EN = {
   'mod.invalid': 'Fill in power, length and width.',
   'mod.imported': 'Imported {n} modules from {file}.',
   'mod.importedSkipped': 'Imported {n} modules from {file}; {skipped} rows skipped (no power or no size).',
+  'mod.xlsOld': '{file} is an old Excel workbook (.xls): open it in Excel and save it as .xlsx, then import it again.',
   'mod.importNone': 'No module found in {file}. Columns read: {cols}. Needed: power (Wp) and length and width (or a dimensions column).',
   'mod.hint': 'Tick the modules planned for this project: they come first in the Field section. The modules a project uses are saved in its file.',
   'mod.roadmapRead': '{file}: roadmap read, {n} periods ({first} – {last}) from «{sheet}», column «{column}». Now ({period}): {wp} Wp.',
@@ -490,6 +491,7 @@ const EN = {
   'toast.exported': 'Exported {n} tables to {file}.',
   'toast.nothingToExport': 'Nothing to export yet.',
   'toast.exportedKmz': 'Exported {file} for Google Earth.',
+  'toast.noBasemap': 'The background map could not be loaded (network or proxy): you can keep working without it.',
   'toast.sdkFail': 'The map could not start: {err}',
   'confirm.new': 'Start a new project? Changes to the current one that are not saved in a file are lost.',
 

@@ -9,9 +9,8 @@ import { toGeoJSON } from './geo/convert.js';
 import { moduleLabel } from './modules.js';
 import { layoutInfra } from './infra.js';
 import { exportReport } from './report.js';
-
-const JSZIP_URL = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 import { toast } from './ui/toast.js';
+import { loadJsZip } from './libs.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -159,7 +158,7 @@ export function buildKml(fc = buildGeoJSON()) {
 export async function buildKmz() {
   const kml = buildKml();
   if (!kml) return null;
-  const JSZip = (await import(JSZIP_URL)).default;
+  const JSZip = await loadJsZip();
   const zip = new JSZip();
   zip.file('doc.kml', kml);
   return { blob: await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }), kml };

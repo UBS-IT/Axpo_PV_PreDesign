@@ -9,10 +9,11 @@ import { t, fmt } from './i18n.js';
 import { store, change, emit, on, uid } from './state.js';
 import { catalogModules, standardFor } from './catalog.js';
 import { toast } from './ui/toast.js';
+import { readWorkbook } from './io/xlsx.js';
+import { parseCsv } from './io/csv.js';
 
 // test pages set __PVP_TEST__ so that they never touch the library of the app (same origin)
 const LIB_KEY = globalThis.__PVP_TEST__ ? 'pvp.modules.test' : 'pvp.modules.v1';
-const XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
 export const STALE_DAYS = 183;   // six months
 
 export const library = { modules: loadLibrary() };
@@ -282,11 +283,22 @@ export function readGroupRoadmap(sheets, modules = catalogModules()) {
   return out;
 }
 
+// sheets of a roadmap file: [{ name, hidden, aoa }], or null (message shown) when the file cannot be read
+export async function readRoadmapSheets(file) {
+  const ext = file.name.toLowerCase().split('.').pop();
+  try {
+    if (ext === 'csv' || ext === 'txt') return [{ name: file.name, hidden: false, aoa: parseCsv(await file.text()) }];
+    if (ext === 'xls') { toast(t('mod.xlsOld', { file: file.name }), 'err', 12000); return null; }
+    return await readWorkbook(await file.arrayBuffer());
+  } catch (e) {
+    toast(t('toast.importFail', { file: file.name, err: e.message || e }), 'err', 12000);
+    return null;
+  }
+}
+
 export async function importRoadmapFile(file) {
-  const XLSX = await import(XLSX_URL);
-  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-  const sheets = wb.SheetNames.map((name, i) => ({ name, hidden: !!wb.Workbook?.Sheets?.[i]?.Hidden,
-    aoa: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: true }) }));
+  const sheets = await readRoadmapSheets(file);
+  if (!sheets) return 0;
   // 1) the group roadmap by semester
   const group = readGroupRoadmap(sheets);
   if (group.length) {

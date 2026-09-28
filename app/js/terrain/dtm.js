@@ -1,13 +1,12 @@
 // GeoTIFF terrain models (DTM / DSM): coordinate system, georeferencing and windows of elevations.
-// Read with geotiff.js (jsDelivr) straight from the file, a window at a time, so large models are not loaded whole.
+// Read with geotiff.js (app/vendor) straight from the file, a window at a time, so large models are not loaded whole.
 import { t } from '../i18n.js';
-
-const GEOTIFF_URL = 'https://cdn.jsdelivr.net/npm/geotiff@2.1.3/+esm';
+import { loadGeoTiff } from '../libs.js';
 
 // { width, height, epsg (null if the file does not say), geographic, origin: [x, y] of the centre of the first
 // pixel, res: [rx, ry] (ry negative for north-up files), noData, bbox: [xmin, ymin, xmax, ymax], read(c0, r0, c1, r1) }
 export async function openGeoTiff(file) {
-  const GeoTIFF = await import(GEOTIFF_URL);
+  const GeoTIFF = await loadGeoTiff();
   let tiff, img;
   try { tiff = await GeoTIFF.fromBlob(file); img = await tiff.getImage(); }
   catch (e) { throw new Error(t('err.badTiff', { err: e.message || e })); }

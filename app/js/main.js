@@ -31,16 +31,22 @@ async function start() {
     return;
   }
   const { Map, MapView, ScaleBar, BasemapToggle } = sdk;
+  // the spatial reference is given, so the view starts even when the background map cannot be reached (company
+  // proxies, offline): the site, the layout and the exports do not need it
   const view = new MapView({
     container: 'view',
     map: new Map({ basemap: 'hybrid' }),
+    spatialReference: { wkid: 3857 },
     center: [10.5, 46.5], zoom: 5,
     constraints: { snapToZoom: false },
   });
   view.ui.add(new ScaleBar({ view, unit: 'metric' }), 'bottom-left');
   view.ui.add(new BasemapToggle({ view, nextBasemap: 'topo-vector' }), 'bottom-right');
   window.__view = view;   // debug hook
-  await view.when();
+  view.map.basemap.load().then(b => Promise.all(b.baseLayers.map(l => l.load())))
+    .catch(e => { console.warn('[map] background map not available', e); toast(t('toast.noBasemap'), '', 15000); });
+  try { await view.when(); }
+  catch (e) { console.warn('[map] view not ready', e); toast(t('toast.noBasemap'), '', 15000); }
 
   initAreas(view);
   initTerrain(view);

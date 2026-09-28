@@ -13,8 +13,7 @@ import { currentSlopeRule } from './terrain/terrain.js';
 import { crsLabel } from './crs.js';
 import { toSdk } from './geo/convert.js';
 import { toast } from './ui/toast.js';
-
-const JSPDF_URL = 'https://cdn.jsdelivr.net/npm/jspdf@4.2.1/+esm';
+import { loadJsPdf } from './libs.js';
 
 // jsPDF standard fonts cover Latin-1 only
 export const pdfText = s => String(s ?? '').replace(/[–—]/g, '-').replace(/→/g, '->').replace(/≈/g, '~').replace(/…/g, '...')
@@ -70,8 +69,7 @@ function ringsOfPolygon(g) { return (g?.rings || []).map(r => r.map(p => [p[0], 
 export async function buildReport() {
   const d = reportData();
   if (!d) return null;
-  const mod = await import(JSPDF_URL);
-  const JsPDF = mod.jsPDF || mod.default?.jsPDF || mod.default;
+  const JsPDF = await loadJsPdf();
   const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const W = 297, H = 210, M = 12;
   const txt = (s, x, y, o) => doc.text(pdfText(s), x, y, o);

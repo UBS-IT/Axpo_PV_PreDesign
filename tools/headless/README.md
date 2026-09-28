@@ -1,12 +1,18 @@
 # Headless test runner
 
 Runs every browser test page in headless Chromium (Playwright) and prints the results — also on machines whose
-network policy blocks `js.arcgis.com` or `cdn.jsdelivr.net` (e.g. a cloud session): the ArcGIS Maps SDK 4.34 and the
-ESM libraries the app loads from CDNs are bundled from npm (`build.mjs`) and served in their place (`page.mjs`).
+network policy blocks `js.arcgis.com` (e.g. a cloud session): the ArcGIS Maps SDK 4.34 is bundled from npm
+(`build.mjs`) and served in its place (`page.mjs`). The other libraries are part of the app (`app/vendor`).
+
+It also builds those vendored libraries: `npm run vendor` writes JSZip, togeojson, shpjs, geotiff and jsPDF into
+`app/vendor/` as minified ES modules of the versions in `package-lock.json`, with `versions.json` and the licenses.
+The output is deterministic and CI fails if it differs from the committed files. To update a library: change its
+version in `package.json`, `npm install`, `npm run vendor`, run the tests, commit `app/vendor` with the lock file.
 
 ```
 cd tools/headless
 npm install          # @arcgis/core 4.34, the libraries, esbuild
+npm run vendor       # only after changing a library version: rewrites app/vendor
 npm run build        # bundles into dist/ (rebuild after adding an SDK module to app/js/sdk.js)
 npm test             # all pages, or: node run.mjs /tests/terrain.html
 ```

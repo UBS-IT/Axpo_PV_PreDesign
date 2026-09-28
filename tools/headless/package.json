@@ -2,10 +2,11 @@
   "name": "pv-predesign-headless-tests",
   "private": true,
   "type": "module",
-  "description": "Runs the browser test pages headless with the CDN libraries served from local npm bundles (for machines without access to js.arcgis.com / cdn.jsdelivr.net).",
+  "description": "Browser tests headless with the ArcGIS Maps SDK bundled from npm, and the builder of the vendored libraries of the app (app/vendor).",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node run.mjs"
+    "test": "node run.mjs",
+    "vendor": "node vendor.mjs"
   },
   "devDependencies": {
     "@arcgis/core": "4.34.2",
@@ -13,10 +14,9 @@
     "buffer": "^6.0.3",
     "esbuild": "^0.25.0",
     "geotiff": "2.1.3",
-    "jspdf": "^4.2.1",
+    "jspdf": "4.2.1",
     "jszip": "3.10.1",
     "playwright": "1.56.1",
-    "shpjs": "4.0.4",
-    "xlsx": "0.18.5"
+    "shpjs": "4.0.4"
   }
 }

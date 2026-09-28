@@ -5,6 +5,10 @@ import { parsePeriod, periodOf, periodLabel, modulePower, powerAge, parseSemeste
   usedModules, adoptProjectModules, seedCatalogModules, moduleById, defaultModuleId, STALE_DAYS } from '../app/js/modules.js';
 import { parseNotation, tableGeometry, minPitch, halfNotation } from '../app/js/layout/structures.js';
 import { store, defaultProject } from '../app/js/state.js';
+import { readWorkbook, columnIndex } from '../app/js/io/xlsx.js';
+import { parseCsv, detectSeparator } from '../app/js/io/csv.js';
+import { readRoadmapSheets } from '../app/js/modules.js';
+import { loadJsZip, loadToGeoJSON, loadShp, loadGeoTiff, loadJsPdf } from '../app/js/libs.js';
 
 const results = [];
 async function test(name, fn) {
@@ -86,6 +90,82 @@ await test('roadmap workbook: visible standard sheet first, NZIA only as a fallb
   eq(onlyNzia[0].powers[0], ['2027-S1', 620], 'NZIA when it is the only one');
 });
 
+// ── Excel and CSV readers ──
+// a minimal .xlsx written here: sheets = [{ name, state, rows: [[value | { f, v } | { rich: [..] } | { inline }]] }]
+async function makeXlsx(sheets, { prefix = '' } = {}) {
+  const JSZip = await loadJsZip();
+  const zip = new JSZip(), strings = [], p = prefix ? prefix + ':' : '', xmlns = prefix ? `xmlns:${prefix}` : 'xmlns';
+  const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const col = i => { let s = ''; for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s; return s; };
+  const cell = (v, ref) => {
+    if (v === '' || v == null) return '';
+    if (typeof v === 'number') return `<${p}c r="${ref}"><${p}v>${v}</${p}v></${p}c>`;
+    if (typeof v === 'boolean') return `<${p}c r="${ref}" t="b"><${p}v>${v ? 1 : 0}</${p}v></${p}c>`;
+    if (v.f) return `<${p}c r="${ref}"${typeof v.v === 'string' ? ' t="str"' : ''}><${p}f>${esc(v.f)}</${p}f><${p}v>${esc(v.v)}</${p}v></${p}c>`;
+    if (v.inline) return `<${p}c r="${ref}" t="inlineStr"><${p}is><${p}t>${esc(v.inline)}</${p}t></${p}is></${p}c>`;
+    const si = v.rich ? `<${p}si>${v.rich.map(r => `<${p}r><${p}t xml:space="preserve">${esc(r)}</${p}t></${p}r>`).join('')}<${p}rPh sb="0" eb="1"><${p}t>ヨミ</${p}t></${p}rPh></${p}si>`
+      : `<${p}si><${p}t xml:space="preserve">${esc(v)}</${p}t></${p}si>`;
+    strings.push(si);
+    return `<${p}c r="${ref}" t="s"><${p}v>${strings.length - 1}</${p}v></${p}c>`;
+  };
+  sheets.forEach((sh, k) => {
+    const rows = sh.rows.map((row, r) => row.some(v => v !== '' && v != null)
+      ? `<${p}row r="${r + 1}">${row.map((v, c) => cell(v, col(c) + (r + 1))).join('')}</${p}row>` : '').join('');
+    zip.file(`xl/worksheets/sheet${k + 1}.xml`, `<?xml version="1.0"?><${p}worksheet ${xmlns}="${NS}"><${p}sheetData>${rows}</${p}sheetData></${p}worksheet>`);
+  });
+  zip.file('xl/workbook.xml', `<?xml version="1.0"?><${p}workbook ${xmlns}="${NS}" xmlns:r="${R}"><${p}sheets>${sheets.map((sh, k) =>
+    `<${p}sheet name="${esc(sh.name)}" sheetId="${k + 1}"${sh.state ? ` state="${sh.state}"` : ''} r:id="rId${k + 1}"/>`).join('')}</${p}sheets></${p}workbook>`);
+  zip.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((sh, k) =>
+    `<Relationship Id="rId${k + 1}" Type="${R}/worksheet" Target="${k % 2 ? '/xl/' : ''}worksheets/sheet${k + 1}.xml"/>`).join('')}</Relationships>`);
+  zip.file('xl/sharedStrings.xml', `<?xml version="1.0"?><${p}sst ${xmlns}="${NS}">${strings.join('')}</${p}sst>`);
+  return zip.generateAsync({ type: 'arraybuffer' });
+}
+
+await test('Excel reader: text (shared, rich, inline), numbers, booleans, formula results, gaps, hidden sheets', async () => {
+  eq(['A1', 'Z9', 'AA1', 'AB12', 'XFD1'].map(columnIndex), [0, 25, 26, 27, 16383], 'column letters');
+  const rows = [['Name', 'Wp', '', 'Ok'], [{ rich: ['TOP', 'Con'] }, 650, '', true], [], [{ inline: 'a_x000D_b' }, { f: 'B2+1', v: 651 }, { f: 'A1', v: 'Name' }, false]];
+  for (const prefix of ['', 'x']) {
+    const book = await readWorkbook(await makeXlsx([{ name: 'Visible', rows }, { name: 'Old', state: 'hidden', rows: [[1]] }, { name: 'VH', state: 'veryHidden', rows: [[2]] }], { prefix }));
+    eq(book.map(s => [s.name, s.hidden]), [['Visible', false], ['Old', true], ['VH', true]], 'sheets ' + prefix);
+    eq(book[0].aoa, [['Name', 'Wp', '', 'Ok'], ['TOPCon', 650, '', true], ['', '', '', ''], ['a\rb', 651, 'Name', false]], 'values ' + prefix);
+  }
+  let err = null;
+  try { await readWorkbook(new TextEncoder().encode('not a zip').buffer); } catch (e) { err = e.message; }
+  assert(/xlsx/.test(err || ''), 'a file that is not a workbook is refused: ' + err);
+});
+
+await test('roadmap workbook read from a real .xlsx file: same powers as the rows', async () => {
+  const buf = await makeXlsx([{ name: 'Roadmap Module - Critères NZIA', rows: [['Date', 'S1 2030']] }, { name: ' Roadmap Module- Standard', rows: sheetStd },
+    { name: 'Modules date', state: 'hidden', rows: sheetStd }]);
+  const sheets = await readRoadmapSheets(new File([buf], 'roadmap.xlsm'));
+  const got = readGroupRoadmap(sheets, catalogModules());
+  eq(got[0].sheet, ' Roadmap Module- Standard', 'standard sheet');
+  eq(got[0].powers, [['2026-S1', 601], ['2026-S2', 602], ['2027-S1', 603], ['2029', 609]], 'powers');
+  eq(await readRoadmapSheets(new File(['x'], 'old.xls')), null, 'an .xls is refused with a message');
+});
+
+await test('CSV (RFC 4180): quoted separators, doubled quotes, line breaks in quotes, BOM, CRLF', () => {
+  eq(detectSeparator('name;"a,b,c";x\n1;2;3'), ';', 'semicolon despite commas in quotes');
+  eq(detectSeparator('a\tb\tc'), '\t', 'tab');
+  eq(parseCsv('﻿name,note,x\r\n"Pole ""A""","line 1\nline 2, still",12.5\r\n\r\n plain , "",3\n'),
+    [['name', 'note', 'x'], ['Pole "A"', 'line 1\nline 2, still', '12.5'], ['plain', '', '3']], 'rows');
+  eq(parseCsv('a;b\n"1;5";2'), [['a', 'b'], ['1;5', '2']], 'separator inside quotes');
+  eq(parseCsv('Wp,Length\n650,2382'), [['Wp', 'Length'], ['650', '2382']], 'no trailing line break');
+});
+
+await test('vendored libraries load from app/vendor (no CDN)', async () => {
+  const [JSZip, tg, shp, GeoTIFF, JsPDF] = await Promise.all([loadJsZip(), loadToGeoJSON(), loadShp(), loadGeoTiff(), loadJsPdf()]);
+  assert(typeof JSZip.loadAsync === 'function', 'JSZip');
+  assert(typeof tg.kml === 'function', 'togeojson');
+  assert(typeof shp.parseShp === 'function' && typeof shp.parseDbf === 'function', 'shpjs');
+  assert(typeof GeoTIFF.fromBlob === 'function', 'geotiff');
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+  assert(doc.output('arraybuffer').byteLength > 500, 'jsPDF');
+  const v = await (await fetch('../app/vendor/versions.json')).json();
+  return Object.values(v).map(m => `${m.package}@${m.version}`).join(', ');
+});
+
 // ── catalog: group standards and country values ──
 await test('catalog: standard module and structures of the group', () => {
   const m = catalogModules()[0];
@@ -160,7 +240,7 @@ await test('modules are written into the project and adopted on another computer
 
 // every module of the app loads (the app page itself needs a map: check it in a browser)
 await test('every app module loads', async () => {
-  const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile',
+  const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile', 'io/xlsx', 'io/csv', 'libs', 'report',
     'geo/convert', 'geo/localframe', 'layout/rows', 'layout/structures', 'ui/rail', 'ui/crsdialog', 'ui/toast', 'terrain/slope', 'terrain/terrain', 'terrain/dtm', 'terrain/store'];
   const missing = [];
   for (const n of names) {

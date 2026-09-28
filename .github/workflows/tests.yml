@@ -1,5 +1,6 @@
 # Browser tests of PV Predesign, on every push and pull request: every page of tests/ in headless Chromium, with
-# the ArcGIS Maps SDK and the libraries bundled from npm (tools/headless). The app page itself is checked by hand.
+# the ArcGIS Maps SDK bundled from npm (tools/headless). The app page itself is checked by hand. The vendored
+# libraries (app/vendor) are rebuilt from package-lock.json and must match the committed files.
 name: tests
 
 on:
@@ -22,6 +23,8 @@ jobs:
           cache: npm
           cache-dependency-path: tools/headless/package-lock.json
       - run: npm ci
+      - name: vendored libraries match package-lock.json
+        run: npm run vendor && git status --porcelain -- ../../app/vendor && test -z "$(git status --porcelain -- ../../app/vendor)"
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm test
