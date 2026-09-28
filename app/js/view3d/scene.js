@@ -31,6 +31,8 @@ const D = Math.PI / 180;
 
 let mapView = null, scene = null, layer3d = null, current = null, active = false, groundId = undefined, timer = null, building = null;
 const widgets = {};
+// test hook: the elevation service under the terrain model (the test bench has no access to Esri World Elevation)
+export const scene3dConfig = { baseElevation: null };
 export const view3dState = { get scene() { return scene; }, get model() { return current; }, get active() { return active; } };
 
 // ── ground from the terrain of step 0 ──
@@ -56,29 +58,42 @@ function dtmGround() {
   const box = projectOperator.execute(new Polygon({ rings: [[[meta.x0, meta.y0], [meta.x0, y1], [x1, y1], [x1, meta.y0], [meta.x0, meta.y0]]], spatialReference: gridSr }),
     SpatialReference.WebMercator).extent;
   const Layer = BaseElevationLayer.createSubclass({
+    // as in the Esri sample: the tiling of World Elevation, and load() returns the layer
     load() {
-      this._base = new ElevationLayer({ url: ESRI_ELEVATION });
+      this._base = scene3dConfig.baseElevation?.() || new ElevationLayer({ url: ESRI_ELEVATION });
       this.addResolvingPromise(this._base.load().then(() => {
         this.tileInfo = this._base.tileInfo; this.spatialReference = this._base.spatialReference; this.fullExtent = this._base.fullExtent;
       }));
+      return this;
     },
     fetchTile(level, row, col, options) {
       return this._base.fetchTile(level, row, col, options).then(data => {
+        // coarse tiles (over ~10 km) keep World Elevation: the grid is too small to matter there
+        if (!data?.values || level < 12) return data;
         const b = this.getTileBounds(level, row, col);
-        if (b[2] < box.xmin || b[0] > box.xmax || b[3] < box.ymin || b[1] > box.ymax) return data;
-        fillTileFromGrid(data.values, data.width, data.height, b,
-          pts => projectOperator.execute(new Multipoint({ points: pts, spatialReference: this.spatialReference }), gridSr).points, meta, grid);
+        if (!b || b[2] < box.xmin || b[0] > box.xmax || b[3] < box.ymin || b[1] > box.ymax) return data;
+        try {
+          fillTileFromGrid(data.values, data.width, data.height, b, pts => {
+            const q = projectOperator.execute(new Multipoint({ points: pts, spatialReference: this.spatialReference }), gridSr)?.points;
+            return q && q.length === pts.length ? q : [];
+          }, meta, grid);
+        } catch (e) { console.warn('[3d] terrain tile kept from World Elevation', e); }
         return data;
       });
     },
   });
   return new Layer({ title: meta.name || 'Terrain' });
 }
+// the terrain model of the designer (a GeoTIFF of step 0) as ground; a grid sampled from Esri World Elevation adds
+// nothing to World Elevation itself, which is then used directly
+export const useDtmGround = () => terrainData.meta?.source === 'dtm' && store.project.view3d.ground !== 'esri';
 function setGround() {
-  const id = terrainData.meta ? terrainData.meta.id : null;
+  const id = useDtmGround() ? terrainData.meta.id : null;
   if (id === groundId) return;
   groundId = id;
-  mapView.map.ground = id ? { layers: [dtmGround()] } : 'world-elevation';
+  let ground = scene3dConfig.baseElevation ? { layers: [scene3dConfig.baseElevation()] } : 'world-elevation';
+  if (id) { try { ground = { layers: [dtmGround()] }; } catch (e) { console.error('[3d] terrain model not usable as ground', e); } }
+  mapView.map.ground = ground;
 }
 
 // ── meshes on the map ──
@@ -86,15 +101,18 @@ function toMesh(mesh, colour) {
   const { Mesh, Multipoint, SpatialReference, projectOperator } = getSdk();
   const n = mesh.positions.length / 3, xy = new Array(n);
   for (let i = 0; i < n; i++) xy[i] = [mesh.positions[3 * i], mesh.positions[3 * i + 1]];
-  const wm = projectOperator.execute(new Multipoint({ points: xy, spatialReference: current.frame.sr }), SpatialReference.WebMercator).points;
+  const wm = projectOperator.execute(new Multipoint({ points: xy, spatialReference: current.frame.sr }), SpatialReference.WebMercator)?.points;
+  if (!wm || wm.length !== n) return null;
   const pos = new Float64Array(n * 3);
   wm.forEach((p, i) => { pos[3 * i] = p[0]; pos[3 * i + 1] = p[1]; pos[3 * i + 2] = mesh.positions[3 * i + 2]; });
+  if (!pos.every(Number.isFinite)) { console.warn('[3d] mesh left out: coordinates not finite'); return null; }
   return new Mesh({ spatialReference: SpatialReference.WebMercator, vertexAttributes: { position: pos },
     components: [{ faces: mesh.faces, shading: 'flat', material: { color: colour, doubleSided: true } }] });
 }
 function graphic(mesh, colour, kind) {
   const { Graphic } = getSdk();
-  return mesh && new Graphic({ geometry: toMesh(mesh, colour), attributes: { kind }, symbol: { type: 'mesh-3d', symbolLayers: [{ type: 'fill' }] } });
+  const geometry = mesh && toMesh(mesh, colour);
+  return geometry && new Graphic({ geometry, attributes: { kind }, symbol: { type: 'mesh-3d', symbolLayers: [{ type: 'fill' }] } });
 }
 function draw() {
   layer3d.removeAll();
@@ -129,7 +147,9 @@ async function enter() {
     layer3d = new GraphicsLayer({ title: '3D layout', listMode: 'hide', elevationInfo: { mode: 'absolute-height' } });
     mapView.map.add(layer3d);
     try {
-      scene = new SceneView({ container: 'view3d', map: mapView.map,
+      const f0 = siteFrame();
+      scene = new SceneView({ container: 'view3d', map: mapView.map, viewingMode: 'global',
+        ...(f0 ? { camera: { position: { longitude: f0.lon0, latitude: f0.lat0 - 0.012, z: 900 }, heading: 0, tilt: 60 } } : {}),
         environment: { lighting: { type: 'sun', date: new Date(), directShadowsEnabled: true }, atmosphereEnabled: true } });
     } catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
     widgets.daylight = new Daylight({ view: scene });
@@ -155,10 +175,13 @@ function tablesLayer2d(visible) {
   const l = mapView?.map.layers.find(x => x.title === 'Tables');
   if (l) l.visible = visible;
 }
-function goToSite() {
+// the site framed from the south, once the scene is ready (a goTo before that is lost)
+async function goToSite() {
   const g = store.project.features.find(f => f.category === 'gross') || store.project.features.find(f => f.category === 'net');
   const geom = g && toSdk(g.geometry);
-  if (scene && geom) scene.goTo({ target: geom, tilt: 60 }, { animate: false }).catch(() => {});
+  if (!scene || !geom) return;
+  try { await scene.when(); await scene.goTo({ target: geom, heading: 0, tilt: 60 }, { animate: false }); }
+  catch (e) { console.warn('[3d] could not frame the site', e); }
 }
 
 // ── model ──
@@ -186,8 +209,10 @@ function initPanel() {
   const p = $('d3Panel');
   p.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'd3LowEdge') change('view3d', q => { q.view3d.lowEdge = el.value === '' ? null : Math.max(0, Number(el.value)); });
-    else if (el.id === 'd3Axis') change('view3d', q => { q.view3d.axisHeight = el.value === '' ? null : Math.max(0, Number(el.value)); });
+    const height = () => (Number(el.value) > 0 ? Number(el.value) : null);   // empty or 0: the toolkit value
+    if (el.id === 'd3LowEdge') change('view3d', q => { q.view3d.lowEdge = height(); });
+    else if (el.id === 'd3Axis') change('view3d', q => { q.view3d.axisHeight = height(); });
+    else if (el.id === 'd3Dtm') change('view3d', q => { q.view3d.ground = el.checked ? 'dtm' : 'esri'; });
     else if (el.id === 'd3Cat') change('view3d', q => { q.view3d.trackerCategory = el.value; q.view3d.axisHeight = null; });
     else if (el.name === 'd3Mode') { change('views3d', q => { q.view3d.trackerMode = el.value; }); if (current && retilt(current, viewDate())) redrawTables(); renderPanel(); }
     else if (el.id === 'd3Shadow') toggleWidget('shadow', el.checked);
@@ -228,20 +253,22 @@ function renderPanel() {
     const ah = iso ? countryValue(iso, 'tracker.axisHeights')?.value : null;
     const opts = ['standard', 'grazing', 'advanced'].map(c => `<option value="${c}" ${v.trackerCategory === c ? 'selected' : ''}>${esc(t('d3.cat.' + c))}${ah?.[c] ? ` · ${fmt(ah[c], 2)} m` : ''}</option>`).join('');
     hts = `<label class="l" for="d3Cat">${esc(t('d3.category'))}</label><select id="d3Cat">${opts}</select>
-      <label class="l" for="d3Axis">${esc(t('d3.axis'))}</label><input id="d3Axis" type="number" min="0" step="0.05" value="${v.axisHeight ?? ''}" placeholder="${h.axis?.source !== 'custom' && h.axis ? fmt(h.axis.value, 2) : ''}">
+      <label class="l" for="d3Axis">${esc(t('d3.axis'))}</label><input id="d3Axis" type="number" min="0" step="0.05" value="${v.axisHeight > 0 ? v.axisHeight : ''}" placeholder="${h.axis?.source !== 'custom' && h.axis ? fmt(h.axis.value, 2) : ''}">
       <p class="hint">${esc(h.axis ? t(h.axis.source === 'custom' ? 'd3.axisCustom' : 'd3.axisToolkit', { m: fmt(h.axis.value, 2), country, src: h.axis.source }) : t('d3.axisMissing', { country }))}</p>
       <div class="opts row"><label><input type="radio" name="d3Mode" value="sun" ${v.trackerMode === 'sun' ? 'checked' : ''}> ${esc(t('d3.modeSun'))}</label>
       <label><input type="radio" name="d3Mode" value="manual" ${v.trackerMode === 'manual' ? 'checked' : ''}> ${esc(t('d3.modeManual'))}</label></div>
       <input id="d3Angle" type="range" min="${-(h.maxRotation ?? 55)}" max="${h.maxRotation ?? 55}" step="1" value="${v.trackerAngle || 0}" ${v.trackerMode === 'manual' ? '' : 'disabled'}>
       <p class="hint" id="d3AngleOut"></p>`;
   } else {
-    hts = `<label class="l" for="d3LowEdge">${esc(t('d3.lowEdge'))}</label><input id="d3LowEdge" type="number" min="0" step="0.05" value="${v.lowEdge ?? ''}" placeholder="${h.lowEdge && h.lowEdge.source !== 'custom' ? fmt(h.lowEdge.value, 2) : ''}">
+    hts = `<label class="l" for="d3LowEdge">${esc(t('d3.lowEdge'))}</label><input id="d3LowEdge" type="number" min="0" step="0.05" value="${v.lowEdge > 0 ? v.lowEdge : ''}" placeholder="${h.lowEdge && h.lowEdge.source !== 'custom' ? fmt(h.lowEdge.value, 2) : ''}">
       <p class="hint">${esc(h.lowEdge ? t(h.lowEdge.source === 'custom' ? 'd3.lowCustom' : 'd3.lowToolkit', { m: fmt(h.lowEdge.value, 2), country, src: h.lowEdge.source }) : t(P.field.technology === 'agri-fixed' ? 'd3.lowAgri' : 'd3.lowMissing', { country }))}</p>`;
   }
-  const ground = terrainData.meta ? t('d3.groundDtm', { name: terrainData.meta.name || terrainData.meta.source || 'DTM' }) : t('d3.groundEsri');
+  const ground = useDtmGround() ? t('d3.groundDtm', { name: terrainData.meta.name || 'DTM' }) : t('d3.groundEsri');
+  const dtmOpt = terrainData.meta?.source === 'dtm'
+    ? `<label class="chk"><input type="checkbox" id="d3Dtm" ${useDtmGround() ? 'checked' : ''}> <span>${esc(t('d3.useDtm'))}</span></label>` : '';
   const notes = (m?.notes || []).map(k => `<div class="warn">${esc(t(k, { country, n: m.gaps }))}</div>`).join('');
   parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.title'))}</b></div>
-    <p class="hint">${esc(ground)}${r?.tables ? '' : ' ' + esc(t('d3.noLayout'))}</p>${notes}${hts}
+    <p class="hint">${esc(ground)}${r?.tables ? '' : ' ' + esc(t('d3.noLayout'))}</p>${dtmOpt}${notes}${hts}
     <p class="hint">${esc(t('d3.obstacleNote'))}</p>
     <div class="btns"><button type="button" class="btn" id="d3Site">${esc(t('d3.site'))}</button></div></div>`);
   // sun and shadows

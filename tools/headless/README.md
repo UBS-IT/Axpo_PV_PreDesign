@@ -23,4 +23,8 @@ test, not only the failures.
 Known limit: a MapView does not start with the npm bundle (its 2D workers do not come up), so the page of the app
 itself must be checked in a real browser. `tests/ui.html` mounts the real panels on a stand-in view instead.
 
+The SceneView of step 4b does run: `tests/scene3d.html` is opened with software WebGL (SwiftShader, which the SDK
+refuses by default; `openPage(…, { softwareWebGL: true })` lifts that). `node snap3d.mjs <folder>` saves screenshots of
+that scene, to look at it without a browser.
+
 `make_terrain_fixture.mjs` writes the synthetic GeoTIFF of the terrain tests (`tests/fixtures/it_dtm_plane.tif`).

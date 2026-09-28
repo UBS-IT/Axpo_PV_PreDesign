@@ -76,7 +76,7 @@ mettersi al lavoro.**
 - Server locale: voce `pv-predesign` in `.claude/launch.json` (porta 8140, serve la radice del progetto).
   App: `http://localhost:8140/app/` · Test: `/tests/` (motore, mezze tabelle), `/tests/modules.html` (roadmap,
   catalogo per paese, moduli nel progetto), `/tests/sdk.html` (SDK), `/tests/import.html` (import, sistemi di
-  riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/infra.html` (step 3), `/tests/view3d.html` (3D), `/tests/ui.html` (pannelli veri su
+  riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/infra.html` (step 3), `/tests/view3d.html` (3D), `/tests/scene3d.html` (SceneView vera, WebGL software in headless), `/tests/ui.html` (pannelli veri su
   una vista finta). Devono essere tutti verdi prima di un commit.
 - Senza browser o con js.arcgis.com bloccato (sessione cloud): `tools/headless` (`npm install && npm run build && npm test`)
   esegue tutte le pagine in Chromium headless con l'SDK preso da npm; GitHub Actions lo fa a ogni push
