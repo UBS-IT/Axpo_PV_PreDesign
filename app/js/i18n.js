@@ -517,6 +517,8 @@ const EN = {
   'toast.exported': 'Exported {n} tables to {file}.',
   'toast.nothingToExport': 'Nothing to export yet.',
   'toast.exportedKmz': 'Exported {file} for Google Earth.',
+  'map.opacity': 'Background {pct} %',
+  'map.opacityTitle': 'Opacity of the background map (satellite or topographic)',
   'toast.noBasemap': 'The background map could not be loaded (network or proxy): you can keep working without it.',
   'toast.sdkFail': 'The map could not start: {err}',
   'confirm.new': 'Start a new project? Changes to the current one that are not saved in a file are lost.',

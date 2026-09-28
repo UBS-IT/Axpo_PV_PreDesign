@@ -23,6 +23,7 @@ import { buildReport } from '../app/js/report.js';
 import { initQuick, runQuick } from '../app/js/quick.js';
 import { initInfra, addStation } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
+import { initBasemap } from '../app/js/ui/basemap.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
 const results = [];
@@ -289,6 +290,27 @@ await test('for Engineering: Shapefile, GeoPackage, DXF and bill of quantities i
   change('infra', q => { q.infra.stations = []; });
   await wait(400);
   return `EPSG:${wkid} · ${shp.files.length} shapefiles · GeoPackage ${(gp.bytes.length / 1024).toFixed(0)} KB, ${gp.tables.length} layers · DXF ${(dxf.length / 1024).toFixed(0)} KB, ${polys.length} polylines, layers ${[...usedL].join(' ')}`;
+});
+
+await test('background map: satellite without labels, opacity slider kept when switching to topographic', async () => {
+  try { localStorage.removeItem('pvp.test.basemapOpacity'); } catch {}
+  const added = [];
+  // basemaps from ids load their layers from the network (not in the test bench): stand-in basemaps with a layer each
+  const { GraphicsLayer } = getSdk();
+  const v = { map: new Map({ basemap: { baseLayers: [new GraphicsLayer()] } }), ui: { add: (w, pos) => added.push([w, pos]) } };
+  const box = initBasemap(v);
+  assert(added.length === 2 && added.every(a => a[1] === 'bottom-right'), 'toggle and slider on the map');
+  assert(/basemap: 'satellite'/.test(await (await fetch('../app/js/main.js')).text()), 'the app starts on satellite imagery without labels');
+  const input = box.querySelector('input');
+  eq(input.value, '100', 'opaque by default');
+  input.value = '40'; input.dispatchEvent(new Event('input'));
+  assert(v.map.basemap.baseLayers.every(l => l.opacity === 0.4) && /40 %/.test(box.textContent), 'opacity applied: ' + box.textContent);
+  v.map.basemap = { baseLayers: [new GraphicsLayer()] };
+  await wait(50);
+  assert(v.map.basemap.baseLayers.length && v.map.basemap.baseLayers.every(l => l.opacity === 0.4), 'the other basemap takes the same opacity');
+  eq(localStorage.getItem('pvp.test.basemapOpacity'), '0.4', 'remembered in this browser (test key)');
+  localStorage.removeItem('pvp.test.basemapOpacity');
+  return box.textContent;
 });
 
 await test('infrastructure panel: lots numbered, two of them joined in one fence with the check boxes', async () => {

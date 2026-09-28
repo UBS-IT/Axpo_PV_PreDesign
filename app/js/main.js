@@ -14,6 +14,7 @@ import { initInfra } from './infra.js';
 import { initRail, showStep } from './ui/rail.js';
 import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EXT } from './io/projectfile.js';
 import { toast } from './ui/toast.js';
+import { initBasemap } from './ui/basemap.js';
 
 const $ = id => document.getElementById(id);
 
@@ -30,18 +31,18 @@ async function start() {
     toast(t('toast.sdkFail', { err: e.message || e }), 'err', 30000);
     return;
   }
-  const { Map, MapView, ScaleBar, BasemapToggle } = sdk;
+  const { Map, MapView, ScaleBar } = sdk;
   // the spatial reference is given, so the view starts even when the background map cannot be reached (company
   // proxies, offline): the site, the layout and the exports do not need it
   const view = new MapView({
     container: 'view',
-    map: new Map({ basemap: 'hybrid' }),
+    map: new Map({ basemap: 'satellite' }),
     spatialReference: { wkid: 3857 },
     center: [10.5, 46.5], zoom: 5,
     constraints: { snapToZoom: false },
   });
   view.ui.add(new ScaleBar({ view, unit: 'metric' }), 'bottom-left');
-  view.ui.add(new BasemapToggle({ view, nextBasemap: 'topo-vector' }), 'bottom-right');
+  initBasemap(view);
   window.__view = view;   // debug hook
   view.map.basemap.load().then(b => Promise.all(b.baseLayers.map(l => l.load())))
     .catch(e => { console.warn('[map] background map not available', e); toast(t('toast.noBasemap'), '', 15000); });

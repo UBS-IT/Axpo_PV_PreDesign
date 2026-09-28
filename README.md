@@ -11,6 +11,9 @@ its power roadmap, 3V9, tracker 1V28), optional terrain step with slope limits. 
 
 ## The workflow
 
+The map opens on satellite imagery without labels (a toggle switches to the topographic map); a slider on the map
+sets the opacity of the background, remembered in the browser, so the layout stays readable over busy imagery.
+
 The left rail holds the steps; clicking the active step again folds the panel away to give the map more room.
 
 | Step | Today |

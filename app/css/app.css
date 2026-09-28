@@ -226,3 +226,8 @@ kbd { font: 11px/1 var(--font); border: 1px solid var(--line); border-radius: 4p
 dialog.dlg.quick { max-width: 420px; }
 .it.lot { cursor: pointer; }
 .it.moving { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* opacity of the background map, on the map above the basemap toggle */
+.bm-opacity { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; font-size: 11px; width: 120px; box-sizing: border-box; cursor: default; }
+.bm-opacity input { width: 100%; margin: 0; accent-color: var(--accent); }
+#view .esri-view-surface { background: var(--bg); }
