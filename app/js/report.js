@@ -66,7 +66,8 @@ export function reportData() {
 
 // ── drawing ──
 function ringsOfPolygon(g) { return (g?.rings || []).map(r => r.map(p => [p[0], p[1]])); }
-export async function buildReport() {
+// views: pictures of the 3D view [{ name, dataUrl, width, height, note }], one page each after the first
+export async function buildReport({ views = [] } = {}) {
   const d = reportData();
   if (!d) return null;
   const JsPDF = await loadJsPdf();
@@ -114,6 +115,19 @@ export async function buildReport() {
   // footer
   doc.setFontSize(7); doc.setTextColor(120, 130, 140); doc.setFont('helvetica', 'normal');
   txt(t('rep.footer', { date: d.date }), M, H - 6);
+  // 3D views saved in 4b · 3D (pictures taken by the 3D view), one page each
+  for (const v of views) {
+    doc.addPage('a4', 'landscape');
+    doc.setFillColor(57, 69, 207); doc.rect(0, 0, W, 3, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(15, 23, 32);
+    txt(`${d.title} - ${v.name}`, M, 12);
+    const ar = v.width / v.height, bw = W - 2 * M, bh = H - 34;
+    const [iw, ih] = bw / bh > ar ? [bh * ar, bh] : [bw, bw / ar];
+    doc.addImage(v.dataUrl, v.dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG', M + (bw - iw) / 2, 18, iw, ih);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120, 130, 140);
+    txt(t('rep.view3d', { note: v.note || '' }), M, H - 10);
+    txt(t('rep.footer', { date: d.date }), M, H - 6);
+  }
   return { doc, blob: doc.output('blob'), name: (d.title.replace(/[\\/:*?"<>|]+/g, '_') || 'pv-predesign') + ' - predesign.pdf', data: d };
 }
 
@@ -187,9 +201,9 @@ function drawMap(doc, d, x0, y0, w, h) {
   }
 }
 
-export async function exportReport() {
+export async function exportReport(opts = {}) {
   let out;
-  try { out = await buildReport(); }
+  try { out = await buildReport(opts); }
   catch (e) { console.error(e); toast(t('rep.fail', { err: e.message || e }), 'err', 10000); return null; }
   if (!out) { toast(t('rep.noLayout'), 'err'); return null; }
   const a = document.createElement('a');

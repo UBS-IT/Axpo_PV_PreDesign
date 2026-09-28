@@ -24,6 +24,10 @@ import { initQuick, runQuick } from '../app/js/quick.js';
 import { initInfra, addStation } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { initBasemap } from '../app/js/ui/basemap.js';
+import { initView3d } from '../app/js/view3d/scene.js';
+import { model3d } from '../app/js/view3d/model.js';
+import { layoutGlb, readGlb } from '../app/js/view3d/glb.js';
+import { terrainData } from '../app/js/terrain/store.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
 const results = [];
@@ -35,6 +39,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const text = id => document.getElementById(id).innerText;
 const eq = (a, b, w) => assert(JSON.stringify(a) === JSON.stringify(b), `${w}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
+const close = (a, b, tol, w) => assert(Math.abs(a - b) <= tol, `${w}: ${a} vs ${b}`);
 
 await loadSdk();
 await loadCatalog();
@@ -290,6 +295,48 @@ await test('for Engineering: Shapefile, GeoPackage, DXF and bill of quantities i
   change('infra', q => { q.infra.stations = []; });
   await wait(400);
   return `EPSG:${wkid} · ${shp.files.length} shapefiles · GeoPackage ${(gp.bytes.length / 1024).toFixed(0)} KB, ${gp.tables.length} layers · DXF ${(dxf.length / 1024).toFixed(0)} KB, ${polys.length} polylines, layers ${[...usedL].join(' ')}`;
+});
+
+await test('4b · 3D: panel, trackers on the terrain of step 0 at the IT axis height, glTF, report with a 3D view', async () => {
+  initView3d(view);
+  const panel = document.getElementById('d3Panel');
+  const cat = panel.querySelector('#d3Cat');
+  assert(cat && /1\.50 m/.test(cat.options[0].textContent) && /3\.10 m/.test(cat.options[2].textContent), 'IT categories with their axis heights');
+  assert(/IT-PC/.test(panel.textContent) && panel.querySelector('#d3Glb') && panel.querySelector('[data-sun="12-21-9"]'), 'toolkit source, sun buttons, glTF');
+  assert(terrainData.meta, 'terrain of step 0 still loaded');
+  change('infra', q => { q.infra.stations = []; });
+  addStation('CT', lon, lat, 0, { snap: false });
+  await wait(800);
+  const r = last.result;
+  const date = new Date('2026-12-21T09:00:00Z');
+  const m = await model3d({ date, query: null });
+  eq([m.h.tracker, m.h.axis.value, m.tables.positions.length / 12, m.stations.length], [true, 1.5, r.tables, 1], 'model');
+  assert(m.angle < -30, `trackers towards the east in the morning: ${m.angle.toFixed(1)}°`);
+  // every tracker end: its axis 1.50 m over the terrain (the midpoint of the two long edges)
+  const p = m.tables.positions, k = 7;
+  const axisZ = (p[12 * k + 2] + p[12 * k + 11]) / 2;
+  const g = (m.tableGround[4 * k] + m.tableGround[4 * k + 3]) / 2;
+  close(axisZ - g, 1.5, 1e-6, 'axis height over the ground');
+  assert(m.gaps === 0 && m.fences.length >= 1, `ground known everywhere (${m.gaps} gaps), fence walls`);
+  // changing category moves the axis
+  change('view3d', q => { q.view3d.trackerCategory = 'grazing'; });
+  const m2 = await model3d({ date, query: null });
+  close((m2.tables.positions[12 * k + 2] + m2.tables.positions[12 * k + 11]) / 2 - g, 2.3, 1e-6, 'grazing: 2.30 m');
+  change('view3d', q => { q.view3d.trackerCategory = 'standard'; });
+  // glTF of the layout: nodes and extras
+  const glb = layoutGlb(m, null, { wkid: 6708, x: 1, y: 2 });
+  const { json } = readGlb(glb.buffer);
+  eq(json.nodes.map(n => n.name), ['Modules', 'Stations', 'Fence'], 'nodes');
+  eq(json.accessors[0].count, r.tables * 4, 'module vertices');
+  eq([json.asset.extras.national.wkid, json.asset.extras.axes], [6708, 'x east, y up, z south'], 'extras');
+  // the PDF report with a picture of the 3D view on a second page
+  const c = document.createElement('canvas'); c.width = 400; c.height = 240;
+  const cx = c.getContext('2d'); cx.fillStyle = '#3b5'; cx.fillRect(0, 0, 400, 240);
+  const rep = await buildReport({ views: [{ name: 'From the road', dataUrl: c.toDataURL('image/jpeg', 0.8), width: 400, height: 240, note: 'test' }] });
+  eq(rep.doc.getNumberOfPages(), 2, 'second page with the 3D view');
+  change('infra', q => { q.infra.stations = []; });
+  await wait(400);
+  return `${r.tables} trackers at ${m.angle.toFixed(1)}° on 21 Dec 09:00 UTC, GLB ${(glb.buffer.byteLength / 1024).toFixed(0)} KB`;
 });
 
 await test('background map: satellite without labels, opacity slider kept when switching to topographic', async () => {

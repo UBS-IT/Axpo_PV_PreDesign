@@ -33,7 +33,7 @@ version» at AO 25°. Supports: vertical piles or concrete footing (shape and nu
 | Variants drawn | 1V27 / 1V54 (sheet), 1V26 / 1V52 and 1V28 / 1V56 (DWG) | IT-PC | confirmed — the group standard is **1V28** (`group.md`) |
 | Rotation | ±55° | IT-PC | confirmed |
 | Pitch | 6.00 m or 5.50 m in the drawings (free space 3.62 / 3.12 m) | IT-PC | examples: the pitch is agreed with the farm |
-| Heights | h min at max rotation 0.50 m (agroPV standard) · 1.30 m (grazing) · 2.10 m (advanced agroPV); axis at 1.50 / 2.30 / 3.10 m; top at 2.50 / 3.30 / 4.10 m | IT-PC | confirmed |
+| Heights | h min at max rotation 0.50 m (agroPV standard) · 1.30 m (grazing) · 2.10 m (advanced agroPV); axis at 1.50 / 2.30 / 3.10 m; top at 2.50 / 3.30 / 4.10 m | IT-PC | confirmed — in the catalog as `tracker.axisHeights`; the 3D view uses the standard category unless the designer picks another (USER 2026-09-28) |
 | Length of a 1V27 | **32.33 m** (27 modules = 31.14 m + **1.19 m** drive / motor gap) | IT-PC DWG, block extents | confirmed; the 1V28 is 33.48 m with the same gap (USER) |
 | Gap between trackers in line | 0.50 m («distanza tra due stringhe contigue») | IT-PC | confirmed |
 | Trackers in line | **4 at most**, then a 4.00 m gap | IT-PC DWG, panel «distanza tra strada nord-sud e trackers 1V27» (130.81 m = 4 × 32.33 + 3 × 0.50) | confirmed |

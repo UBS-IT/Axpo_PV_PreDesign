@@ -44,6 +44,9 @@ export function defaultProject() {
     // structures clearance (null = the toolkit value of the country), stations { id, kind CC|CU|CT, lon, lat, rot },
     // roads drawn by the designer { id, kind heavy|light, width, geometry LineString }
     infra: { fence: true, fenceGroups: [], perimeterRoad: null, clearance: null, stations: [], roads: [] },
+    // 4b · 3D: heights (null = the toolkit value of the country), AgriPV category of the trackers (IT axis heights),
+    // tracker angle following the sun at the time of the view or set by hand, saved viewpoints { id, name, camera }
+    view3d: { lowEdge: null, trackerCategory: 'standard', axisHeight: null, trackerMode: 'sun', trackerAngle: 0, viewpoints: [] },
   };
 }
 
@@ -67,6 +70,7 @@ export function upgrade(p) {
     field: { ...d.field, ...(p.field || {}), tracks: { ...d.field.tracks, ...((p.field || {}).tracks || {}) } },
     terrain: { ...d.terrain, ...(p.terrain || {}) },
     infra: { ...d.infra, ...(p.infra || {}) },
+    view3d: { ...d.view3d, ...(p.view3d || {}) },
   };
   if ((p.version || 1) < 2) {
     // v1: role site|exclusion|reference and global buffers -> v2 categories with per-object attributes

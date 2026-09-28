@@ -137,6 +137,24 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
     X, Y; foundations, cables and earthworks listed as not included, never estimated.
   Checked with ezdxf (audit: no errors), pyshp and openpyxl.
 
+### 4b · 3D
+
+Opening the step turns the map into a 3D scene (same background and opacity); any other step goes back to 2D, where
+the editing stays.
+
+- **Ground** — the terrain of step 0 (a custom elevation layer on Esri World Elevation), else Esri World Elevation.
+- **Structures at their real height** — fixed tables with the low edge at the toolkit height of the country (IT
+  1.00 m, FR 1.10 m) over the ground under each corner, as the piles follow the terrain; trackers with the axis at
+  the IT height of their AgriPV category (standard 1.50, grazing 2.30, advanced 3.10 m), turned towards the sun at
+  the time of the view (±55°, no backtracking) or by hand. Missing heights (other countries, AgriPV fixed) are typed
+  in, never borrowed. Stations, fence, gates and obstacles with a height come too.
+- **Sun and shadows** — date and time on the map (Daylight) with quick buttons for the solstices in solar time; the
+  panel gives the sun position and the row-to-row shading at that moment; ShadowCast shows the hours of shadow over a
+  period. Sun position from the NOAA calculator, within 0.01° of NREL SPA (pvlib), tracker angles as pvlib.
+- **Views** — viewpoints saved in the project, PNG pictures, a PDF report with one page per saved view, line of sight.
+- **glTF (.glb)** — terrain of step 0 around the site, modules, stations, fence, gates and obstacles in metres, Y up,
+  with the origin and its national coordinates in the file (checked with the Khronos glTF validator).
+
 ### Coordinate systems
 
 - **Proposed from the site location**: the country comes from generalized outlines (`app/catalog/countries.json`),
@@ -201,7 +219,9 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
 - `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure,
-  KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities in the national system (11)
+  KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on the terrain (13)
+- `http://localhost:8140/tests/view3d.html` — sun and trackers against pvlib, row shading, heights by country,
+  meshes, ground elevations, terrain tiles, glTF (8)
 
 Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs every page in headless Chromium with the
 ArcGIS Maps SDK bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
@@ -228,7 +248,8 @@ app/                  the web app (index.html, css/, js/)
   js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
   vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
-  js/ui/              rail, coordinate system dialog, toasts
+  js/ui/              rail, coordinate system dialog, background map, toasts
+  js/view3d/          4b · 3D: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
 docs/                 plan, decisions; toolkit/ = the toolkit archive by country
 scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts)
@@ -237,6 +258,6 @@ tools/                headless test runner and vendor builder, CAD (DWG) reader 
 
 ## Not done yet
 
-Contour lines, access road from the gate, 3D, several
+Contour lines, access road from the gate, backtracking of the trackers, several
 fields per site, DXF layer names of Engineering, piles in the bill of quantities (no toolkit value yet), DWG / DXF
 import, yield API, electrical design (deliberately left open). See `docs/plan.md`.
