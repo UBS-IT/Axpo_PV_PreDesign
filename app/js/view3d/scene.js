@@ -143,7 +143,7 @@ async function enter() {
   catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
   if (!active) return;
   if (!scene) {
-    const { SceneView, GraphicsLayer, Daylight, reactiveUtils } = S;
+    const { SceneView, GraphicsLayer } = S;
     layer3d = new GraphicsLayer({ title: '3D layout', listMode: 'hide', elevationInfo: { mode: 'absolute-height' } });
     mapView.map.add(layer3d);
     try {
@@ -152,10 +152,15 @@ async function enter() {
         ...(f0 ? { camera: { position: { longitude: f0.lon0, latitude: f0.lat0 - 0.012, z: 900 }, heading: 0, tilt: 60 } } : {}),
         environment: { lighting: { type: 'sun', date: new Date(), directShadowsEnabled: true }, atmosphereEnabled: true } });
     } catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
-    widgets.daylight = new Daylight({ view: scene });
+  }
+  // Do not attach overlays or draw the model until the renderer has a sized host.
+  try { await scene.when(); }
+  catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
+  if (!active) return;
+  if (!widgets.daylight) {
+    widgets.daylight = new S.Daylight({ view: scene });
     scene.ui.add(widgets.daylight, 'top-right');
-    reactiveUtils.watch(() => scene.environment.lighting.date?.getTime?.(), () => onTime());
-    scene.when().catch(e => { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); });
+    S.reactiveUtils.watch(() => scene.environment.lighting.date?.getTime?.(), () => onTime());
   }
   layer3d.visible = true;
   tablesLayer2d(false);

@@ -58,9 +58,15 @@ button, input, select { font: inherit; color: inherit; }
 #rail button.later { opacity: .6; }
 #side { width: 372px; flex: none; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
 body.side-off #side { display: none; }
-#view, #view3d { flex: 1; min-width: 0; position: relative; }
+/* Keep the 2D view measurable when 3D opens; hiding it with display:none
+   collapses the renderer while both views still share the same Map. */
+#mapStack { flex: 1; min-width: 0; min-height: 0; position: relative; }
+#view, #view3d { position: absolute; inset: 0; min-width: 0; min-height: 0; }
+/* A view can report ready while its internal root remains at auto height (0).
+   The renderer's absolute surface and 100%-height canvas then also collapse. */
+#view .esri-view-root, #view3d .esri-view-root { height: 100%; }
 #view3d { display: none; }
-body.in-3d #view { display: none; }
+body.in-3d #view { visibility: hidden; pointer-events: none; }
 body.in-3d #view3d { display: block; }
 @media (max-width: 760px) {
   /* phone: map on top, the steps as a strip, the panel below; the page itself never scrolls */
@@ -70,7 +76,7 @@ body.in-3d #view3d { display: block; }
   #top .tb { padding: 4px 8px; font-size: 12px; }
   #top .tb.crs { display: none; }
   #body { flex-direction: column; }
-  #view, #view3d { order: 1; flex: none; height: 36vh; }
+  #mapStack { order: 1; flex: none; height: 36vh; }
   #rail { order: 2; flex: none; width: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--line); padding: 4px 6px; scrollbar-width: none; }
   #rail::-webkit-scrollbar { display: none; }
   #rail button { flex: none; min-width: 62px; }
