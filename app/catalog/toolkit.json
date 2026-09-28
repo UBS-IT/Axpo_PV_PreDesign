@@ -458,7 +458,15 @@
      "grazing": 1.3,
      "advanced": 2.1
     },
-    "source": "IT-PC"
+    "source": "IT-PC",
+    "axisHeights": {
+     "standard": 1.5,
+     "grazing": 2.3,
+     "advanced": 3.1,
+     "unit": "m",
+     "source": "IT-PC",
+     "note": "Rotation axis above the ground by AgriPV category (minimum heights at full rotation 0.50 / 1.30 / 2.10 m, top 2.50 / 3.30 / 4.10 m)"
+    }
    },
    "roads": {
     "light": {

@@ -58,7 +58,10 @@ button, input, select { font: inherit; color: inherit; }
 #rail button.later { opacity: .6; }
 #side { width: 372px; flex: none; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
 body.side-off #side { display: none; }
-#view { flex: 1; min-width: 0; position: relative; }
+#view, #view3d { flex: 1; min-width: 0; position: relative; }
+#view3d { display: none; }
+body.in-3d #view { display: none; }
+body.in-3d #view3d { display: block; }
 @media (max-width: 760px) {
   /* phone: map on top, the steps as a strip, the panel below; the page itself never scrolls */
   #top { flex-wrap: wrap; gap: 6px 10px; padding: 6px 10px; }
@@ -67,7 +70,7 @@ body.side-off #side { display: none; }
   #top .tb { padding: 4px 8px; font-size: 12px; }
   #top .tb.crs { display: none; }
   #body { flex-direction: column; }
-  #view { order: 1; flex: none; height: 36vh; }
+  #view, #view3d { order: 1; flex: none; height: 36vh; }
   #rail { order: 2; flex: none; width: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--line); padding: 4px 6px; scrollbar-width: none; }
   #rail::-webkit-scrollbar { display: none; }
   #rail button { flex: none; min-width: 62px; }
@@ -231,3 +234,14 @@ dialog.dlg.quick { max-width: 420px; }
 .bm-opacity { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; font-size: 11px; width: 120px; box-sizing: border-box; cursor: default; }
 .bm-opacity input { width: 100%; margin: 0; accent-color: var(--accent); }
 #view .esri-view-surface { background: var(--bg); }
+
+/* 4b · 3D panel */
+#d3Panel .row { display: flex; gap: 6px; align-items: center; }
+#d3Panel .row input[type=text] { flex: 1; min-width: 0; }
+#d3Panel .opts.row { flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 2px; }
+#d3Panel input[type=range] { width: 100%; accent-color: var(--accent); }
+#d3Panel .list { list-style: none; margin: 6px 0; padding: 0; }
+#d3Panel .list li { display: flex; align-items: center; gap: 4px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+#d3Panel .list li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#d3Panel .btns.wrap { flex-wrap: wrap; }
+#d3Panel .btn.sm { padding: 5px 8px; font-size: 12px; }

@@ -19,8 +19,15 @@ export function initRail() {
   showStep(saved && document.querySelector(`#side .step[data-step="${saved}"]`) ? saved : 'areas');
 }
 
+// listeners of the step shown (the 3D view opens with 4b · 3D and closes with any other step)
+const listeners = [];
+export function onStep(fn) { listeners.push(fn); }
+export const currentStep = () => current;
+
 export function showStep(step) {
+  const before = current;
   current = step;
+  if (before !== step) for (const fn of listeners) { try { fn(step, before); } catch (e) { console.error(e); } }
   document.body.classList.remove('side-off');
   document.querySelectorAll('#rail button[data-step]').forEach(b => {
     const on = b.dataset.step === step;

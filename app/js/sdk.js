@@ -50,3 +50,22 @@ export function getSdk() {
   if (!sdk) throw new Error('SDK not loaded yet');
   return sdk;
 }
+
+// The 3D modules (4b · 3D), loaded the first time the 3D view opens and added to the same object
+const MODULES_3D = {
+  SceneView: '@arcgis/core/views/SceneView.js',
+  Camera: '@arcgis/core/Camera.js',
+  Mesh: '@arcgis/core/geometry/Mesh.js',
+  BaseElevationLayer: '@arcgis/core/layers/BaseElevationLayer.js',
+  Daylight: '@arcgis/core/widgets/Daylight.js',
+  ShadowCast: '@arcgis/core/widgets/ShadowCast.js',
+  LineOfSight: '@arcgis/core/widgets/LineOfSight.js',
+};
+export async function loadSdk3d() {
+  const s = await loadSdk();
+  if (s.SceneView) return s;
+  const names = Object.keys(MODULES_3D);
+  const mods = await $arcgis.import(names.map(n => MODULES_3D[n]));
+  names.forEach((n, i) => { s[n] = mods[i]; });
+  return s;
+}

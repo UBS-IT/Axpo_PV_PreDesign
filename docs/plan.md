@@ -91,9 +91,16 @@ toolkit has no pile count per structure yet, so the bill of quantities lists fou
 | D2 | **Hosting and sign-in**: static hosting on the company cloud (e.g. Azure Static Web Apps) with Entra ID; ArcGIS licence / API key for basemaps and World Elevation in production; repository moved to the company organisation | Colleagues use it without a local server; Esri terms for production use | M | IT department, ArcGIS organisation |
 | D3 | **Pilots per country**: Poland against a HelioScope design, Spain against a RatedPower one | Trust of the country teams | S each | one site per country |
 
+### 4b · 3D (done 2026-09-28)
+
+Scene on the terrain of step 0 or Esri World Elevation; tables and trackers at the toolkit heights of the country
+(IT tracker axis by AgriPV category, standard by default: user), trackers following the sun at the time of the view
+or set by hand (no backtracking); stations, fence, gates, obstacles; Daylight with solstice buttons, row-to-row
+shading at that time, ShadowCast; viewpoints saved in the project, PNG, PDF report with the saved views, line of
+sight; glTF export. Checked by the user in a browser (WebGL does not run in the test bench).
+
 ### Phase E — Later
 
-- **4b · 3D**: SceneView with the terrain, tables at their real height and tilt.
 - **Yield**: the internal yield tool API when it exists (typed-in kWh/kWp until then).
 - **Electrical design**: after the user's survey (kept open on purpose).
 

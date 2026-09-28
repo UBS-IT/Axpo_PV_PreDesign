@@ -15,6 +15,7 @@ import { initRail, showStep } from './ui/rail.js';
 import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EXT } from './io/projectfile.js';
 import { toast } from './ui/toast.js';
 import { initBasemap } from './ui/basemap.js';
+import { initView3d } from './view3d/scene.js';
 
 const $ = id => document.getElementById(id);
 
@@ -56,6 +57,7 @@ async function start() {
   initInfra(view);
   initOutput();
   initQuick();
+  initView3d(view);
   on('modules', renderModules);
   on('project', renderModules);
 
