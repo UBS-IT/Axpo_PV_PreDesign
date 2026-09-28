@@ -10,10 +10,18 @@ import { initAreas } from '../app/js/areas.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
 import { initField, last } from '../app/js/field.js';
-import { initOutput, buildGeoJSON, buildKmz } from '../app/js/output.js';
+import { initOutput, buildGeoJSON, buildKmz, exportEngineering } from '../app/js/output.js';
+import { exportModel } from '../app/js/export/model.js';
+import { buildShapefiles, prjFor } from '../app/js/export/shp.js';
+import { buildDxf } from '../app/js/export/dxf.js';
+import { buildBoq } from '../app/js/export/boq.js';
+import { buildGeoPackage } from '../app/js/export/gpkg.js';
+import { srsDefinition } from '../app/js/export/shp.js';
+import { readWorkbook } from '../app/js/io/xlsx.js';
+import { loadJsZip, loadShp, loadSqlJs } from '../app/js/libs.js';
 import { buildReport } from '../app/js/report.js';
 import { initQuick, runQuick } from '../app/js/quick.js';
-import { initInfra } from '../app/js/infra.js';
+import { initInfra, addStation } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
@@ -25,6 +33,7 @@ async function test(name, fn) {
 const assert = (c, m) => { if (!c) throw new Error(m); };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const text = id => document.getElementById(id).innerText;
+const eq = (a, b, w) => assert(JSON.stringify(a) === JSON.stringify(b), `${w}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
 
 await loadSdk();
 await loadCatalog();
@@ -183,6 +192,103 @@ await test('KMZ for Google Earth and the one-page PDF report', async () => {
   assert(rep.data.assumptions.some(a => /agreed with the farm/.test(a)) && rep.data.checks.some(c => /topographic survey/.test(c)), 'assumptions and checks');
   window.__reportPdf = btoa(pdf);
   return `KMZ ${(out.blob.size / 1024).toFixed(0)} KB, ${folders.length} folders · PDF ${(rep.blob.size / 1024).toFixed(0)} KB`;
+});
+
+await test('for Engineering: Shapefile, GeoPackage, DXF and bill of quantities in the national system', async () => {
+  const wkid = store.project.crs.wkid;
+  assert(wkid, 'export system set from the site');
+  addStation('CT', lon, lat, 0, { snap: false });
+  await wait(800);
+  const r = last.result, model = exportModel();
+  assert(!model.error, 'model: ' + model.error);
+  const { Point, SpatialReference: SR } = getSdk();
+  const target = new SR({ wkid });
+  const c0 = r.frame.toSr(new Point({ x: r.tablesLocal[0].corners[0][0], y: r.tablesLocal[0].corners[0][1], spatialReference: r.frame.sr }), target);
+  const near = (pts, [x, y], tol) => pts.some(p => Math.hypot(p[0] - x, p[1] - y) < tol);
+  // Shapefile: read back with shpjs (raw coordinates, no reprojection) and its dBase reader
+  const shp = await buildShapefiles(model);
+  const [JSZip, shpjs] = await Promise.all([loadJsZip(), loadShp()]);
+  const zip = await JSZip.loadAsync(shp.blob);
+  for (const n of ['tables', 'fences', 'roads', 'stations', 'buildable', 'areas_polygon']) assert(shp.files.includes(n), `layer ${n} in ${shp.files}`);
+  for (const ext of ['shp', 'shx', 'dbf', 'prj', 'cpg']) assert(zip.file('tables.' + ext), 'tables.' + ext);
+  eq(await zip.file('tables.prj').async('text'), await prjFor(wkid), '.prj = ESRI WKT of EPSG:' + wkid);
+  const geoms = shpjs.parseShp(await zip.file('tables.shp').async('arraybuffer'));
+  const rows = shpjs.parseDbf(await zip.file('tables.dbf').async('arraybuffer'), 'UTF-8');
+  assert(geoms.length === r.tables && rows.length === r.tables, `${geoms.length} shapes, ${rows.length} rows, ${r.tables} tables`);
+  assert(near(geoms[0].coordinates[0], [c0.x, c0.y], 0.001), 'first table corner at the SDK projection (1 mm)');
+  const halves = rows.filter(x => x.HALF === 1);
+  assert(halves.length === r.halves && halves.every(x => x.STRUCTURE === r.halfGeom.notation && x.MODULES === r.halfGeom.modules), 'half tables with their notation');
+  assert(rows.filter(x => x.HALF === 0).every(x => x.STRUCTURE === store.project.field.structure && x.WP === r.power.wp), 'attributes');
+  const shx = new DataView(await zip.file('tables.shx').async('arraybuffer'));
+  assert(shx.getInt32(24, false) * 2 === shx.byteLength && shx.byteLength === 100 + 8 * r.tables, 'index length');
+  const st = shpjs.parseDbf(await zip.file('stations.dbf').async('arraybuffer'), 'UTF-8');
+  assert(st.length === 1 && st[0].KIND === 'CT' && st[0].BUILDING === 'CT-IT', 'station row: ' + JSON.stringify(st[0]));
+  // DXF: group codes in pairs, layers declared, one closed polyline per table
+  const dxf = buildDxf(model), lines = dxf.split('\r\n');
+  assert(lines.length % 2 === 1 && lines.at(-2) === 'EOF', 'pairs and EOF');
+  const pairs = []; for (let i = 0; i + 1 < lines.length; i += 2) pairs.push([lines[i].trim(), lines[i + 1]]);
+  const ents = []; let cur = null;
+  for (const [c, v] of pairs) { if (c === '0') { cur = { type: v, g: [] }; ents.push(cur); } else if (cur) cur.g.push([c, v]); }
+  const layerOf = e => e.g.find(x => x[0] === '8')?.[1];
+  const declared = new Set(ents.filter(e => e.type === 'LAYER').map(e => e.g.find(x => x[0] === '2')[1]));
+  const usedL = new Set(ents.filter(e => ['POLYLINE', 'POINT', 'TEXT'].includes(e.type)).map(layerOf));
+  assert([...usedL].every(l => declared.has(l)), `layers declared: ${[...usedL].filter(l => !declared.has(l))}`);
+  const polys = ents.filter(e => e.type === 'POLYLINE');
+  const tablesDxf = polys.filter(e => /^PVP_TABLES/.test(layerOf(e)));
+  assert(tablesDxf.length === r.tables && tablesDxf.every(e => e.g.some(x => x[0] === '70' && x[1] === '1')), `${tablesDxf.length} closed table polylines`);
+  assert(ents.filter(e => e.type === 'VERTEX').length === ents.filter(e => e.type === 'VERTEX').length && polys.length === ents.filter(e => e.type === 'SEQEND').length, 'one SEQEND per polyline');
+  const verts = []; let i0 = ents.indexOf(tablesDxf[0]);
+  for (let k = i0 + 1; ents[k].type === 'VERTEX'; k++) verts.push([+ents[k].g.find(x => x[0] === '10')[1], +ents[k].g.find(x => x[0] === '20')[1]]);
+  assert(verts.length === 4 && near(verts, [c0.x, c0.y], 0.002), 'first table in the DXF at the SDK projection');
+  assert(ents.some(e => e.type === 'TEXT' && layerOf(e) === 'PVP_TEXT' && e.g.some(x => x[0] === '1' && x[1] === 'CT')), 'station label');
+  // bill of quantities: read back with the app's own Excel reader
+  const book = await readWorkbook(await (await buildBoq(model)).arrayBuffer());
+  eq(book.map(b => b.name), ['Summary', 'Tables', 'Infrastructure', 'Areas'], 'sheets');
+  const sum = book[0].aoa, val = label => sum.find(x => x[0] === label)?.[1];
+  assert(val('DC capacity') === Math.round(r.dcMWp * 1000) / 1000 && val('Modules') === r.modules && val('Half tables') === (r.halves || undefined), 'summary figures: ' + JSON.stringify(sum.slice(0, 26)));
+  assert(sum.some(x => /^Fence A/.test(x[0]) && x[1] > 1000) && sum.some(x => x[0] === 'Transformer station' && x[1] === 1), 'fence and station quantities');
+  assert(sum.some(x => /Foundations and piles/.test(x[0])), 'what is not included is said');
+  assert(book[1].aoa.length === r.tables + 1 && Math.abs(book[1].aoa[1][6] - c0.x) < 5, 'one row per table with X, Y');
+  // GeoPackage: opened again with SQLite, checked against the OGC rules that readers rely on
+  const gp = await buildGeoPackage(model);
+  const SQL = await loadSqlJs(), db = new SQL.Database(gp.bytes);
+  const one = sql => db.exec(sql)[0]?.values ?? [];
+  try {
+    eq(one('PRAGMA application_id')[0][0], 0x47504B47, 'application id GPKG');
+    eq(one('PRAGMA user_version')[0][0], 10300, 'GeoPackage 1.3');
+    eq(one('PRAGMA integrity_check')[0][0], 'ok', 'SQLite integrity');
+    eq(one('PRAGMA foreign_key_check'), [], 'foreign keys');
+    const srs = one(`SELECT organization, organization_coordsys_id, definition FROM gpkg_spatial_ref_sys WHERE srs_id = ${wkid}`)[0];
+    eq([srs[0], srs[1], srs[2]], ['EPSG', wkid, (await srsDefinition(wkid)).wkt], 'system with its OGC WKT');
+    const contents = Object.fromEntries(one('SELECT table_name, data_type FROM gpkg_contents'));
+    for (const n of gp.tables) assert(contents[n] === 'features', 'contents: ' + n);
+    eq(one("SELECT geometry_type_name, srs_id FROM gpkg_geometry_columns WHERE table_name = 'tables'")[0], ['MULTIPOLYGON', wkid], 'geometry column');
+    eq(one('SELECT COUNT(*), SUM(half) FROM "tables"')[0], [r.tables, r.halves || 0], 'one row per table');
+    const blob = one('SELECT geom FROM "tables" ORDER BY fid LIMIT 1')[0][0];
+    const dv = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+    eq([String.fromCharCode(blob[0], blob[1]), blob[2], blob[3], dv.getInt32(4, true)], ['GP', 0, 3, wkid], 'blob header');
+    eq([blob[40], dv.getUint32(41, true), dv.getUint32(45, true), blob[49], dv.getUint32(50, true), dv.getUint32(54, true), dv.getUint32(58, true)], [1, 6, 1, 1, 3, 1, 5], 'WKB multipolygon of one ring of 5 points');
+    const ring = [0, 1, 2, 3, 4].map(k => [dv.getFloat64(62 + 16 * k, true), dv.getFloat64(70 + 16 * k, true)]);
+    assert(near(ring, [c0.x, c0.y], 0.001), 'first table corner at the SDK projection (1 mm)');
+    const area2 = ring.slice(0, 4).reduce((a, p, k) => a + p[0] * ring[k + 1][1] - ring[k + 1][0] * p[1], 0);
+    assert(area2 > 0, 'outer ring anticlockwise (OGC)');
+    const [minx, maxx, miny, maxy] = [8, 16, 24, 32].map(o => dv.getFloat64(o, true));
+    assert(minx === Math.min(...ring.map(p => p[0])) && maxy === Math.max(...ring.map(p => p[1])) && maxx > minx && maxy > miny, 'envelope');
+    eq(one('SELECT kind, building FROM stations')[0], ['CT', 'CT-IT'], 'station attributes');
+  } finally { db.close(); }
+  // the button: no real download (anchor click intercepted), no system -> a message
+  const click = HTMLAnchorElement.prototype.click, got = [];
+  HTMLAnchorElement.prototype.click = function () { got.push(this.download); };
+  try {
+    const out = await exportEngineering('dxf');
+    assert(out && got[0] === out.name && out.name.endsWith(`_EPSG${wkid}.dxf`), 'download ' + got);
+    change('crs', q => { q.crs.auto = false; q.crs.wkid = null; });
+    assert(await exportEngineering('shp') === null && got.length === 1, 'no system: nothing written');
+    change('crs', q => { q.crs.auto = true; q.crs.wkid = wkid; });
+  } finally { HTMLAnchorElement.prototype.click = click; }
+  change('infra', q => { q.infra.stations = []; });
+  await wait(400);
+  return `EPSG:${wkid} · ${shp.files.length} shapefiles · GeoPackage ${(gp.bytes.length / 1024).toFixed(0)} KB, ${gp.tables.length} layers · DXF ${(dxf.length / 1024).toFixed(0)} KB, ${polys.length} polylines, layers ${[...usedL].join(' ')}`;
 });
 
 await test('infrastructure panel: lots numbered, two of them joined in one fence with the check boxes', async () => {

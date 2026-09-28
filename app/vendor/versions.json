@@ -23,5 +23,10 @@
     "package": "jspdf",
     "version": "4.2.1",
     "license": "MIT"
+  },
+  "sqljs.js": {
+    "package": "sql.js",
+    "version": "1.13.0",
+    "license": "MIT"
   }
 }

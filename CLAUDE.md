@@ -57,11 +57,13 @@ mettersi al lavoro.**
 - Librerie servite dall'app in `app/vendor/` (moduli ES minificati, versioni fissate in `tools/headless/package-lock.json`,
   rigenerati con `npm run vendor`; la CI controlla che coincidano), caricate solo da `app/js/libs.js`: JSZip 3.10.1,
   @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4 (solo lettura grezza di .shp/.dbf), geotiff 2.1.3 (DTM), jsPDF 4.2.1
-  (report). Excel (.xlsx/.xlsm) letto da `app/js/io/xlsx.js` (JSZip + DOMParser, niente SheetJS: la 0.18.5 di npm ha
+  (report), sql.js 1.13.0 (SQLite in WebAssembly, con il suo `.wasm`: GeoPackage). Excel (.xlsx/.xlsm) letto da `app/js/io/xlsx.js` (JSZip + DOMParser, niente SheetJS: la 0.18.5 di npm ha
   falle note), CSV da `app/js/io/csv.js` (RFC 4180). Solo l'SDK ArcGIS arriva da CDN (js.arcgis.com).
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
 - `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `infra.js`
-  step 3, `output.js` step 4, `quick.js` predesign rapido) ·
+  step 3, `output.js` step 4 con `export/` per Engineering: Shapefile, GeoPackage, DXF R12, computo Excel nel sistema nazionale
+  (niente .gdb: deciso dall'utente il 2026-09-28),
+  `.prj` da `app/catalog/prj.json` generato da `scripts/make_prj.py`; `quick.js` predesign rapido) ·
   `app/catalog/` toolkit, contorni dei paesi, Länder tedeschi in zona 33 · `tests/` test nel browser ·
   `docs/` piano, decisioni, `toolkit/` archivio per paese · `scripts/` server locale e generatore dei fixture ·
   `tools/` strumenti di sviluppo (test headless, lettore DWG), non parte dell'app · `backups/`.
