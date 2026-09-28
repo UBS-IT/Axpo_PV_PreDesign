@@ -57,7 +57,7 @@ async function start() {
   initInfra(view);
   initOutput();
   initQuick();
-  initView3d(view);
+  try { initView3d(view); } catch (e) { console.error('[3d]', e); }   // the 3D step must never stop the app from starting
   on('modules', renderModules);
   on('project', renderModules);
 
