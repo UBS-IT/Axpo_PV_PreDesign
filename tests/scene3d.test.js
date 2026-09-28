@@ -55,7 +55,7 @@ applyI18n(box);
 
 // World Elevation stand-in: a flat ground at 90 m on the Web Mercator tiling
 const { Map, MapView, SpatialReference, Extent, Polygon } = getSdk();
-const [BaseElevationLayer, TileInfo] = await $arcgis.import(['@arcgis/core/layers/BaseElevationLayer.js', '@arcgis/core/layers/support/TileInfo.js']);
+const [BaseElevationLayer, BaseTileLayer, Basemap, TileInfo] = await $arcgis.import(['@arcgis/core/layers/BaseElevationLayer.js', '@arcgis/core/layers/BaseTileLayer.js', '@arcgis/core/Basemap.js', '@arcgis/core/layers/support/TileInfo.js']);
 const Flat = BaseElevationLayer.createSubclass({
   load() {
     this.tileInfo = TileInfo.create({ spatialReference: SpatialReference.WebMercator, size: 256, numLODs: 20 });
@@ -67,12 +67,41 @@ const Flat = BaseElevationLayer.createSubclass({
 });
 scene3dConfig.baseElevation = () => new Flat({ title: 'flat' });
 
-const view = new MapView({
-  container: 'view', map: new Map(), spatialReference: SpatialReference.WebMercator,
-  center: [10.5, 46.5], zoom: 5, constraints: { snapToZoom: false },
+// A local Web Mercator basemap makes the shared Map choose the same 3D spatial reference
+// as the real app's satellite basemap, without network requests in the test bench.
+const FlatBasemap = BaseTileLayer.createSubclass({
+  load() {
+    this.tileInfo = TileInfo.create({ spatialReference: SpatialReference.WebMercator, size: 256, numLODs: 20 });
+    this.spatialReference = SpatialReference.WebMercator;
+    this.fullExtent = new Extent({ xmin: -20037508.34, ymin: -20037508.34, xmax: 20037508.34, ymax: 20037508.34, spatialReference: SpatialReference.WebMercator });
+    return this;
+  },
+  fetchTile() {
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 256;
+    const ctx = tile.getContext('2d');
+    ctx.fillStyle = '#c9c9c9';
+    ctx.fillRect(0, 0, tile.width, tile.height);
+    return Promise.resolve(tile);
+  },
 });
-document.getElementById('sum').textContent = 'Preparing real 2D view...';
-await view.when();
+const view = new MapView({
+  container: 'view', map: new Map({ basemap: new Basemap({ baseLayers: [new FlatBasemap({ title: 'offline Web Mercator' })] }) }), spatialReference: SpatialReference.WebMercator,
+  // With an empty map there is no basemap tiling scheme from which to infer zoom.
+  center: [10.5, 46.5], scale: 4000000, constraints: { snapToZoom: false },
+});
+window.__sceneTest2dView = view; // inspect view.ready/size/fatalError if the fixture fails
+const setupStatus = document.getElementById('sum');
+setupStatus.textContent = 'Preparing real 2D view...';
+try {
+  await Promise.race([
+    view.when(),
+    wait(30000).then(() => { throw new Error('2D MapView did not become ready within 30 seconds'); }),
+  ]);
+} catch (error) {
+  setupStatus.textContent = 'Setup FAIL: ' + (error?.message || String(error));
+  throw error;
+}
 library.modules = [];
 const [lon, lat] = projectPointToWgs84(32633, [317500, 5063500]);
 const f = makeLocalFrame({ lon0: lon, lat0: lat });
@@ -108,6 +137,7 @@ await test('step 4b opens a SceneView on the site, without errors of the scene',
   await settle();
   const s = view3dState.scene, c = s.center;
   assert(s.ready, 'scene ready');
+  assert(s.spatialReference?.isWebMercator, '3D scene must use the Web Mercator basemap reference: ' + JSON.stringify(s.spatialReference?.toJSON()));
   assert(view.ready && view.map === s.map, 'real MapView and SceneView share one map');
   assert(document.getElementById('view').getBoundingClientRect().height > 0, '2D container keeps its height in 3D');
   assert(s.container.querySelector('.esri-view-root')?.getBoundingClientRect().height > 0, '3D internal root has non-zero height');
