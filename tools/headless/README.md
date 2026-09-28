@@ -4,7 +4,7 @@ Runs every browser test page in headless Chromium (Playwright) and prints the re
 network policy blocks `js.arcgis.com` (e.g. a cloud session): the ArcGIS Maps SDK 4.34 is bundled from npm
 (`build.mjs`) and served in its place (`page.mjs`). The other libraries are part of the app (`app/vendor`).
 
-It also builds those vendored libraries: `npm run vendor` writes JSZip, togeojson, shpjs, geotiff and jsPDF into
+It also builds those vendored libraries: `npm run vendor` writes JSZip, togeojson, shpjs, geotiff, jsPDF and sql.js (with its .wasm) into
 `app/vendor/` as minified ES modules of the versions in `package-lock.json`, with `versions.json` and the licenses.
 The output is deterministic and CI fails if it differs from the committed files. To update a library: change its
 version in `package.json`, `npm install`, `npm run vendor`, run the tests, commit `app/vendor` with the lock file.

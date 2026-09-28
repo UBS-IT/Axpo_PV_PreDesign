@@ -64,11 +64,14 @@ blocked).
 
 ### Phase B — Complete the predesign (the deliverable for prospection and engineering)
 
+B3 done 2026-09-28 (Shapefile, GeoPackage, DXF, Excel; no file geodatabase, user's choice) with the app's own DXF layer names (`PVP_*`, one place to change them) and without piles: the
+toolkit has no pile count per structure yet, so the bill of quantities lists foundations as not included.
+
 | # | What | Why | Size | Needs |
 |---|---|---|---|---|
 | B1 ✔ | **3 · Infrastructure v1**: perimeter road as a switch (proposed up to ~9 MWp), fence offset from the structures (IT: 6 m with the road, 4 m without), gate at the access point, internal roads from the corridors, delivery station at the access with its user station within 20 m, transformer stations placed by hand (hint: ~1 per 3 MWp) with their clearances cut from the field | Fence, roads and stations change the MWp: without them the predesign overstates the capacity | M–L | road / station rules of other countries when they come |
 | B2 ✔ | **4 · Output v1**: one-page PDF report (map, KPIs, assumptions with their toolkit sources, checks still to do) and KML / KMZ for Google Earth | What prospection sends around | M | a sample of today's reports, if any |
-| B3 | **4 · Output v2**: Shapefile and DXF in the national system for engineering, Excel bill of quantities (tables, modules, piles, fence, roads) | Hand-over to engineering without redrawing | M | the DXF layer names Engineering wants |
+| B3 ✔ | **4 · Output v2**: Shapefile and DXF in the national system for engineering, Excel bill of quantities (tables, modules, piles, fence, roads) | Hand-over to engineering without redrawing | M | the DXF layer names Engineering wants; piles per structure |
 | B4 | **2 · Fields v2**: remove / lock single tables by clicking, kept across regenerations; several fields per site with their own structure | Real sites need exceptions; kept optional | M | — |
 
 ### Phase C — Better inputs

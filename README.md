@@ -120,6 +120,19 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - **KMZ** for Google Earth — folders by category with their colours, attributes in the descriptions; the tables are
   one placemark.
 - **GeoJSON** in WGS 84 — every object with its category and attributes (can be imported back).
+- **For Engineering**, in the national system chosen above (metres; lengths and areas measured in the local frame):
+  - **Shapefile** (zip) — one layer per kind of object (`areas_polygon` / `_line` / `_point`, `buildable`, `tables`,
+    `fences`, `roads`, `road_axes`, `stations`, `gates`) with attributes, `.cpg` UTF-8 and the `.prj` in ESRI WKT
+    (`app/catalog/prj.json`, generated from the EPSG database by `scripts/make_prj.py`); outer rings clockwise.
+  - **GeoPackage** (`.gpkg`, OGC 1.3) — the same layers in one SQLite file (sql.js, SQLite in WebAssembly),
+    multipolygons / multilinestrings, the system with its OGC WKT; ArcGIS Pro and QGIS open it directly (checked
+    with GDAL 3.12). No file geodatabase: ArcGIS Pro converts a GeoPackage in one step if needed.
+  - **DXF** (AutoCAD R12) — layers `PVP_*` (defaults of the app until Engineering gives its names: `DXF_LAYERS` in
+    `app/js/export/model.js`), closed polylines, gates as points, labels of fences, stations and gates.
+  - **Bill of quantities** (Excel) — summary of layout and infrastructure (tables, half tables, modules, MWp, areas,
+    fence per group, gates, roads by kind with length and surface, stations), one row per table and per object with
+    X, Y; foundations, cables and earthworks listed as not included, never estimated.
+  Checked with ezdxf (audit: no errors), pyshp and openpyxl.
 
 ### Coordinate systems
 
@@ -158,7 +171,7 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - **ArcGIS Maps SDK 4.34** loaded with `$arcgis.import()` (the 5.x mechanism), geometry operators
   (`geometry/operators/*`) for union, difference, buffer and projection. All SDK access goes through `app/js/sdk.js`.
   It is the only library loaded from a CDN (js.arcgis.com).
-- **Libraries served by the app** — `app/vendor/` holds JSZip, togeojson, shpjs, geotiff and jsPDF as minified ES
+- **Libraries served by the app** — `app/vendor/` holds JSZip, togeojson, shpjs, geotiff, jsPDF and sql.js as minified ES
   modules of the versions pinned in `tools/headless/package-lock.json` (`npm run vendor` rebuilds them; CI checks they
   match; licenses and versions alongside), all loaded through `app/js/libs.js`, so company proxies that block public
   CDNs do not break imports or exports. Excel roadmaps (.xlsx / .xlsm) are read by `app/js/io/xlsx.js` (JSZip and
@@ -176,7 +189,7 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 
 - `http://localhost:8140/tests/` — layout engine, half tables, corridors as roads (14)
 - `http://localhost:8140/tests/modules.html` — roadmap by semester, power periods, six-month alert, country catalog,
-  slope limits, trackers, modules carried by projects, Excel and CSV readers, vendored libraries (16)
+  slope limits, trackers, modules carried by projects, Excel and CSV readers and writers, GeoPackage geometry, vendored libraries (19)
 - `http://localhost:8140/tests/sdk.html` — SDK and local frame (5)
 - `http://localhost:8140/tests/import.html` — classification, v1 → v2 migration, countries and proposed systems,
   every national EPSG code, the import fixtures against the ArcGIS reference areas, Geoportale projects with the
@@ -185,7 +198,7 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
 - `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure,
-  KMZ and PDF report (10)
+  KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities in the national system (11)
 
 Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs every page in headless Chromium with the
 ArcGIS Maps SDK bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
@@ -208,18 +221,19 @@ app/                  the web app (index.html, css/, js/)
   js/output.js        step 4: coordinate system for exports, export
   js/layout/          structures (notation, table geometry, pitch rule) and the row-fill engine
   js/geo/             local metric frame, GeoJSON <-> SDK conversion and reprojection
-  js/io/              importers, Excel and CSV readers, project files
+  js/io/              importers, Excel and CSV readers, Excel writer, project files
+  js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
-  vendor/             third-party libraries (built by tools/headless/vendor.mjs), versions.json, licenses/
+  vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
   js/ui/              rail, coordinate system dialog, toasts
 tests/                browser tests and synthetic fixtures
 docs/                 plan, decisions; toolkit/ = the toolkit archive by country
-scripts/              serve.py (local server without cache), make_fixtures.py
+scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts)
 tools/                headless test runner and vendor builder, CAD (DWG) reader — development tools, not part of the app
 ```
 
 ## Not done yet
 
 Contour lines, access road from the gate, 3D, several
-fields per site, exports in the national system (KML / Shapefile / DXF), report, DWG / DXF import, yield API,
-electrical design (deliberately left open). See `docs/plan.md`.
+fields per site, DXF layer names of Engineering, piles in the bill of quantities (no toolkit value yet), DWG / DXF
+import, yield API, electrical design (deliberately left open). See `docs/plan.md`.

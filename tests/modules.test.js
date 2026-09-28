@@ -6,6 +6,9 @@ import { parsePeriod, periodOf, periodLabel, modulePower, powerAge, parseSemeste
 import { parseNotation, tableGeometry, minPitch, halfNotation } from '../app/js/layout/structures.js';
 import { store, defaultProject } from '../app/js/state.js';
 import { readWorkbook, columnIndex } from '../app/js/io/xlsx.js';
+import { writeWorkbook } from '../app/js/io/xlsxwrite.js';
+import { writeDbf, writeShp } from '../app/js/export/shp.js';
+import { polygonsOf, toWkb } from '../app/js/export/gpkg.js';
 import { parseCsv, detectSeparator } from '../app/js/io/csv.js';
 import { readRoadmapSheets } from '../app/js/modules.js';
 import { loadJsZip, loadToGeoJSON, loadShp, loadGeoTiff, loadJsPdf } from '../app/js/libs.js';
@@ -145,6 +148,41 @@ await test('roadmap workbook read from a real .xlsx file: same powers as the row
   eq(await readRoadmapSheets(new File(['x'], 'old.xls')), null, 'an .xls is refused with a message');
 });
 
+await test('Excel writer: values, bold rows, awkward sheet names; read back by the reader', async () => {
+  const blob = await writeWorkbook([{ name: 'Summary', rows: [['Item', 'Qty'], ['Fence <A> & "B"', 1600.5], [], ['ctrl\u0001char', -0.25]], bold: [0], widths: [20, 8], freeze: true },
+    { name: 'a/b:c*?[x]' + 'y'.repeat(40), rows: [[1, 2, 3]] }, { name: 'Summary', rows: [['dup']] }]);
+  const book = await readWorkbook(await blob.arrayBuffer());
+  eq(book.map(b => b.name), ['Summary', 'a b c   x ' + 'y'.repeat(21), 'Summary 2'], 'sheet names');
+  eq(book[0].aoa, [['Item', 'Qty'], ['Fence <A> & "B"', 1600.5], ['', ''], ['ctrlchar', -0.25]], 'values');
+});
+
+await test('dBase and shapefile writers: UTF-8 text cut on a character, numbers, index offsets', () => {
+  const dbf = new Uint8Array(writeDbf([{ name: 'é'.repeat(200), n: 1.5, k: 3 }, { name: 'x', n: null, k: 12 }]));
+  const dv = new DataView(dbf.buffer);
+  eq([dbf[0], dv.getUint32(4, true), dv.getUint16(8, true)], [3, 2, 32 + 32 * 3 + 1], 'header');
+  const field = i => [new TextDecoder().decode(dbf.slice(32 + 32 * i, 32 + 32 * i + 11)).replace(/\0+$/, ''), String.fromCharCode(dbf[32 + 32 * i + 11]), dbf[32 + 32 * i + 16], dbf[32 + 32 * i + 17]];
+  eq([field(0), field(1), field(2)], [['NAME', 'C', 254, 0], ['N', 'N', 19, 1], ['K', 'N', 19, 0]], 'fields');
+  const rec = new TextDecoder().decode(dbf.slice(32 + 32 * 3 + 1 + 1, 32 + 32 * 3 + 1 + 1 + 254));
+  assert(rec.trim() === 'é'.repeat(127) && !rec.includes('�'), 'text cut at 254 bytes on a character');
+  eq(dbf.at(-1), 0x1a, 'end of file');
+  const { shp, shx } = writeShp('polyline', [{ parts: [[[0, 0], [10, 0]], [[0, 5], [3, 4], [6, 5]]] }, { parts: [[[1, 1], [2, 2]]] }]);
+  const s = new DataView(shp), x = new DataView(shx);
+  eq([s.getInt32(0, false), s.getInt32(24, false) * 2, s.getInt32(32, true), s.getFloat64(36, true), s.getFloat64(52, true)], [9994, shp.byteLength, 3, 0, 10], 'shp header');
+  eq([x.getInt32(100, false), x.getInt32(108, false)], [50, 50 + 4 + (44 + 8 + 16 * 5) / 2], 'record offsets in 16-bit words');
+});
+
+await test('GeoPackage geometry: holes go to the outer ring holding them, OGC orientation, WKB sizes', () => {
+  const sq = (x, y, d, cw) => { const r = [[x, y], [x + d, y], [x + d, y + d], [x, y + d], [x, y]]; return cw ? r.reverse() : r; };
+  // ESRI rings: two outer rings (clockwise), a hole (anticlockwise) inside the second one, listed first
+  const polys = polygonsOf([sq(12, 2, 2, false), sq(0, 0, 4, true), sq(10, 0, 6, true)]);
+  eq(polys.map(p => p.length), [1, 2], 'hole in the second polygon');
+  const sa = r => r.slice(1).reduce((a, p, k) => a + r[k][0] * p[1] - p[0] * r[k][1], 0) / 2;
+  assert(polys.every(p => sa(p[0]) > 0 && p.slice(1).every(h => sa(h) < 0)), 'outer anticlockwise, holes clockwise');
+  const w = toWkb({ type: 'polygon', parts: [sq(12, 2, 2, false), sq(0, 0, 4, true), sq(10, 0, 6, true)] });
+  eq([w.type, w.wkb.length, w.box], ['MULTIPOLYGON', 9 + (9 + 4 + 5 * 16) + (9 + 4 + 5 * 16 + 4 + 5 * 16), [0, 0, 16, 6]], 'multipolygon');
+  eq([toWkb({ type: 'point', parts: [[[3, 4]]] }).wkb.length, toWkb({ type: 'polyline', parts: [[[0, 0], [1, 1]]] }).type], [21, 'MULTILINESTRING'], 'point and lines');
+});
+
 await test('CSV (RFC 4180): quoted separators, doubled quotes, line breaks in quotes, BOM, CRLF', () => {
   eq(detectSeparator('name;"a,b,c";x\n1;2;3'), ';', 'semicolon despite commas in quotes');
   eq(detectSeparator('a\tb\tc'), '\t', 'tab');
@@ -240,7 +278,7 @@ await test('modules are written into the project and adopted on another computer
 
 // every module of the app loads (the app page itself needs a map: check it in a browser)
 await test('every app module loads', async () => {
-  const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile', 'io/xlsx', 'io/csv', 'libs', 'report',
+  const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile', 'io/xlsx', 'io/xlsxwrite', 'io/csv', 'libs', 'report', 'export/model', 'export/shp', 'export/gpkg', 'export/dxf', 'export/boq',
     'geo/convert', 'geo/localframe', 'layout/rows', 'layout/structures', 'ui/rail', 'ui/crsdialog', 'ui/toast', 'terrain/slope', 'terrain/terrain', 'terrain/dtm', 'terrain/store'];
   const missing = [];
   for (const n of names) {

@@ -11,6 +11,11 @@ import { layoutInfra } from './infra.js';
 import { exportReport } from './report.js';
 import { toast } from './ui/toast.js';
 import { loadJsZip } from './libs.js';
+import { exportModel, fileName } from './export/model.js';
+import { buildShapefiles } from './export/shp.js';
+import { buildDxf } from './export/dxf.js';
+import { buildGeoPackage } from './export/gpkg.js';
+import { buildBoq } from './export/boq.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -27,6 +32,10 @@ export function initOutput() {
   $('outGeojson').onclick = exportGeoJSON;
   $('outKml').onclick = exportKmz;
   $('outReport').onclick = exportReport;
+  $('outShp').onclick = () => exportEngineering('shp');
+  $('outGpkg').onclick = () => exportEngineering('gpkg');
+  $('outDxf').onclick = () => exportEngineering('dxf');
+  $('outBoq').onclick = () => exportEngineering('boq');
   on('crs', renderCrs);
   on('project', renderCrs);
   renderCrs();
@@ -171,4 +180,41 @@ export async function exportKmz() {
   a.href = URL.createObjectURL(out.blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast(t('toast.exportedKmz', { file: name }), 'ok');
+}
+
+// ── for Engineering: Shapefile, DXF and bill of quantities in the national system ──
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+// what: 'shp' | 'gpkg' | 'dxf' | 'boq'. Returns { name, blob } or null (message shown)
+export async function exportEngineering(what) {
+  const model = exportModel();
+  if (model.error) { toast(t(model.error === 'noCrs' ? 'out.noCrs' : 'toast.nothingToExport'), 'err'); return null; }
+  try {
+    let blob, name, msg;
+    if (what === 'shp') {
+      const out = await buildShapefiles(model);
+      blob = out.blob; name = fileName(`_EPSG${model.wkid}_shp.zip`);
+      msg = t(out.missingPrj ? 'out.shpNoPrj' : 'out.shpDone', { file: name, n: out.files.length, wkid: model.wkid });
+    } else if (what === 'gpkg') {
+      const out = await buildGeoPackage(model);
+      blob = new Blob([out.bytes], { type: 'application/geopackage+sqlite3' }); name = fileName(`_EPSG${model.wkid}.gpkg`);
+      msg = t('out.gpkgDone', { file: name, n: out.tables.length, wkid: model.wkid });
+    } else if (what === 'dxf') {
+      blob = new Blob([buildDxf(model)], { type: 'application/dxf' }); name = fileName(`_EPSG${model.wkid}.dxf`);
+      msg = t('out.dxfDone', { file: name, wkid: model.wkid });
+    } else {
+      blob = await buildBoq(model); name = fileName('_quantities.xlsx');
+      msg = t('out.boqDone', { file: name });
+    }
+    download(blob, name);
+    toast(msg, 'ok', 8000);
+    return { name, blob };
+  } catch (e) {
+    console.error(e);
+    toast(t('out.fail', { err: e.message || e }), 'err', 12000);
+    return null;
+  }
 }

@@ -13,18 +13,21 @@ fs.mkdirSync(tmp, { recursive: true });
 fs.mkdirSync(path.join(out, 'licenses'), { recursive: true });
 
 // file in app/vendor -> npm package (version from package-lock.json); `external`: optional dependencies the app never
-// reaches (jsPDF's html(), SVG and sanitising plugins), left out to keep the file small
+// reaches (jsPDF's html(), SVG and sanitising plugins; the Node.js branches of sql.js), left out to keep the file
+// small; `assets`: files copied as they are (published name -> path in the package)
 export const LIBS = {
   'jszip.js': { pkg: 'jszip' },
   'togeojson.js': { pkg: '@tmcw/togeojson' },
   'shpjs.js': { pkg: 'shpjs' },
   'geotiff.js': { pkg: 'geotiff' },
   'jspdf.js': { pkg: 'jspdf', external: ['html2canvas', 'dompurify', 'canvg'] },
+  'sqljs.js': { pkg: 'sql.js', external: ['fs', 'path', 'crypto'], assets: { 'sql-wasm.wasm': 'dist/sql-wasm.wasm' } },
 };
 
 const lock = JSON.parse(fs.readFileSync(path.join(here, 'package-lock.json'), 'utf8'));
 const manifest = {};
-for (const [file, { pkg, external = [] }] of Object.entries(LIBS)) {
+for (const [file, { pkg, external = [], assets = {} }] of Object.entries(LIBS)) {
+  for (const [name, from] of Object.entries(assets)) fs.copyFileSync(path.join(here, 'node_modules', pkg, from), path.join(out, name));
   const version = lock.packages[`node_modules/${pkg}`].version;
   const entry = path.join(tmp, 'entry_' + file);
   fs.writeFileSync(entry, `import * as m from '${pkg}';\nexport * from '${pkg}';\nexport default (m.default ?? m);\n`);
