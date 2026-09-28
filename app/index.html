@@ -215,6 +215,14 @@
         <div class="cardhd"><b data-i18n="infra.fence"></b></div>
         <label class="chk"><input type="checkbox" id="infFence"> <span data-i18n="infra.fenceOn"></span></label>
         <div id="infFenceInfo"></div>
+        <div id="infLotsBox" hidden>
+          <p class="hint" id="infLotsHint"></p>
+          <div class="list" id="infLots"></div>
+          <div class="btns">
+            <button type="button" class="btn" id="infJoin" data-i18n="infra.join"></button>
+            <button type="button" class="btn" id="infSeparate" data-i18n="infra.separate"></button>
+          </div>
+        </div>
         <label class="l" for="infClear" data-i18n="infra.clear"></label>
         <input id="infClear" type="number" min="0" step="0.5">
         <p class="hint" id="infClearHint"></p>
@@ -227,6 +235,11 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.roads"></b></div>
         <div id="infRoads"></div>
+        <div class="row2">
+          <div><select id="infRoadKind" data-i18n-aria="infra.roadKindLabel"><option value="heavy"></option><option value="light"></option></select></div>
+          <div><button type="button" class="btn" id="infRoadDraw" data-i18n="infra.drawRoad"></button></div>
+        </div>
+        <div class="list" id="infRoadList" data-i18n-empty="infra.roadListNone"></div>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.gates"></b></div>

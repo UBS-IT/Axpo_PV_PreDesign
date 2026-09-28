@@ -224,3 +224,5 @@ kbd { font: 11px/1 var(--font); border: 1px solid var(--line); border-radius: 4p
 .tb.quick { background: var(--axpo-gradient); color: #fff; border-color: transparent; font-weight: 600; }
 .tb.quick:hover { filter: brightness(1.08); background: var(--axpo-gradient); }
 dialog.dlg.quick { max-width: 420px; }
+.it.lot { cursor: pointer; }
+.it.moving { background: color-mix(in srgb, var(--accent) 12%, transparent); }

@@ -456,14 +456,14 @@ function renderSummary() {
   else if (r.setbackArea > 0) k.push(kpi(minus(r.setbackArea), t('areas.sumSetback', { m: fmt(store.project.settings.boundarySetback, 1) })));
   k.push(kpi(minus(Math.max(0, r.baseArea - r.buildableArea)), t('areas.sumExcluded')));
   const byKind = kind => (r.extras || []).filter(x => x.kind === kind).reduce((s, x) => s + x.area, 0);
-  const slope = byKind('slope'), fence = byKind('fence'), stations = byKind('station');
+  const slope = byKind('slope'), fence = byKind('fence'), stations = byKind('station'), roadsDrawn = byKind('road');
   k.push(kpi(ha(r.buildableArea), t('areas.sumBuildable'), 'big'));
   const spread = siteSpreadKm();
   const routes = routeSummary();
   el.innerHTML = `<div class="kpis">${k.join('')}</div>
     <div class="hint">${esc(t(r.netMode === 'given' ? 'areas.modeGiven' : 'areas.modeComputed'))}</div>
     ${slope >= 5 ? `<div class="hint">${esc(t('areas.sumSlope', { ha: fmt(slope / 1e4, 2) }))}</div>` : ''}
-    ${fence + stations >= 5 ? `<div class="hint">${esc(t('areas.sumInfra', { fence: fmt(fence / 1e4, 2), stations: fmt(stations / 1e4, 2) }))}</div>` : ''}
+    ${fence + stations + roadsDrawn >= 5 ? `<div class="hint">${esc(t('areas.sumInfra', { fence: fmt(fence / 1e4, 2), roads: fmt(roadsDrawn / 1e4, 2), stations: fmt(stations / 1e4, 2) }))}</div>` : ''}
     ${(r.notes || []).map(n => `<div class="hint">${esc(n)}</div>`).join('')}
     ${routes ? `<div class="hint">${esc(routes)}</div>` : ''}
     ${spread > SPREAD_WARN_KM ? `<div class="warn">${esc(t('warn.spread', { km: fmt(spread, 0) }))}</div>` : ''}

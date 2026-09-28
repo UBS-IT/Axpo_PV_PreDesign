@@ -165,6 +165,26 @@ await test('half tables option and GeoJSON export', async () => {
   return `${r.halves} halves (1V14) of ${r.tables}`;
 });
 
+await test('infrastructure panel: lots numbered, two of them joined in one fence with the check boxes', async () => {
+  const { Polyline } = getSdk();
+  const line = (pts, type, buffer) => ({ id: type, name: type, category: 'linear', attrs: { type, buffer }, source: 'test', sourceCategory: '',
+    geometry: toGeoJSON(f.toSr(new Polyline({ paths: [pts], spatialReference: f.sr }), SpatialReference.WGS84)) });
+  change('site', q => { q.features.push(line([[-260, 0], [260, 0]], 'road', 10), line([[0, 0], [0, 260]], 'ditch', 5)); });
+  await wait(800);
+  const boxes = [...document.querySelectorAll('#infLots [data-lot]')];
+  assert(boxes.length === 3 && !document.getElementById('infLotsBox').hidden, `lots in the panel: ${boxes.length}`);
+  for (const b of boxes.slice(0, 2)) { b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); }
+  document.getElementById('infJoin').click();
+  await wait(800);
+  assert(store.project.infra.fenceGroups.length === 1, 'one group');
+  assert(/fence A/.test(text('infLots')) && (text('infLots').match(/fence A/g) || []).length === 2, text('infLots'));
+  const labels = view.map.layers.find(l => l.title === 'Infrastructure').graphics.filter(g => g.symbol?.type === 'text').map(g => g.symbol.text);
+  assert(labels.includes('1 · A') && labels.includes('2 · A') && labels.includes('3'), 'labels on the map: ' + labels.join(' '));
+  change('site', q => { q.features = q.features.filter(x => x.category !== 'linear'); q.infra.fenceGroups = []; });
+  await wait(500);
+  return labels.join(' | ');
+});
+
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
   change('field', q => { q.field.technology = 'ground-fixed'; q.field.structure = '3V9'; q.field.pitch = 10.3; });
   await wait(800);

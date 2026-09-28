@@ -88,9 +88,10 @@ export function buildGeoJSON() {
   // infrastructure: fence, perimeter and internal roads, stations, gates
   if (r && r.frame && area && area.pre) {
     const { Polyline, Point } = getSdk();
-    const L = layoutInfra(r.frame, area.pre);
+    const L = layoutInfra(r.frame, area.pre, area.base);
     const wgs84 = g => toGeoJSON(g);
-    if (L.fence) feats.push({ type: 'Feature', geometry: wgs84(new Polyline({ paths: L.fence.rings, spatialReference: r.frame.sr })), properties: { category: 'fence', length_m: Math.round(L.fence.length) } });
+    for (const f of L.fences) feats.push({ type: 'Feature', geometry: wgs84(new Polyline({ paths: f.rings, spatialReference: r.frame.sr })), properties: { category: 'fence', fence: f.letter, lots: f.lots.join(','), length_m: Math.round(f.length) } });
+    for (const rd of L.roads) feats.push({ type: 'Feature', geometry: rd.geometry, properties: { category: 'road', kind: 'drawn-' + rd.kind, width_m: rd.width, length_m: Math.round(rd.length) } });
     if (L.road) feats.push({ type: 'Feature', geometry: wgs84(L.road), properties: { category: 'road', kind: 'perimeter', length_m: Math.round(L.roadLength) } });
     for (const g of r.roads || []) feats.push({ type: 'Feature', geometry: wgs84(g), properties: { category: 'road', kind: 'internal', width_m: store.project.field.tracks.width } });
     for (const s of L.stations) feats.push({ type: 'Feature', geometry: wgs84(s.footprint), properties: { category: 'station', kind: s.kind, building: s.building.id, length_m: s.building.length, width_m: s.building.width } });

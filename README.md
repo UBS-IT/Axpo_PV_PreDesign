@@ -91,16 +91,21 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 
 ### 3 · Infrastructure
 
-- **Fence** — along the outline of the land the plant can use (base area minus the objects of 1 · Areas; holes
-  inside are not fenced). The band between fence and structures is cut from the buildable area: in Italy 4 m, or
-  6 m with the perimeter road (1 m, 4 m road, 1 m). The designer can type another clearance or switch the fence off.
+- **Lots and fences** — the land the plant can use (base area minus the objects of 1 · Areas) often falls apart in
+  lots, e.g. between roads, lines and ditches: they are numbered on the map (north to south) and each has its own
+  fence. Tick lots and **join them in one fence**: it runs around them and across the gaps between them, never outside
+  the site nor over the lots of another fence. The band between fence and structures is cut from the buildable area:
+  in Italy 4 m, or 6 m with the perimeter road (1 m, 4 m road, 1 m). The designer can type another clearance or switch
+  the fence off.
 - **Perimeter road** — a switch. It is the template for plants up to about 9 MWp: the panel shows the suggestion
   for the current layout and the quick predesign applies it; the designer decides.
-- **Internal roads** — the corridors across the rows of 2 · Fields (e.g. a 4 m gap after 4 trackers in line),
-  drawn and measured inside the buildable area.
+- **Roads** — the corridors across the rows of 2 · Fields (e.g. a 4 m gap after 4 trackers in line) are drawn and
+  measured; any other road is drawn on the map (heavy 4 m or light 3 m in Italy), reshaped by its vertices, removed,
+  and cut from the buildable area with its width.
 - **Gates** — one on the fence next to each site access (toolkit width, 6 m in Italy).
 - **Stations** — delivery, user and transformer stations with the sizes of the country (IT: CT 8.70 × 3.00, CC and
-  CU 7.50 × 3.00 m) and 3 m kept free around them; delivery and user stations can be placed at the site access in one
+  CU 7.50 × 3.00 m) and 3 m kept free around them; placed or moved within 25 m of a fence they snap flush with it and
+  along it (elsewhere they follow the rows), turned by 90° with a click; delivery and user stations can be placed at the site access in one
   click (flush with the fence, user station within 20 m); transformer stations by hand, with a hint of about one every
   3 MWp (part of the electrical design, optional). Stations are cut from the buildable area.
 - Countries without toolkit values get no borrowed value: the panel says what is missing.
@@ -159,8 +164,9 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
   every national EPSG code, the import fixtures against the ArcGIS reference areas, Geoportale projects with the
   site-features model, net area, grid connection route, project and GeoJSON round trips (25)
 - `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, project file (14)
-- `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, stations, stations at the access (8)
-- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure (8)
+- `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
+  (snapping, moving, at the access), roads drawn (12)
+- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure (9)
 
 Without a browser, or where the CDNs are blocked: `tools/headless` runs every page in headless Chromium with the
 libraries bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same

@@ -5,7 +5,7 @@ import { loadSdk, getSdk } from '../app/js/sdk.js';
 import { loadCatalog } from '../app/js/catalog.js';
 import { store, defaultProject } from '../app/js/state.js';
 import { computeArea, siteFrame, crsState } from '../app/js/areas.js';
-import { layoutInfra, addStation, placeAtAccess, suggestedRoad, clearances, nearestOnRings, rectangle, ringArea } from '../app/js/infra.js';
+import { layoutInfra, addStation, moveStation, placeAtAccess, suggestedRoad, clearances, nearestOnRings, rectangle, ringArea, lotsOf, joinLots, separateLots, addRoad, updateRoad, removeRoad, innerPoint } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
@@ -48,8 +48,8 @@ await test('plain geometry: nearest point on a ring, rectangles, orientation', (
 await test('fence without perimeter road: 4 m band cut in Italy', () => {
   const a = site();
   near(a.buildableArea, 392 * 392, 1, 'buildable');
-  const L = layoutInfra(siteFrame(), a.pre);
-  near(L.fence.length, 1600, 0.5, 'fence length');
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
+  near(L.fences[0].length, 1600, 0.5, 'fence length');
   assert(!L.road && clearances().clearance === 4, 'no road');
   return `${(a.buildableArea / 1e4).toFixed(2)} ha of ${(a.grossArea / 1e4).toFixed(2)}`;
 });
@@ -57,7 +57,7 @@ await test('fence without perimeter road: 4 m band cut in Italy', () => {
 await test('perimeter road: 1 + 4 + 1 m, road drawn and measured', () => {
   const a = site([], { perimeterRoad: true });
   near(a.buildableArea, 388 * 388, 1, 'buildable');
-  const L = layoutInfra(siteFrame(), a.pre);
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
   const { areaOperator } = getSdk();
   near(areaOperator.execute(L.road), 398 * 398 - 390 * 390, 1, 'road area: from 1 to 5 m inside the fence');
   near(L.roadLength, 4 * 394, 0.5, 'road centre line');
@@ -72,10 +72,10 @@ await test('the designer can override the clearance, and switch the fence off', 
 await test('the fence follows exclusions on the edge and ignores holes inside', () => {
   const edge = site([exclusion('west strip', sq(-200, -200, -150, 200))]);
   near(edge.buildableArea, (350 - 8) * 392, 2, 'edge exclusion moves the fence');
-  near(layoutInfra(siteFrame(), edge.pre).fence.length, 1500, 0.5, 'fence length');
+  near(layoutInfra(siteFrame(), edge.pre, edge.base).fences[0].length, 1500, 0.5, 'fence length');
   const hole = site([exclusion('pond', sq(-20, -20, 20, 20))]);
   near(hole.buildableArea, 392 * 392 - 40 * 40, 2, 'hole cut once, no fence around it');
-  near(layoutInfra(siteFrame(), hole.pre).fence.length, 1600, 0.5, 'fence length');
+  near(layoutInfra(siteFrame(), hole.pre, hole.base).fences[0].length, 1600, 0.5, 'fence length');
 });
 
 await test('stations: footprint of the Italian toolkit and 3 m kept free around', () => {
@@ -85,7 +85,7 @@ await test('stations: footprint of the Italian toolkit and 3 m kept free around'
   assert(s, 'placed');
   const a = computeArea(siteFrame());
   near(base - a.buildableArea, (8.7 + 6) * (3 + 6), 0.5, 'area taken');
-  const L = layoutInfra(siteFrame(), a.pre);
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
   assert(L.stations[0].building.id === 'CT-IT' && L.stations[0].inside, 'CT inside');
   return `${(base - a.buildableArea).toFixed(1)} m²`;
 });
@@ -95,7 +95,7 @@ await test('delivery and user stations at the site access: on the fence, inside,
   site([{ id: 'acc', name: 'Main access', category: 'access', geometry: { type: 'Point', coordinates: [x, y] }, attrs: { type: 'site-access' }, source: 'test', sourceCategory: '' }]);
   assert(placeAtAccess(), 'placed');
   const a = computeArea(siteFrame());
-  const L = layoutInfra(siteFrame(), a.pre);
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
   const cc = L.stations.find(s => s.kind === 'CC'), cu = L.stations.find(s => s.kind === 'CU');
   assert(cc && cu && cc.inside && cu.inside, 'both inside');
   near(cc.center[1], -200 + 1.5, 0.05, 'delivery station flush with the fence');
@@ -103,6 +103,78 @@ await test('delivery and user stations at the site access: on the fence, inside,
   assert(d <= 20 && !L.notes.length, `distance ${d}`);
   assert(L.gates.length === 1 && Math.abs(L.gates[0].point[1] + 200) < 0.01 && L.gates[0].width === 6, 'gate on the fence, 6 m');
   return `CC–CU ${d.toFixed(1)} m, gate at x ${L.gates[0].point[0].toFixed(1)}`;
+});
+
+// a road (linear infrastructure with a 10 m buffer) across the site from west to east, and a ditch from north to
+// the road: three lots — 1 north-west, 2 north-east, 3 south
+const splitters = () => [
+  { id: 'road', name: 'Strada vicinale', category: 'linear', geometry: toGeoJSON(F.toSr(new (getSdk().Polyline)({ paths: [[[-260, 0], [260, 0]]], spatialReference: F.sr }), SpatialReference.WGS84)), attrs: { type: 'road', buffer: 10 }, source: 'test', sourceCategory: '' },
+  { id: 'ditch', name: 'Fosso', category: 'linear', geometry: toGeoJSON(F.toSr(new (getSdk().Polyline)({ paths: [[[0, 0], [0, 260]]], spatialReference: F.sr }), SpatialReference.WGS84)), attrs: { type: 'ditch', buffer: 5 }, source: 'test', sourceCategory: '' },
+];
+await test('lots: the usable land split by a road and a ditch gives 3 lots, numbered north to south, one fence each', () => {
+  const a = site(splitters());
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
+  assert(L.lots.length === 3 && L.fences.length === 3, `${L.lots.length} lots, ${L.fences.length} fences`);
+  assert(L.lots[0].label[0] < 0 && L.lots[0].label[1] > 0 && L.lots[1].label[0] > 0 && L.lots[2].label[1] < 0, 'numbering');
+  near(L.lots[2].area, 400 * 190, 1, 'south lot');
+  const p = innerPoint([[0, 0], [10, 0], [10, 10], [5, 1], [0, 10], [0, 0]]);
+  assert(p[1] < 5 && p[0] > 0 && p[0] < 10, 'a point inside a concave ring');
+  return L.lots.map(l => `${l.n}: ${(l.area / 1e4).toFixed(2)} ha`).join(' · ');
+});
+
+await test('lots 1 and 2 share one fence across the ditch; separating them gives their own fences back', () => {
+  const a = site(splitters());
+  const alone = a.buildableArea;
+  assert(joinLots([1, 2]), 'joined');
+  const b = computeArea(siteFrame());
+  const L = layoutInfra(siteFrame(), b.pre, b.base);
+  assert(L.fences.length === 2 && L.fences[0].lots.join() === '1,2' && L.fences[0].parts === 1, JSON.stringify(L.fences.map(f => f.lots)));
+  assert(L.lots[0].fence === 'A' && L.lots[1].fence === 'A' && L.lots[2].fence === 'B', 'letters');
+  // no band along the ditch any more
+  near(b.buildableArea - alone, 2 * 4 * (190 - 8), 30, 'area gained: the two 4 m strips beside the ditch (their ends are in the other bands)');
+  const len = L.fences[0].length;
+  near(len, 2 * 400 + 2 * 190, 5, 'one fence around both lots, across the ditch');
+  assert(separateLots([1, 2]), 'separated');
+  const c = computeArea(siteFrame());
+  near(c.buildableArea, alone, 1, 'back to three fences');
+  store.project.infra.fenceGroups = [];
+  return `fence A ${len.toFixed(0)} m, +${(b.buildableArea - alone).toFixed(0)} m²`;
+});
+
+await test('stations snap flush with the fence and along it; far from it they follow the rows; moving snaps too', () => {
+  site();
+  const [x, y] = wgs(50, -195);           // 5 m inside the south fence
+  const s = addStation('CT', x, y);
+  const L = () => { const a = computeArea(siteFrame()); return layoutInfra(siteFrame(), a.pre, a.base).stations; };
+  let st = L()[0];
+  near(st.center[1], -200 + 1.5, 0.05, 'flush with the south fence');
+  near(Math.abs(Math.sin(st.rot * Math.PI / 180)), 0, 1e-6, 'along the fence');
+  const [x2, y2] = wgs(0, 0);
+  addStation('CT', x2, y2);
+  st = L()[1];
+  near(st.center[0], 0, 0.05, 'far from the fence: where clicked');
+  const [x3, y3] = wgs(193, 30);          // near the east fence
+  moveStation(s.id, x3, y3);
+  st = L().find(q => q.id === s.id);
+  near(st.center[0], 200 - 1.5, 0.05, 'moved flush with the east fence');
+  near(Math.abs(Math.cos(st.rot * Math.PI / 180)), 0, 1e-6, 'turned along it');
+  return `rotation ${st.rot.toFixed(0)}°`;
+});
+
+await test('roads drawn by the designer: cut with their width, reshaped, removed', () => {
+  const before = site().buildableArea;
+  const r = addRoad([wgs(0, -250), wgs(0, 250)], 'heavy');
+  assert(r && r.width === 4, 'heavy road 4 m (Italy)');
+  const a = computeArea(siteFrame());
+  near(before - a.buildableArea, 4 * 392, 2, 'strip taken across the buildable area');
+  updateRoad(r.id, [wgs(-250, 50), wgs(250, 50)]);
+  near(before - computeArea(siteFrame()).buildableArea, 4 * 392, 2, 'moved, same length inside');
+  assert(addRoad([wgs(0, 0), wgs(10, 0)], 'light').width === 3, 'light road 3 m');
+  removeRoad(r.id);
+  assert(store.project.infra.roads.length === 1, 'removed');
+  const L = layoutInfra(siteFrame(), computeArea(siteFrame()).pre);
+  near(L.roads[0].length, 10, 0.01, 'length of the light road');
+  return `${(before - a.buildableArea).toFixed(0)} m² for 392 m of 4 m road`;
 });
 
 await test('a country without toolkit values: said, not borrowed', () => {
