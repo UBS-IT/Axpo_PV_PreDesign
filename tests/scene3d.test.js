@@ -1,5 +1,5 @@
 // 4b · 3D with the real SceneView (WebGL; headless Chromium draws it with SwiftShader, see tools/headless): the panels
-// of the app on a stand-in 2D view, a site in Italy with the synthetic DTM of the fixtures as ground over a flat
+// of the app on a real MapView sharing its Map with the SceneView, a site in Italy with synthetic DTM over a flat
 // stand-in for Esri World Elevation (no Internet in the test bench), the quick predesign, then step 4b: the scene
 // starts on the site without errors, the ground follows the terrain model, the layout is drawn, sun buttons, views,
 // report and back to 2D. Run in the browser: /tests/scene3d.html.
@@ -45,12 +45,16 @@ const box = document.createElement('div');
 box.style.display = 'none';
 box.append(doc.getElementById('top'), doc.getElementById('side'), ...doc.querySelectorAll('body > input[type=file]'));
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
-const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 document.body.append(box, doc.getElementById('toast'));
+// Use the app's actual map markup/CSS rather than a stand-in 2D view.
+const appStack = doc.getElementById('mapStack');
+const body = document.getElementById('body');
+if (appStack) body.append(appStack);
+else body.append(doc.getElementById('view'), doc.getElementById('view3d'));
 applyI18n(box);
 
 // World Elevation stand-in: a flat ground at 90 m on the Web Mercator tiling
-const { Map, SpatialReference, Extent, Polygon } = getSdk();
+const { Map, MapView, SpatialReference, Extent, Polygon } = getSdk();
 const [BaseElevationLayer, TileInfo] = await $arcgis.import(['@arcgis/core/layers/BaseElevationLayer.js', '@arcgis/core/layers/support/TileInfo.js']);
 const Flat = BaseElevationLayer.createSubclass({
   load() {
@@ -63,7 +67,12 @@ const Flat = BaseElevationLayer.createSubclass({
 });
 scene3dConfig.baseElevation = () => new Flat({ title: 'flat' });
 
-const view = { map: new Map(), spatialReference: SpatialReference.WebMercator, ui: { add() {} }, goTo: async () => {}, on() { return { remove() {} }; }, when: async () => {} };
+const view = new MapView({
+  container: 'view', map: new Map(), spatialReference: SpatialReference.WebMercator,
+  center: [10.5, 46.5], zoom: 5, constraints: { snapToZoom: false },
+});
+document.getElementById('sum').textContent = 'Preparing real 2D view...';
+await view.when();
 library.modules = [];
 const [lon, lat] = projectPointToWgs84(32633, [317500, 5063500]);
 const f = makeLocalFrame({ lon0: lon, lat0: lat });
@@ -74,6 +83,7 @@ p.features = [{ id: 'g', name: 'gross', category: 'gross', geometry: toGeoJSON(f
 store.project = p;
 initAreas(view); initTerrain(view); initModulesUi(); initField(view); initInfra(view); initOutput(); initQuick(); initView3d(view);
 await wait(600);
+document.getElementById('sum').textContent = 'Preparing synthetic terrain and layout...';
 // the synthetic DTM (a 12 % plane) as the terrain model of step 0
 const g = gridForSite();
 const file = new File([await (await fetch('./fixtures/it_dtm_plane.tif')).blob()], 'it_dtm_plane.tif');
@@ -90,6 +100,7 @@ const settle = async (ms = 60000) => {
   await wait(1500);
 };
 
+document.getElementById('sum').textContent = 'Running scene tests...';
 await test('step 4b opens a SceneView on the site, without errors of the scene', async () => {
   showStep('3d');
   for (let i = 0; i < 100 && !view3dState.scene; i++) await wait(100);
@@ -97,6 +108,12 @@ await test('step 4b opens a SceneView on the site, without errors of the scene',
   await settle();
   const s = view3dState.scene, c = s.center;
   assert(s.ready, 'scene ready');
+  assert(view.ready && view.map === s.map, 'real MapView and SceneView share one map');
+  assert(document.getElementById('view').getBoundingClientRect().height > 0, '2D container keeps its height in 3D');
+  assert(s.container.querySelector('.esri-view-root')?.getBoundingClientRect().height > 0, '3D internal root has non-zero height');
+  assert(s.width > 0 && s.height > 0, `scene size: ${s.width} x ${s.height}`);
+  const canvases = [...s.container.querySelectorAll('canvas')];
+  assert(canvases.some(c => c.getBoundingClientRect().height > 0 && c.width > 0 && c.height > 0), '3D canvas has non-zero CSS and pixel sizes');
   assert(c && Number.isFinite(c.longitude) && Math.abs(c.longitude - lon) < 0.05 && Math.abs(c.latitude - lat) < 0.05, `centre on the site: ${c?.longitude}, ${c?.latitude}`);
   assert(!sceneErrors().length, 'errors: ' + sceneErrors().slice(0, 3).join(' | '));
   const layer = s.map.layers.find(l => l.title === '3D layout');
