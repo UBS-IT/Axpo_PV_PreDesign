@@ -19,7 +19,7 @@ The left rail holds the steps; clicking the active step again folds the panel aw
 | **1 · Areas** | Import or draw the areas, sorted into categories (below); net area given or computed |
 | **2 · Fields** | Modules (power by semester), structure (3V9 / 1V28 by default), tilt, azimuth, pitch, half tables, parametric layout and results |
 | **3 · Infrastructure** | Fence with its clearance, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
-| **4 · Output** | Coordinate system for exports, GeoJSON export; KML, Shapefile, DXF and the report come next |
+| **4 · Output** | Coordinate system for exports; one-page PDF report; KMZ for Google Earth; GeoJSON; Shapefile and DXF come next |
 | **4b · 3D** | Placeholder |
 | **Electrical** | Kept open on purpose |
 
@@ -111,6 +111,16 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - Countries without toolkit values get no borrowed value: the panel says what is missing.
 - Fence, roads, stations and gates are part of the GeoJSON export.
 
+### 4 · Output
+
+- **PDF report** — one A4 landscape page: the layout drawn to scale from the local metric frame (site, exclusions,
+  lines, roads, buildable area, tables, fences, stations, gates, lot numbers; scale bar and north arrow), the key
+  figures, the assumptions with their toolkit sources (shading angle of the country, module power and roadmap date,
+  fence clearance, slope limit and terrain, export system) and the checks still to do. Vector, no background map.
+- **KMZ** for Google Earth — folders by category with their colours, attributes in the descriptions; the tables are
+  one placemark.
+- **GeoJSON** in WGS 84 — every object with its category and attributes (can be imported back).
+
 ### Coordinate systems
 
 - **Proposed from the site location**: the country comes from generalized outlines (`app/catalog/countries.json`),
@@ -166,7 +176,8 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, project file (14)
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
-- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure (9)
+- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure,
+  KMZ and PDF report (10)
 
 Without a browser, or where the CDNs are blocked: `tools/headless` runs every page in headless Chromium with the
 libraries bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same

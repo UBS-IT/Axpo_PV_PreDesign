@@ -8,6 +8,9 @@ import { last } from './field.js';
 import { toGeoJSON } from './geo/convert.js';
 import { moduleLabel } from './modules.js';
 import { layoutInfra } from './infra.js';
+import { exportReport } from './report.js';
+
+const JSZIP_URL = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 import { toast } from './ui/toast.js';
 
 const $ = id => document.getElementById(id);
@@ -23,6 +26,8 @@ export function initOutput() {
     });
   };
   $('outGeojson').onclick = exportGeoJSON;
+  $('outKml').onclick = exportKmz;
+  $('outReport').onclick = exportReport;
   on('crs', renderCrs);
   on('project', renderCrs);
   renderCrs();
@@ -98,4 +103,73 @@ export function buildGeoJSON() {
     for (const g of L.gates) feats.push({ type: 'Feature', geometry: wgs84(new Point({ x: g.point[0], y: g.point[1], spatialReference: r.frame.sr })), properties: { category: 'gate', access: g.name, width_m: g.width } });
   }
   return feats.length ? { type: 'FeatureCollection', features: feats } : null;
+}
+
+// ── KML / KMZ (Google Earth; always WGS 84) ──
+// Folders by category with their colours; the tables are one placemark (a multi-geometry), so that large plants stay
+// light in Google Earth.
+const KML_STYLE = {   // [r, g, b], fill opacity (0 = no fill)
+  gross: [[255, 140, 26], 0.1], net: [[45, 190, 126], 0.15], exclusion: [[229, 72, 77], 0.35], linear: [[233, 30, 140], 0],
+  obstacle: [[150, 90, 40], 0.5], connection: [[139, 92, 246], 0], access: [[31, 153, 204], 0], mitigation: [[110, 170, 60], 0.35],
+  agri: [[200, 170, 40], 0.3], reference: [[123, 138, 153], 0.05], buildable: [[45, 190, 126], 0.1], table: [[57, 69, 207], 0.85],
+  fence: [[40, 40, 40], 0], road: [[150, 150, 150], 0.7], station: [[233, 120, 30], 0.9], gate: [[30, 30, 30], 0],
+};
+const xml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+const kmlColour = ([r, g, b], a) => [Math.round(a * 255), b, g, r].map(v => v.toString(16).padStart(2, '0')).join('');
+const coords = pts => pts.map(p => `${+p[0].toFixed(8)},${+p[1].toFixed(8)},0`).join(' ');
+function kmlGeometry(g) {
+  if (!g) return '';
+  const poly = rings => `<Polygon><outerBoundaryIs><LinearRing><coordinates>${coords(rings[0])}</coordinates></LinearRing></outerBoundaryIs>${rings.slice(1).map(r => `<innerBoundaryIs><LinearRing><coordinates>${coords(r)}</coordinates></LinearRing></innerBoundaryIs>`).join('')}</Polygon>`;
+  switch (g.type) {
+    case 'Point': return `<Point><coordinates>${coords([g.coordinates])}</coordinates></Point>`;
+    case 'LineString': return `<LineString><tessellate>1</tessellate><coordinates>${coords(g.coordinates)}</coordinates></LineString>`;
+    case 'Polygon': return poly(g.coordinates);
+    case 'MultiPoint': return `<MultiGeometry>${g.coordinates.map(c => `<Point><coordinates>${coords([c])}</coordinates></Point>`).join('')}</MultiGeometry>`;
+    case 'MultiLineString': return `<MultiGeometry>${g.coordinates.map(l => `<LineString><tessellate>1</tessellate><coordinates>${coords(l)}</coordinates></LineString>`).join('')}</MultiGeometry>`;
+    case 'MultiPolygon': return `<MultiGeometry>${g.coordinates.map(poly).join('')}</MultiGeometry>`;
+    default: return '';
+  }
+}
+const polysOf = g => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []);
+export function buildKml(fc = buildGeoJSON()) {
+  if (!fc) return null;
+  const byCat = new Map();
+  for (const f of fc.features) { const c = f.properties.category || 'reference'; if (!byCat.has(c)) byCat.set(c, []); byCat.get(c).push(f); }
+  const styles = [...byCat.keys()].map(c => { const [rgb, a] = KML_STYLE[c] || KML_STYLE.reference;
+    return `<Style id="s-${c}"><LineStyle><color>${kmlColour(rgb, 1)}</color><width>${c === 'fence' ? 2.5 : 1.5}</width></LineStyle><PolyStyle><color>${kmlColour(rgb, a)}</color><fill>${a > 0 ? 1 : 0}</fill></PolyStyle><IconStyle><color>${kmlColour(rgb, 1)}</color><scale>0.8</scale></IconStyle></Style>`; }).join('');
+  const label = c => (c === 'table' ? t('res.tables') : c === 'buildable' ? t('res.buildable') : c === 'fence' ? t('infra.fence') : c === 'road' ? t('infra.roads')
+    : c === 'station' ? t('infra.stations') : c === 'gate' ? t('infra.gates') : t('cat.' + c));
+  const folders = [...byCat].map(([c, feats]) => {
+    if (c === 'table') {   // one placemark for all the tables
+      const all = feats.flatMap(f => polysOf(f.geometry));
+      const p = feats[0].properties;
+      const desc = `${feats.length} tables · ${p.structure} · ${p.module} · tilt ${p.tilt_deg}° · azimuth ${p.azimuth_deg}°`;
+      return `<Folder><name>${xml(label(c))}</name><Placemark><name>${xml(label(c))} (${feats.length})</name><description>${xml(desc)}</description><styleUrl>#s-table</styleUrl>${kmlGeometry({ type: 'MultiPolygon', coordinates: all })}</Placemark></Folder>`;
+    }
+    const marks = feats.map(f => {
+      const pr = f.properties;
+      const desc = Object.entries(pr).filter(([k, v]) => v !== '' && v != null && k !== 'name').map(([k, v]) => `${k}: ${v}`).join('<br>');
+      return `<Placemark><name>${xml(pr.name || pr.kind || label(c))}</name><description><![CDATA[${desc}]]></description><styleUrl>#s-${c}</styleUrl>${kmlGeometry(f.geometry)}</Placemark>`;
+    }).join('');
+    return `<Folder><name>${xml(label(c))}</name>${marks}</Folder>`;
+  }).join('');
+  const name = store.project.name || 'PV Predesign';
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${xml(name)}</name><description>${xml(t('out.kmlDesc', { date: new Date().toISOString().slice(0, 10) }))}</description>${styles}${folders}</Document></kml>`;
+}
+export async function buildKmz() {
+  const kml = buildKml();
+  if (!kml) return null;
+  const JSZip = (await import(JSZIP_URL)).default;
+  const zip = new JSZip();
+  zip.file('doc.kml', kml);
+  return { blob: await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }), kml };
+}
+export async function exportKmz() {
+  const out = await buildKmz();
+  if (!out) { toast(t('toast.nothingToExport'), 'err'); return; }
+  const name = (store.project.name || 'pv-predesign').replace(/[\\/:*?"<>|]+/g, '_') + '.kmz';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(out.blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(t('toast.exportedKmz', { file: name }), 'ok');
 }
