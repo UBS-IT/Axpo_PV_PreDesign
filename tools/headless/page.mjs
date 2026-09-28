@@ -47,9 +47,15 @@ const shim = () => `(() => {
     return Array.isArray(p) ? p.map(one) : one(p); } };
 })();`;
 
-export async function openPage(pagePath, { localStorage: ls = null } = {}) {
+// softwareWebGL: let the SDK draw with the software WebGL of headless Chromium (SwiftShader), which it refuses by
+// default (failIfMajorPerformanceCaveat): slow, but enough to run a SceneView in the tests
+export async function openPage(pagePath, { localStorage: ls = null, softwareWebGL = false } = {}) {
   await start();
-  const ctx = await browser.newContext();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  if (softwareWebGL) await ctx.addInitScript(() => {
+    const get = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, opts) { return get.call(this, type, opts ? { ...opts, failIfMajorPerformanceCaveat: false } : opts); };
+  });
   await ctx.route(/^https:\/\/js\.arcgis\.com\/4\.34\/?$/, r => r.fulfill({ contentType: 'text/javascript', body: shim() }));
   await ctx.route(/^https:\/\/js\.arcgis\.com\/.*\.css$/, r => r.fulfill({ contentType: 'text/css', body: '' }));
   // anything else on the Internet (basemaps, Esri services) is not reachable offline: fail fast

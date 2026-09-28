@@ -3,10 +3,10 @@
 // network policy blocks js.arcgis.com. Usage: node run.mjs [page ...] (default: every page).
 import { openPage, shutdown } from './page.mjs';
 
-const pages = process.argv.slice(2).length ? process.argv.slice(2) : ['/tests/', '/tests/modules.html', '/tests/sdk.html', '/tests/import.html', '/tests/terrain.html', '/tests/infra.html', '/tests/view3d.html', '/tests/ui.html'];
+const pages = process.argv.slice(2).length ? process.argv.slice(2) : ['/tests/', '/tests/modules.html', '/tests/sdk.html', '/tests/import.html', '/tests/terrain.html', '/tests/infra.html', '/tests/view3d.html', '/tests/ui.html', '/tests/scene3d.html'];
 let failed = 0;
 for (const pg of pages) {
-  const { page, errors, close } = await openPage(pg);
+  const { page, errors, close } = await openPage(pg, { softwareWebGL: /scene3d/.test(pg) });
   try {
     await page.waitForFunction(() => window.__results || /passed/.test(document.getElementById('sum')?.textContent || ''), null, { timeout: 240000 });
     const rows = await page.$$eval('#out tr', trs => trs.map(t => t.innerText.replace(/\s+/g, ' ').trim()));

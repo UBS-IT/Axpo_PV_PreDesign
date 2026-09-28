@@ -75,7 +75,7 @@ export async function model3d({ date = new Date(), query } = {}) {
   out.tableList = tables;
   out.tableGround = Float64Array.from(g0);
   if (tables.length && !h.missing) retilt(out, date);
-  else if (tables.length) out.notes.push(h.missing === 'axis' ? 'd3.noteAxis' : 'd3.noteLowEdge');
+  else if (tables.length) out.notes.push(h.missing === 'axis' ? 'd3.noteAxis' : P.field.technology === 'agri-fixed' ? 'd3.noteLowEdgeAgri' : 'd3.noteLowEdge');
   // stations: from the lowest corner, their height above the ground
   for (const s of st) {
     const g = next(4), b = s.building;

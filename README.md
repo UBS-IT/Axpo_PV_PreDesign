@@ -222,6 +222,8 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
   KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on the terrain (13)
 - `http://localhost:8140/tests/view3d.html` — sun and trackers against pvlib, row shading, heights by country,
   meshes, ground elevations, terrain tiles, glTF (8)
+- `http://localhost:8140/tests/scene3d.html` — the real SceneView of step 4b on the synthetic DTM: opens on the site
+  without errors, ground from the terrain model, AgriPV fixed heights, sun buttons, views, report, back to 2D (5)
 
 Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs every page in headless Chromium with the
 ArcGIS Maps SDK bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
