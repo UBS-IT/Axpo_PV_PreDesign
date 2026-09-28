@@ -157,6 +157,14 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   random polygons with holes (71 003 tables, identical). A 1 km site with ~5 500 tables fills in ~5 ms.
 - **ArcGIS Maps SDK 4.34** loaded with `$arcgis.import()` (the 5.x mechanism), geometry operators
   (`geometry/operators/*`) for union, difference, buffer and projection. All SDK access goes through `app/js/sdk.js`.
+  It is the only library loaded from a CDN (js.arcgis.com).
+- **Libraries served by the app** — `app/vendor/` holds JSZip, togeojson, shpjs, geotiff and jsPDF as minified ES
+  modules of the versions pinned in `tools/headless/package-lock.json` (`npm run vendor` rebuilds them; CI checks they
+  match; licenses and versions alongside), all loaded through `app/js/libs.js`, so company proxies that block public
+  CDNs do not break imports or exports. Excel roadmaps (.xlsx / .xlsm) are read by `app/js/io/xlsx.js` (JSZip and
+  the browser's XML parser; no SheetJS, whose npm release has known flaws) and CSV by `app/js/io/csv.js` (RFC 4180:
+  quoted separators, quotes and line breaks). Old .xls workbooks must be saved as .xlsx. If the background map cannot
+  be reached the app starts anyway and says so.
 
 ## Run it locally
 
@@ -168,7 +176,7 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 
 - `http://localhost:8140/tests/` — layout engine, half tables, corridors as roads (14)
 - `http://localhost:8140/tests/modules.html` — roadmap by semester, power periods, six-month alert, country catalog,
-  slope limits, trackers, modules carried by projects (12)
+  slope limits, trackers, modules carried by projects, Excel and CSV readers, vendored libraries (16)
 - `http://localhost:8140/tests/sdk.html` — SDK and local frame (5)
 - `http://localhost:8140/tests/import.html` — classification, v1 → v2 migration, countries and proposed systems,
   every national EPSG code, the import fixtures against the ArcGIS reference areas, Geoportale projects with the
@@ -179,8 +187,8 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure,
   KMZ and PDF report (10)
 
-Without a browser, or where the CDNs are blocked: `tools/headless` runs every page in headless Chromium with the
-libraries bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
+Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs every page in headless Chromium with the
+ArcGIS Maps SDK bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
 on every push (`.github/workflows/tests.yml`).
 
 No build step; any static web server works, but the app must be served over http(s), not opened as a file.
@@ -200,12 +208,14 @@ app/                  the web app (index.html, css/, js/)
   js/output.js        step 4: coordinate system for exports, export
   js/layout/          structures (notation, table geometry, pitch rule) and the row-fill engine
   js/geo/             local metric frame, GeoJSON <-> SDK conversion and reprojection
-  js/io/              importers, project files
+  js/io/              importers, Excel and CSV readers, project files
+  js/libs.js          loader of the vendored libraries
+  vendor/             third-party libraries (built by tools/headless/vendor.mjs), versions.json, licenses/
   js/ui/              rail, coordinate system dialog, toasts
 tests/                browser tests and synthetic fixtures
 docs/                 plan, decisions; toolkit/ = the toolkit archive by country
 scripts/              serve.py (local server without cache), make_fixtures.py
-tools/                headless test runner, CAD (DWG) reader — development tools, not part of the app
+tools/                headless test runner and vendor builder, CAD (DWG) reader — development tools, not part of the app
 ```
 
 ## Not done yet

@@ -3,12 +3,8 @@
 // afterwards (categories.js). Files with projected coordinates and no declared system are flagged (needsCrs).
 import { t } from '../i18n.js';
 import { looksProjected } from '../crs.js';
-
-const JSZIP_URL = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
-const TOGEOJSON_URL = 'https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/+esm';
-const SHPJS_URL = 'https://cdn.jsdelivr.net/npm/shpjs@4.0.4/+esm';
-
-const loadJsZip = async () => (await import(JSZIP_URL)).default;
+import { loadJsZip, loadToGeoJSON, loadShp } from '../libs.js';
+import { parseCsv } from './csv.js';
 
 export async function readAnyFile(file) {
   const n = file.name.toLowerCase();
@@ -84,7 +80,7 @@ export async function readGeoJSON(file) {
 
 // ── KML / KMZ: the folder path goes to sourceCategory ──
 export async function readKml(text, fileName) {
-  const tg = await import(TOGEOJSON_URL);
+  const tg = await loadToGeoJSON();
   const dom = new DOMParser().parseFromString(text, 'text/xml');
   const features = [];
   const walk = (node, path) => {
@@ -115,8 +111,7 @@ export async function readKmz(file) {
 // also applies the datum shift of older national systems (Monte Mario, DHDN, CH1903…), which proj4 skips when
 // the .prj has no TOWGS84 parameters (errors of 50-100 m).
 export async function readShpZip(file) {
-  const [JSZip, mod] = await Promise.all([loadJsZip(), import(SHPJS_URL)]);
-  const shp = mod.default || mod;
+  const [JSZip, shp] = await Promise.all([loadJsZip(), loadShp()]);
   let zip;
   try { zip = await JSZip.loadAsync(file); } catch (e) { throw new Error(t('err.badShp', { err: e.message || e })); }
   const byBase = new Map();
@@ -151,19 +146,17 @@ export async function readShpZip(file) {
 
 // ── CSV of points: x/y or lon/lat (or easting/northing), optional name, type, height ──
 export async function readCsv(file) {
-  const text = (await file.text()).replace(/^﻿/, '');
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) throw new Error(t('err.noFeatures'));
-  const sep = [';', '\t', ','].map(s => [s, lines[0].split(s).length]).sort((a, b) => b[1] - a[1])[0][0];
-  const head = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+  const rows = parseCsv(await file.text());
+  if (rows.length < 2) throw new Error(t('err.noFeatures'));
+  const head = rows[0].map(h => h.trim().toLowerCase());
   const find = res => head.findIndex(h => res.some(r => r.test(h)));
   const ix = find([/^(x|lon|lng|longitude|easting|est|e)$/]), iy = find([/^(y|lat|latitude|northing|nord|n)$/]);
   if (ix < 0 || iy < 0) throw new Error(t('err.csvColumns', { cols: head.join(', ') }));
   const iname = find([/^(name|nome|nom|nombre|id|label)$/]), ih = find([/^(height|h|altezza|hauteur|altura|höhe|hohe|wysokość)$/]), it = find([/^(type|tipo|categoria|category)$/]);
-  const num = s => Number(String(s ?? '').trim().replace(/^"|"$/g, '').replace(',', sep === ',' ? ',' : '.'));
+  // decimal comma: always with ; or tab separators, and in quoted fields such as "12,5" of a comma-separated file
+  const num = s => { const v = String(s ?? '').trim(); return v === '' ? NaN : Number(/^-?\d+,\d+$/.test(v) ? v.replace(',', '.') : v); };
   const features = [];
-  for (const line of lines.slice(1)) {
-    const c = line.split(sep);
+  for (const c of rows.slice(1)) {
     const x = num(c[ix]), y = num(c[iy]);
     if (!isFinite(x) || !isFinite(y)) continue;
     const props = {};

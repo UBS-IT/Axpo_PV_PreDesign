@@ -4,13 +4,13 @@ import { store, replaceProject, PROJECT_FORMAT } from '../state.js';
 import { toast } from '../ui/toast.js';
 import { usedModules } from '../modules.js';
 import { terrainData, setTerrainData, saveLocal } from '../terrain/store.js';
+import { loadJsZip } from '../libs.js';
 
-const JSZIP_URL = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 export const PROJECT_EXT = '.pvpd';
 let handle = null;   // file handle of the open project (File System Access API), to save in place
 
 export async function projectBlob() {
-  const JSZip = (await import(JSZIP_URL)).default;
+  const JSZip = await loadJsZip();
   const zip = new JSZip();
   // the modules the project uses travel with it: it opens with the same modules on any computer
   const p = { ...store.project, moduleDefs: usedModules(), saved: new Date().toISOString(), app: 'PV Predesign' };
@@ -76,7 +76,7 @@ export async function openProjectPick(input) {
 
 export async function openProjectFile(file, fileHandle = null) {
   try {
-    const JSZip = (await import(JSZIP_URL)).default;
+    const JSZip = await loadJsZip();
     const zip = await JSZip.loadAsync(file);
     const pj = zip.file('project.json');
     if (!pj) throw new Error(t('err.notProject'));

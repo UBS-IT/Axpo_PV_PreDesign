@@ -10,6 +10,7 @@ import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { computeArea, siteFrame, importFiles, lineLengthKm } from '../app/js/areas.js';
 import { projectBlob, openProjectFile } from '../app/js/io/projectfile.js';
 import { buildGeoJSON } from '../app/js/output.js';
+import { loadShp, loadJsZip } from '../app/js/libs.js';
 
 const results = [];
 async function test(name, fn) {
@@ -167,8 +168,7 @@ await test('Shapefile in Monte Mario (.prj): datum shift applied', async () => {
   const ref = projectPointToWgs84(3003, expected.it_monte_mario.firstVertex);
   assert(metres(first, ref) < 0.01, `vertex ${metres(first, ref).toFixed(3)} m from the SDK EPSG:3003 projection`);
   // what proj4 (shpjs with the .prj) gives: no datum shift
-  const shp = (await import('https://cdn.jsdelivr.net/npm/shpjs@4.0.4/+esm')).default;
-  const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+  const [shp, JSZip] = await Promise.all([loadShp(), loadJsZip()]);
   const zip = await JSZip.loadAsync(await fixture('it_monte_mario.zip'));
   const g = shp.parseShp(await zip.file('Perimetro_lordo.shp').async('arraybuffer'), await zip.file('Perimetro_lordo.prj').async('text'));
   const p4 = g[0].coordinates[0][0];

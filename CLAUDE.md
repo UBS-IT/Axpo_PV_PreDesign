@@ -54,8 +54,11 @@ mettersi al lavoro.**
 - ArcGIS Maps SDK for JavaScript **4.34** caricato con `$arcgis.import()` (verificato: funziona in 4.34 ed è lo stesso
   meccanismo della 5.x, così la migrazione resta contenuta). Operatori geometrici `geometry/operators/*`, non
   `geometryEngine` (deprecato). Tutto l'accesso all'SDK passa da `app/js/sdk.js`.
-- Librerie in ESM da jsDelivr: xlsx 0.18.5, JSZip 3.10, @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4
-  (solo lettura grezza di .shp/.dbf), geotiff 2.1.3 (DTM), jsPDF 4.2.1 (report).
+- Librerie servite dall'app in `app/vendor/` (moduli ES minificati, versioni fissate in `tools/headless/package-lock.json`,
+  rigenerati con `npm run vendor`; la CI controlla che coincidano), caricate solo da `app/js/libs.js`: JSZip 3.10.1,
+  @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4 (solo lettura grezza di .shp/.dbf), geotiff 2.1.3 (DTM), jsPDF 4.2.1
+  (report). Excel (.xlsx/.xlsm) letto da `app/js/io/xlsx.js` (JSZip + DOMParser, niente SheetJS: la 0.18.5 di npm ha
+  falle note), CSV da `app/js/io/csv.js` (RFC 4180). Solo l'SDK ArcGIS arriva da CDN (js.arcgis.com).
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
 - `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `infra.js`
   step 3, `output.js` step 4, `quick.js` predesign rapido) ·
@@ -72,8 +75,8 @@ mettersi al lavoro.**
   catalogo per paese, moduli nel progetto), `/tests/sdk.html` (SDK), `/tests/import.html` (import, sistemi di
   riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/infra.html` (step 3), `/tests/ui.html` (pannelli veri su
   una vista finta). Devono essere tutti verdi prima di un commit.
-- Senza browser o con i CDN bloccati (sessione cloud): `tools/headless` (`npm install && npm run build && npm test`)
-  esegue tutte le pagine in Chromium headless con SDK e librerie presi da npm; GitHub Actions lo fa a ogni push
+- Senza browser o con js.arcgis.com bloccato (sessione cloud): `tools/headless` (`npm install && npm run build && npm test`)
+  esegue tutte le pagine in Chromium headless con l'SDK preso da npm; GitHub Actions lo fa a ogni push
   (`.github/workflows/tests.yml`). La pagina dell'app va comunque provata
   in un browser vero (con il bundle npm la MapView non parte).
 - DWG del toolkit: `tools/cad/dwg_dump.mjs` elenca testi, quote (valore misurato) e blocchi per zona del disegno.

@@ -1,5 +1,5 @@
-// Used by run.mjs: a static server on the project root and a Chromium page whose requests to
-// js.arcgis.com and cdn.jsdelivr.net are answered from the local bundles of build.mjs. Map tiles and Esri services
+// Used by run.mjs: a static server on the project root and a Chromium page whose requests to js.arcgis.com are
+// answered from the local bundle of build.mjs (the other libraries are in app/vendor). Map tiles and Esri services
 // are not available offline. Known limit: a MapView does not start with the npm bundle (its 2D workers do not come
 // up), so the app page itself must be checked in a real browser; the test pages do not need a view.
 import http from 'node:http';
@@ -52,13 +52,8 @@ export async function openPage(pagePath, { localStorage: ls = null } = {}) {
   const ctx = await browser.newContext();
   await ctx.route(/^https:\/\/js\.arcgis\.com\/4\.34\/?$/, r => r.fulfill({ contentType: 'text/javascript', body: shim() }));
   await ctx.route(/^https:\/\/js\.arcgis\.com\/.*\.css$/, r => r.fulfill({ contentType: 'text/css', body: '' }));
-  await ctx.route(/^https:\/\/cdn\.jsdelivr\.net\/npm\/(.+?)\/\+esm$/, r => {
-    const spec = /npm\/(.+?)\/\+esm$/.exec(r.request().url())[1];
-    const f = path.join(dist, spec.replace(/[@/]/g, '_') + '.js');
-    return fs.existsSync(f) ? r.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
-  });
   // anything else on the Internet (basemaps, Esri services) is not reachable offline: fail fast
-  await ctx.route(url => !url.href.startsWith(base) && !/^https:\/\/(js\.arcgis\.com|cdn\.jsdelivr\.net)\//.test(url.href), r => r.abort());
+  await ctx.route(url => !url.href.startsWith(base) && !/^https:\/\/js\.arcgis\.com\//.test(url.href), r => r.abort());
   // no real downloads or file pickers during tests
   await ctx.addInitScript(() => { HTMLAnchorElement.prototype.click = function () { window.__downloads = (window.__downloads || []).concat(this.download); }; });
   if (ls) await ctx.addInitScript(items => { if (location.pathname.startsWith('/app')) for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v); }, ls);

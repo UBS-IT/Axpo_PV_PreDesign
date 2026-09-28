@@ -22,6 +22,7 @@ Thumbs.db
 *.dwg
 *.dxf
 *.xlsx
+*.xlsm
 *.xls
 
 # synthetic test fixtures are fine to keep (scripts/make_fixtures.py)

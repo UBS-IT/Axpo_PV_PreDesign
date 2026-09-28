@@ -1,0 +1,27 @@
+{
+  "jszip.js": {
+    "package": "jszip",
+    "version": "3.10.1",
+    "license": "(MIT OR GPL-3.0-or-later)"
+  },
+  "togeojson.js": {
+    "package": "@tmcw/togeojson",
+    "version": "5.8.1",
+    "license": "BSD-2-Clause"
+  },
+  "shpjs.js": {
+    "package": "shpjs",
+    "version": "4.0.4",
+    "license": "MIT"
+  },
+  "geotiff.js": {
+    "package": "geotiff",
+    "version": "2.1.3",
+    "license": "MIT"
+  },
+  "jspdf.js": {
+    "package": "jspdf",
+    "version": "4.2.1",
+    "license": "MIT"
+  }
+}
