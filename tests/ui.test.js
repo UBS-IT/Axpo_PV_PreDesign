@@ -10,7 +10,8 @@ import { initAreas } from '../app/js/areas.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
 import { initField, last } from '../app/js/field.js';
-import { initOutput, buildGeoJSON } from '../app/js/output.js';
+import { initOutput, buildGeoJSON, buildKmz } from '../app/js/output.js';
+import { buildReport } from '../app/js/report.js';
 import { initQuick, runQuick } from '../app/js/quick.js';
 import { initInfra } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
@@ -163,6 +164,25 @@ await test('half tables option and GeoJSON export', async () => {
   assert(tables.every(x => x.properties.wp === r.power.wp), 'power of the period');
   assert(fc.features.some(x => x.properties.category === 'fence') && fc.features.some(x => x.properties.kind === 'internal'), 'fence and roads exported');
   return `${r.halves} halves (1V14) of ${r.tables}`;
+});
+
+await test('KMZ for Google Earth and the one-page PDF report', async () => {
+  const r = last.result;
+  const out = await buildKmz();
+  assert(out && out.blob.size > 1000, 'kmz written');
+  const dom = new DOMParser().parseFromString(out.kml, 'application/xml');
+  assert(!dom.querySelector('parsererror'), 'valid KML');
+  const folders = [...dom.querySelectorAll('Folder > name')].map(n => n.textContent);
+  assert(folders.includes('Tables') && folders.includes('Fence') && folders.includes('Gross area'), folders.join(', '));
+  const tables = [...dom.querySelectorAll('Placemark')].find(p => /^Tables \(/.test(p.querySelector('name').textContent));
+  assert(tables.querySelectorAll('Polygon').length === r.tables, 'one polygon per table in one placemark');
+  const rep = await buildReport();
+  assert(rep && rep.blob.size > 5000, `pdf ${rep && rep.blob.size} bytes`);
+  const pdf = rep.doc.output();
+  assert(pdf.startsWith('%PDF') && pdf.includes(`${r.dcMWp.toFixed(2)} MWp`) && pdf.includes('PV Predesign'), 'capacity and title in the PDF');
+  assert(rep.data.assumptions.some(a => /agreed with the farm/.test(a)) && rep.data.checks.some(c => /topographic survey/.test(c)), 'assumptions and checks');
+  window.__reportPdf = btoa(pdf);
+  return `KMZ ${(out.blob.size / 1024).toFixed(0)} KB, ${folders.length} folders · PDF ${(rep.blob.size / 1024).toFixed(0)} KB`;
 });
 
 await test('infrastructure panel: lots numbered, two of them joined in one fence with the check boxes', async () => {

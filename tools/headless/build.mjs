@@ -27,7 +27,7 @@ await build({ entryPoints: [path.join(dist, 'arcgis-entry.js')], bundle: true, f
   logLevel: 'error', splitting: false, target: 'es2022', loader: { '.css': 'empty' } });
 
 // jsDelivr "+esm" libraries: package@version -> bundle
-const libs = { 'jszip@3.10.1': 'jszip', '@tmcw/togeojson@5.8.1': '@tmcw/togeojson', 'shpjs@4.0.4': 'shpjs', 'xlsx@0.18.5': 'xlsx', 'geotiff@2.1.3': 'geotiff' };
+const libs = { 'jszip@3.10.1': 'jszip', '@tmcw/togeojson@5.8.1': '@tmcw/togeojson', 'shpjs@4.0.4': 'shpjs', 'xlsx@0.18.5': 'xlsx', 'geotiff@2.1.3': 'geotiff', 'jspdf@4.2.1': 'jspdf' };
 for (const [spec, pkg] of Object.entries(libs)) {
   const out = path.join(dist, spec.replace(/[@/]/g, '_') + '.js');
   const e = path.join(dist, 'entry_' + path.basename(out));

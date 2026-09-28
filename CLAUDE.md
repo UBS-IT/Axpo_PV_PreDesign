@@ -54,8 +54,8 @@ mettersi al lavoro.**
 - ArcGIS Maps SDK for JavaScript **4.34** caricato con `$arcgis.import()` (verificato: funziona in 4.34 ed è lo stesso
   meccanismo della 5.x, così la migrazione resta contenuta). Operatori geometrici `geometry/operators/*`, non
   `geometryEngine` (deprecato). Tutto l'accesso all'SDK passa da `app/js/sdk.js`.
-- Librerie in ESM da jsDelivr: turf 6.5, xlsx 0.18.5, JSZip 3.10, @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4
-  (solo lettura grezza di .shp/.dbf).
+- Librerie in ESM da jsDelivr: xlsx 0.18.5, JSZip 3.10, @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4
+  (solo lettura grezza di .shp/.dbf), geotiff 2.1.3 (DTM), jsPDF 4.2.1 (report).
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
 - `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `infra.js`
   step 3, `output.js` step 4, `quick.js` predesign rapido) ·
