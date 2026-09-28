@@ -6,8 +6,10 @@ Geoportale (`.axpo`), but does not depend on it. The predesign is for prospectio
 loading Engineering with embryonic projects, and later gives Engineering a useful starting point (they will still
 rely on the topographic survey).
 
-Status: **milestone 3** (2026-09-25) — toolkit archive by country, group standards (module 2382 × 1134 bifacial with
-its power roadmap, 3V9, tracker 1V28), optional terrain step with slope limits. See `docs/plan.md` for what comes next.
+Status: **internal pilot candidate, not production-ready** (2026-09-28). The implemented workflow includes terrain,
+areas, fields, infrastructure, exports and a working 3D scene. The 3D browser regression check passed 5/5 after the
+SceneView sizing fix; this does not establish production readiness or validate estimates against an Engineering design.
+See [Release readiness](#release-readiness) below and `docs/plan.md` for planned work.
 
 ## The workflow
 
@@ -22,8 +24,8 @@ The left rail holds the steps; clicking the active step again folds the panel aw
 | **1 · Areas** | Import or draw the areas, sorted into categories (below); net area given or computed |
 | **2 · Fields** | Modules (power by semester), structure (3V9 / 1V28 by default), tilt, azimuth, pitch, half tables, parametric layout and results |
 | **3 · Infrastructure** | Fence with its clearance, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
-| **4 · Output** | Coordinate system for exports; one-page PDF report; KMZ for Google Earth; GeoJSON; Shapefile and DXF come next |
-| **4b · 3D** | Placeholder |
+| **4 · Output** | Export coordinate system; one-page PDF report; KMZ, GeoJSON, Shapefile, GeoPackage, DXF and Excel bill of quantities |
+| **4b · 3D** | SceneView on the shared map, terrain, structures, sun and shadows, saved views, PNG/PDF and glTF export; editing remains in 2D |
 | **Electrical** | Kept open on purpose |
 
 **⚡ Quick predesign** (top bar, 1 · Areas, 2 · Fields): once the site is loaded, one dialog with three choices
@@ -142,7 +144,10 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 Opening the step turns the map into a 3D scene (same background and opacity); any other step goes back to 2D, where
 the editing stays.
 
-- **Ground** — the terrain of step 0 (a custom elevation layer on Esri World Elevation), else Esri World Elevation.
+- **Ground** — a designer-uploaded GeoTIFF grid from step 0 overlays Esri World Elevation locally; if the step 0
+  grid was sampled from Esri World Elevation, the scene uses World Elevation directly. National CRS choices apply
+  to imports and exports; the 3D scene uses the spatial reference of its basemap. Do not use Web Mercator to measure
+  site areas or table spacing.
 - **Structures at their real height** — fixed tables with the low edge at the toolkit height of the country (IT
   1.00 m, FR 1.10 m) over the ground under each corner, as the piles follow the terrain; trackers with the axis at
   the IT height of their AgriPV category (standard 1.50, grazing 2.30, advanced 3.10 m), turned towards the sun at
@@ -225,11 +230,34 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/scene3d.html` — the real SceneView of step 4b on the synthetic DTM: opens on the site
   without errors, ground from the terrain model, AgriPV fixed heights, sun buttons, views, report, back to 2D (5)
 
-Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs every page in headless Chromium with the
-ArcGIS Maps SDK bundled from npm (`npm install && npm run build && npm test`, see its README). GitHub Actions runs the same
-on every push (`.github/workflows/tests.yml`).
+Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs the browser test pages in headless
+Chromium with the ArcGIS Maps SDK bundled from npm (`npm ci && npm run build && npm test` from `tools/headless`; see
+its README). GitHub Actions runs them on pushes and pull requests (`.github/workflows/tests.yml`). These tests do
+not exercise the complete production app boot flow; check `/app/` in a real browser and on the intended company
+network before a pilot or release. A green CI run alone is not a production sign-off.
 
-No build step; any static web server works, but the app must be served over http(s), not opened as a file.
+## Release readiness
+
+The app is a candidate for a controlled internal pilot, **not an approved production rollout**. Before sharing it
+widely or relying on its estimates, track and verify these gates:
+
+- **Untrusted files (P0):** validate `.pvpd` project structure and values on open, and ensure imported feature,
+  module and viewpoint IDs cannot enter HTML attributes without escaping. Add regression tests with malformed and
+  hostile project files. See `app/js/io/projectfile.js`, `app/js/areas.js`, `app/js/modules.js` and `app/js/view3d/scene.js`.
+- **Project integrity (P0):** do not report a successful save or open when the project declares a terrain grid but
+  its `terrain/grid.f32` is unavailable, corrupt or mismatched. Surface browser autosave/storage failures and test
+  save–close–reopen, including a fresh browser and storage quota failures.
+- **Test and 3D resilience (P1):** make the headless runner fail on unexpected browser errors; test replacement of a
+  terrain grid while the scene is open; bound screenshot/report waits so a stalled scene does not hang indefinitely.
+  Run a manual smoke test of the real app, including the 2D ↔ 3D transition, on the target browsers.
+- **Engineering pilot:** compare buildable area, tables and MWp with at least one completed Italian design; agree
+  acceptable tolerances and record discrepancies. The existing synthetic fixtures and the 5/5 SceneView check do
+  not establish the accuracy of an actual site.
+- **Deployment decision:** approve company hosting and access control, Esri licensing/credentials for basemaps and
+  World Elevation, data-handling policy, project-file backup/recovery and an owner for toolkit values before rollout.
+  See `docs/plan.md` (A4 and D2). Do not silently substitute another country's unverified toolkit rules.
+
+No build step is needed to serve `app/`; use an HTTP(S) server rather than opening it as a file.
 The fixtures in `tests/fixtures` are synthetic and rebuilt with `scripts/make_fixtures.py` (ArcGIS Pro Python,
 arcpy), which also writes the reference values in `expected.json`.
 
