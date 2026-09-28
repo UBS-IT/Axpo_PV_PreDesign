@@ -210,17 +210,51 @@
     <!-- 3 · Infrastructure -->
     <section class="step" data-step="infra" hidden>
       <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.infra"></h2><p data-i18n="step.infra.sub"></p></div></header>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="infra.fence"></b><span class="pill" data-i18n="soon"></span></div>
-        <p class="hint" data-i18n="infra.fenceHint"></p>
+      <p class="hint" data-i18n="infra.intro"></p>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="infra.fence"></b></div>
+        <label class="chk"><input type="checkbox" id="infFence"> <span data-i18n="infra.fenceOn"></span></label>
+        <div id="infFenceInfo"></div>
+        <div id="infLotsBox" hidden>
+          <p class="hint" id="infLotsHint"></p>
+          <div class="list" id="infLots"></div>
+          <div class="btns">
+            <button type="button" class="btn" id="infJoin" data-i18n="infra.join"></button>
+            <button type="button" class="btn" id="infSeparate" data-i18n="infra.separate"></button>
+          </div>
+        </div>
+        <label class="l" for="infClear" data-i18n="infra.clear"></label>
+        <input id="infClear" type="number" min="0" step="0.5">
+        <p class="hint" id="infClearHint"></p>
       </div>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="infra.roads"></b><span class="pill" data-i18n="soon"></span></div>
-        <p class="hint" data-i18n="infra.roadsHint"></p>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="infra.road"></b></div>
+        <label class="chk"><input type="checkbox" id="infRoad"> <span data-i18n="infra.roadOn"></span></label>
+        <div id="infRoadInfo"></div>
       </div>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="infra.cabins"></b><span class="pill" data-i18n="soon"></span></div>
-        <p class="hint" data-i18n="infra.cabinsHint"></p>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="infra.roads"></b></div>
+        <div id="infRoads"></div>
+        <div class="row2">
+          <div><select id="infRoadKind" data-i18n-aria="infra.roadKindLabel"><option value="heavy"></option><option value="light"></option></select></div>
+          <div><button type="button" class="btn" id="infRoadDraw" data-i18n="infra.drawRoad"></button></div>
+        </div>
+        <div class="list" id="infRoadList" data-i18n-empty="infra.roadListNone"></div>
+      </div>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="infra.gates"></b></div>
+        <div id="infGates"></div>
+      </div>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="infra.stations"></b></div>
+        <div class="btns">
+          <button type="button" class="btn" id="infCC" data-i18n="infra.addCC"></button>
+          <button type="button" class="btn" id="infCU" data-i18n="infra.addCU"></button>
+          <button type="button" class="btn" id="infCT" data-i18n="infra.addCT"></button>
+        </div>
+        <div class="btns"><button type="button" class="linkbtn" id="infAtAccess" data-i18n="infra.atAccess"></button></div>
+        <div class="list" id="infStations" data-i18n-empty="infra.stationsNone"></div>
+        <p class="hint" id="infStationsHint"></p>
       </div>
       <div class="card soon">
         <div class="cardhd"><b data-i18n="infra.electrical"></b><span class="pill" data-i18n="later"></span></div>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PV Predesign · infrastructure tests</title>
+<script src="https://js.arcgis.com/4.34/"></script>
+<style>
+  :root { --ok: #1f8a4c; --err: #c0392b; --mut: #667; --bg: #fff; --txt: #111; --line: #e3e6ea; }
+  @media (prefers-color-scheme: dark) { :root { --ok: #4cc38a; --err: #ff6b5e; --mut: #9aa; --bg: #12181f; --txt: #e8edf2; --line: #2a333d; } }
+  body { font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--txt); margin: 24px; }
+  h1 { font-size: 18px; margin: 0 0 4px; } #sum { margin: 0 0 16px; color: var(--mut); }
+  table { border-collapse: collapse; width: 100%; max-width: 960px; }
+  td { border-bottom: 1px solid var(--line); padding: 6px 8px; vertical-align: top; }
+  td.s { width: 56px; font-weight: 700; } .ok { color: var(--ok); } .err { color: var(--err); }
+  code { font-size: 12px; color: var(--mut); }
+</style>
+</head>
+<body>
+<h1>PV Predesign · infrastructure tests (step 3)</h1>
+<p id="sum">running…</p>
+<table id="out"></table>
+<script>window.__PVP_TEST__ = true;</script>
+<script type="module" src="./infra.test.js"></script>
+</body>
+</html>

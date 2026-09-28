@@ -12,6 +12,7 @@ import { initModulesUi, library } from '../app/js/modules.js';
 import { initField, last } from '../app/js/field.js';
 import { initOutput, buildGeoJSON } from '../app/js/output.js';
 import { initQuick, runQuick } from '../app/js/quick.js';
+import { initInfra } from '../app/js/infra.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
@@ -54,7 +55,7 @@ store.project = p;
 
 await test('panels start: areas, terrain, modules, fields, output', async () => {
   try { initAreas(view); } catch (e) { throw new Error('areas: ' + e.message); }
-  initTerrain(view); initModulesUi(); initField(view); initOutput(); initQuick();
+  initTerrain(view); initModulesUi(); initField(view); initInfra(view); initOutput(); initQuick();
   await wait(600);
   assert(/Italy|RDN2008/.test(document.getElementById('outCrsAlerts').innerText + text('crsBadge')), 'national system proposed');
   assert(document.getElementById('fStruct').value === '3V9', 'standard structure');
@@ -86,7 +87,11 @@ await test('quick predesign, fixed: 3V9, Italian minimum pitch, optimised positi
   assert(r && r.tables > 100 && r.power.wp === 650, `result ${r && r.tables}`);
   assert(store.project.plannedModules.includes(f.moduleId), 'the module is planned for the project');
   assert(!document.querySelector('dialog.quick'), 'dialog closed');
-  return `${r.tables} tables, ${r.dcMWp.toFixed(2)} MWp, offsets ${f.rowOffset} / ${f.columnOffset}`;
+  assert(store.project.infra.perimeterRoad === false && r.dcMWp > 9, 'over 9 MWp: no perimeter road');
+  await wait(300);
+  assert(/1,600 m/.test(text('infFenceInfo')) && /4.0 m/.test(text('infFenceInfo')), 'fence panel: ' + text('infFenceInfo'));
+  assert(/Suggested without/.test(text('infRoadInfo')), 'road panel: ' + text('infRoadInfo'));
+  return `${r.tables} tables, ${r.dcMWp.toFixed(2)} MWp, offsets ${f.rowOffset} / ${f.columnOffset}, no perimeter road`;
 });
 
 await test('fields: 3V9 at the Italian minimum pitch fills the site', async () => {
@@ -138,6 +143,14 @@ await test('quick predesign, tracker: the pitch agreed with the farm is asked, t
   return `${r.tables} trackers at 5.50 m, ${r.dcMWp.toFixed(2)} MWp`;
 });
 
+await test('internal roads from the corridors of the trackers (4 in line, then 4 m)', async () => {
+  await wait(300);
+  const r = last.result;
+  assert(r.roads.length > 0 && r.roadsLength > 300, `roads ${r.roads.length}, ${r.roadsLength} m`);
+  assert(/roads from the corridors/.test(text('infRoads')), text('infRoads'));
+  return `${r.roads.length} roads, ${r.roadsLength.toFixed(0)} m`;
+});
+
 await test('half tables option and GeoJSON export', async () => {
   const half = document.getElementById('fHalf');
   assert(!half.disabled, 'half tracker defined for 1V28');
@@ -148,7 +161,28 @@ await test('half tables option and GeoJSON export', async () => {
   const tables = fc.features.filter(x => x.properties.category === 'table');
   assert(tables.length === r.tables, 'every table exported');
   assert(tables.every(x => x.properties.wp === r.power.wp), 'power of the period');
+  assert(fc.features.some(x => x.properties.category === 'fence') && fc.features.some(x => x.properties.kind === 'internal'), 'fence and roads exported');
   return `${r.halves} halves (1V14) of ${r.tables}`;
+});
+
+await test('infrastructure panel: lots numbered, two of them joined in one fence with the check boxes', async () => {
+  const { Polyline } = getSdk();
+  const line = (pts, type, buffer) => ({ id: type, name: type, category: 'linear', attrs: { type, buffer }, source: 'test', sourceCategory: '',
+    geometry: toGeoJSON(f.toSr(new Polyline({ paths: [pts], spatialReference: f.sr }), SpatialReference.WGS84)) });
+  change('site', q => { q.features.push(line([[-260, 0], [260, 0]], 'road', 10), line([[0, 0], [0, 260]], 'ditch', 5)); });
+  await wait(800);
+  const boxes = [...document.querySelectorAll('#infLots [data-lot]')];
+  assert(boxes.length === 3 && !document.getElementById('infLotsBox').hidden, `lots in the panel: ${boxes.length}`);
+  for (const b of boxes.slice(0, 2)) { b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); }
+  document.getElementById('infJoin').click();
+  await wait(800);
+  assert(store.project.infra.fenceGroups.length === 1, 'one group');
+  assert(/fence A/.test(text('infLots')) && (text('infLots').match(/fence A/g) || []).length === 2, text('infLots'));
+  const labels = view.map.layers.find(l => l.title === 'Infrastructure').graphics.filter(g => g.symbol?.type === 'text').map(g => g.symbol.text);
+  assert(labels.includes('1 · A') && labels.includes('2 · A') && labels.includes('3'), 'labels on the map: ' + labels.join(' '));
+  change('site', q => { q.features = q.features.filter(x => x.category !== 'linear'); q.infra.fenceGroups = []; });
+  await wait(500);
+  return labels.join(' | ');
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
@@ -160,6 +194,16 @@ await test('area summary shows the slope cut and the terrain panel its figures',
   replaceProject(defaultProject());
   await wait(400);
   assert(await runQuick({ technology: 'ground-fixed' }) === null, 'no site: the quick predesign says so');
+  // a small site: the quick predesign keeps the perimeter road of the template (up to ~9 MWp)
+  const small = new Polygon({ rings: [[[-80, -80], [-80, 80], [80, 80], [80, -80], [-80, -80]]], spatialReference: f.sr });
+  const q = defaultProject();
+  q.features = [{ id: 's', name: 'small', category: 'gross', geometry: toGeoJSON(f.toSr(small, SpatialReference.WGS84)), attrs: {}, source: 'test', sourceCategory: '' }];
+  replaceProject(q);
+  await wait(500);
+  const rs = await runQuick({ technology: 'ground-fixed' });
+  assert(rs && rs.dcMWp < 9 && store.project.infra.perimeterRoad === true, `small site ${rs && rs.dcMWp} MWp, road ${store.project.infra.perimeterRoad}`);
+  replaceProject(defaultProject());
+  await wait(300);
   return text('terCut');
 });
 

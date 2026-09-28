@@ -10,6 +10,7 @@ import { initField } from './field.js';
 import { initOutput } from './output.js';
 import { initTerrain } from './terrain/terrain.js';
 import { initQuick } from './quick.js';
+import { initInfra } from './infra.js';
 import { initRail, showStep } from './ui/rail.js';
 import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EXT } from './io/projectfile.js';
 import { toast } from './ui/toast.js';
@@ -45,6 +46,7 @@ async function start() {
   initTerrain(view);
   initModulesUi();
   initField(view);
+  initInfra(view);
   initOutput();
   initQuick();
   on('modules', renderModules);

@@ -57,7 +57,8 @@ mettersi al lavoro.**
 - Librerie in ESM da jsDelivr: turf 6.5, xlsx 0.18.5, JSZip 3.10, @tmcw/togeojson 5.8.1 (KML), shpjs 4.0.4
   (solo lettura grezza di .shp/.dbf).
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
-- `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `output.js` step 4) ·
+- `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `infra.js`
+  step 3, `output.js` step 4, `quick.js` predesign rapido) ·
   `app/catalog/` toolkit, contorni dei paesi, Länder tedeschi in zona 33 · `tests/` test nel browser ·
   `docs/` piano, decisioni, `toolkit/` archivio per paese · `scripts/` server locale e generatore dei fixture ·
   `tools/` strumenti di sviluppo (test headless, lettore DWG), non parte dell'app · `backups/`.
@@ -69,8 +70,8 @@ mettersi al lavoro.**
 - Server locale: voce `pv-predesign` in `.claude/launch.json` (porta 8140, serve la radice del progetto).
   App: `http://localhost:8140/app/` · Test: `/tests/` (motore, mezze tabelle), `/tests/modules.html` (roadmap,
   catalogo per paese, moduli nel progetto), `/tests/sdk.html` (SDK), `/tests/import.html` (import, sistemi di
-  riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/ui.html` (pannelli veri su una vista
-  finta). Devono essere tutti verdi prima di un commit.
+  riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/infra.html` (step 3), `/tests/ui.html` (pannelli veri su
+  una vista finta). Devono essere tutti verdi prima di un commit.
 - Senza browser o con i CDN bloccati (sessione cloud): `tools/headless` (`npm install && npm run build && npm test`)
   esegue tutte le pagine in Chromium headless con SDK e librerie presi da npm; GitHub Actions lo fa a ogni push
   (`.github/workflows/tests.yml`). La pagina dell'app va comunque provata

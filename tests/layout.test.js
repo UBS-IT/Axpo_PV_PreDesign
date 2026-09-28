@@ -1,6 +1,6 @@
 // Layout engine tests. Run in the browser: /tests/index.html. window.__results holds the outcome.
 import { parseNotation, tableGeometry, minPitch, shadingAngleDeg, gcr } from '../app/js/layout/structures.js';
-import { fillRows, stripRanges, columnsIn, tablesPerBlock, toRowFrame, fromRowFrame, areaOf } from '../app/js/layout/rows.js';
+import { fillRows, stripRanges, columnsIn, tablesPerBlock, toRowFrame, fromRowFrame, areaOf, corridorRects } from '../app/js/layout/rows.js';
 
 const results = [];
 function test(name, fn) {
@@ -96,7 +96,13 @@ test('corridors across rows every 100 m', () => {
   assert(us.length === 46, `tables in the row: ${us.length}`);
   near(us[9] - (us[8] + 10), 4, 1e-9, 'corridor width after the first block');
   near(us[1] - (us[0] + 10), 0.3, 1e-9, 'normal gap');
-  return '9 tables per block, 4 m corridors';
+  // the corridors as road rectangles: exactly in the gaps, across the whole area
+  const roads = corridorRects(r.grid).map(c => [Math.min(...c.map(p => p[0])), Math.max(...c.map(p => p[0])), Math.min(...c.map(p => p[1])), Math.max(...c.map(p => p[1]))]);
+  const first = roads.find(q => q[1] > us[0]);
+  near(first[0], us[8] + 10, 1e-9, 'road starts after the ninth table'); near(first[1], us[9], 1e-9, 'road ends at the tenth');
+  near(first[2], 0, 1e-9, 'across the area (south)'); near(first[3], 10, 1e-9, 'across the area (north)');
+  assert(!corridorRects(fillRows(rect, { tableLength: 10, planDepth: 5, pitch: 20, tableGap: 0.3 }).grid).length, 'no corridors, no roads');
+  return `9 tables per block, 4 m corridors, ${roads.length} road rectangles`;
 });
 
 test('target capacity stops the fill', () => {

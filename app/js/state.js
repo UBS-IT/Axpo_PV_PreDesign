@@ -39,6 +39,11 @@ export function defaultProject() {
     // step 0 (optional): terrain model sampled on a grid in a local metric frame; the grid itself is kept in the
     // browser (IndexedDB) and in the project file, the project holds its description
     terrain: { source: null, cellSize: 5, applySlopeLimit: true, minPatch: 250, showSlope: true, grid: null },
+    // step 3: fences around the lots of the usable land (fenceGroups: lots sharing one fence, kept as points
+    // [lon, lat] inside them), perimeter road (null = not decided: off, the app shows its suggestion), fence →
+    // structures clearance (null = the toolkit value of the country), stations { id, kind CC|CU|CT, lon, lat, rot },
+    // roads drawn by the designer { id, kind heavy|light, width, geometry LineString }
+    infra: { fence: true, fenceGroups: [], perimeterRoad: null, clearance: null, stations: [], roads: [] },
   };
 }
 
@@ -61,6 +66,7 @@ export function upgrade(p) {
     settings: { ...d.settings, ...(p.settings || {}) },
     field: { ...d.field, ...(p.field || {}), tracks: { ...d.field.tracks, ...((p.field || {}).tracks || {}) } },
     terrain: { ...d.terrain, ...(p.terrain || {}) },
+    infra: { ...d.infra, ...(p.infra || {}) },
   };
   if ((p.version || 1) < 2) {
     // v1: role site|exclusion|reference and global buffers -> v2 categories with per-object attributes

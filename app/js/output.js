@@ -7,6 +7,7 @@ import { crsState } from './areas.js';
 import { last } from './field.js';
 import { toGeoJSON } from './geo/convert.js';
 import { moduleLabel } from './modules.js';
+import { layoutInfra } from './infra.js';
 import { toast } from './ui/toast.js';
 
 const $ = id => document.getElementById(id);
@@ -83,6 +84,18 @@ export function buildGeoJSON() {
       category: 'table', row: tb.row, col: tb.col, structure: half ? r.halfGeom.notation : f.structure, half,
       modules: half ? r.halfGeom.modules : r.geom.modules, module: moduleLabel(r.module, f.powerPeriod), wp: r.power.wp,
       power_period: r.power.period || null, tilt_deg: f.technology === 'agri-tracker' ? 0 : f.tiltDeg, azimuth_deg: f.azimuthDeg } }); });
+  }
+  // infrastructure: fence, perimeter and internal roads, stations, gates
+  if (r && r.frame && area && area.pre) {
+    const { Polyline, Point } = getSdk();
+    const L = layoutInfra(r.frame, area.pre, area.base);
+    const wgs84 = g => toGeoJSON(g);
+    for (const f of L.fences) feats.push({ type: 'Feature', geometry: wgs84(new Polyline({ paths: f.rings, spatialReference: r.frame.sr })), properties: { category: 'fence', fence: f.letter, lots: f.lots.join(','), length_m: Math.round(f.length) } });
+    for (const rd of L.roads) feats.push({ type: 'Feature', geometry: rd.geometry, properties: { category: 'road', kind: 'drawn-' + rd.kind, width_m: rd.width, length_m: Math.round(rd.length) } });
+    if (L.road) feats.push({ type: 'Feature', geometry: wgs84(L.road), properties: { category: 'road', kind: 'perimeter', length_m: Math.round(L.roadLength) } });
+    for (const g of r.roads || []) feats.push({ type: 'Feature', geometry: wgs84(g), properties: { category: 'road', kind: 'internal', width_m: store.project.field.tracks.width } });
+    for (const s of L.stations) feats.push({ type: 'Feature', geometry: wgs84(s.footprint), properties: { category: 'station', kind: s.kind, building: s.building.id, length_m: s.building.length, width_m: s.building.width } });
+    for (const g of L.gates) feats.push({ type: 'Feature', geometry: wgs84(new Point({ x: g.point[0], y: g.point[1], spatialReference: r.frame.sr })), properties: { category: 'gate', access: g.name, width_m: g.width } });
   }
   return feats.length ? { type: 'FeatureCollection', features: feats } : null;
 }

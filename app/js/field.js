@@ -1,9 +1,9 @@
 // Field: parameters, parametric generation (area -> rows of tables), map rendering, results and warnings.
 import { getSdk } from './sdk.js';
-import { store, change, on, saveSoon } from './state.js';
+import { store, change, on, emit, saveSoon } from './state.js';
 import { t, tn, fmt } from './i18n.js';
 import { parseNotation, tableGeometry, minPitch, shadingAngleDeg, gcr, halfNotation } from './layout/structures.js';
-import { fillRows, tablesPerBlock } from './layout/rows.js';
+import { fillRows, tablesPerBlock, corridorRects } from './layout/rows.js';
 import { structurePresets, presetFor, def, rule, standardFor, countryValue, countryName } from './catalog.js';
 import { library, moduleById, moduleLabel, modulePower, modulePeriods, periodLabel, periodOf, powerAge, defaultModuleId } from './modules.js';
 import { siteFrame, computeArea, crsState } from './areas.js';
@@ -101,7 +101,7 @@ export function initField(mapView) {
   };
   $('specYield').onchange = () => change('yield', p => { p.specificYield = num($('specYield')); });
 
-  for (const topic of ['site', 'settings', 'field', 'modules', 'project', 'crs', 'terrain']) on(topic, () => { syncInputs(); schedule(); });
+  for (const topic of ['site', 'settings', 'field', 'modules', 'project', 'crs', 'terrain', 'infra']) on(topic, () => { syncInputs(); schedule(); });
   on('yield', () => renderResults(last.result));
   syncInputs();
   schedule();
@@ -243,6 +243,7 @@ function generate() {
   if (!st.geom) {
     renderResults({ area: st.area, warns: st.warns });
     updatePitchHint(st.hintGeom && f.technology === 'ground-fixed' && shade ? minPitch(st.hintGeom, shade.value) : null, st.pre, shade);
+    emit('layout');
     return;
   }
   const t0 = performance.now();
@@ -280,12 +281,18 @@ function generate() {
   if (f.tracks.enabled && !f.tracks.tables && def('transversalTrack.width') === f.tracks.width) verify.push('track width');
   if (verify.length) warns.push(t('warn.verify', { items: verify.join(', ') }));
 
-  last.result = { area: st.area, warns, tables, halves, modules, dcMWp, rows: res.rows, gcr: gcr(st.geom, f.pitch),
+  // internal roads: the corridors across the rows, inside the buildable area
+  const { Polygon: P2, intersectionOperator, areaOperator } = getSdk();
+  const roads = corridorRects(res.grid).map(c => intersectionOperator.execute(new P2({ rings: [[...c, c[0]]], spatialReference: st.frame.sr }), st.area.buildable))
+    .filter(g => g && g.rings && g.rings.length);
+  const roadsLength = st.opt.corridorWidth > 0 ? roads.reduce((s, g) => s + areaOperator.execute(g), 0) / st.opt.corridorWidth : 0;
+  last.result = { area: st.area, warns, tables, halves, modules, dcMWp, rows: res.rows, gcr: gcr(st.geom, f.pitch), roads, roadsLength,
     shading: f.technology === 'agri-tracker' ? null : shadingAngleDeg(st.geom, f.pitch), siteArea, buildableArea: st.area.buildableArea,
     cover, geom: st.geom, halfGeom: st.halfGeom, module: st.mod, power: st.power, frame: st.frame, tablesLocal: res.tables, ms: { fill: tFill, draw: tDraw } };
   window.__last = last.result;   // debug hook
   renderResults(last.result);
   updatePitchHint(minP, preset, shade);
+  emit('layout');
 }
 
 function updatePitchHint(minP, preset, shade) {

@@ -160,7 +160,7 @@ await test('modules are written into the project and adopted on another computer
 
 // every module of the app loads (the app page itself needs a map: check it in a browser)
 await test('every app module loads', async () => {
-  const names = ['areas', 'field', 'output', 'modules', 'quick', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile',
+  const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile',
     'geo/convert', 'geo/localframe', 'layout/rows', 'layout/structures', 'ui/rail', 'ui/crsdialog', 'ui/toast', 'terrain/slope', 'terrain/terrain', 'terrain/dtm', 'terrain/store'];
   const missing = [];
   for (const n of names) {

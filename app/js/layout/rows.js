@@ -123,7 +123,8 @@ export function columnsIn(a, b, grid) {
 //   halfLength        optional length of a half table (half strings), used where a whole table does not fit
 //   maxTables         optional cap (target capacity)
 // }
-// Returns { tables: [{ row, col, corners: [[x, y] x4], half: 'L' | 'R' (half tables only) }], rows }.
+// Returns { tables: [{ row, col, corners: [[x, y] x4], half: 'L' | 'R' (half tables only) }], rows, grid } — grid
+// describes the column grid in the row frame (for the corridors: u0, len, gap, blockTables, corridorWidth, extent).
 export function fillRows(area, opt) {
   const A = opt.azimuthDeg ?? 180;
   const len = opt.tableLength, depth = opt.planDepth, pitch = opt.pitch, gap = opt.tableGap ?? 0.3;
@@ -176,7 +177,24 @@ export function fillRows(area, opt) {
     if (inRow) rows++;
     if (tables.length >= maxTables) break;
   }
-  return { tables, rows };
+  let umax = -Infinity;
+  for (const r of rings) for (const [u] of r) if (u > umax) umax = u;
+  return { tables, rows, grid: { ...grid, azimuthDeg: A, umin, umax, vmin, vmax } };
+}
+
+// Corridors of a fill as rectangles in the local frame (x, y), each spanning the whole extent of the area across the
+// rows: [[x, y] × 4] per corridor. Empty when the fill has no corridors.
+export function corridorRects(grid) {
+  const { u0, len, gap, blockTables: K, corridorWidth: w, azimuthDeg: A, umin, umax, vmin, vmax } = grid || {};
+  if (!(K > 0) || !isFinite(K) || !(w > 0)) return [];
+  const blockStep = K * len + (K - 1) * gap + w;
+  const out = [];
+  for (let j = Math.floor((umin - u0) / blockStep) - 1; u0 + j * blockStep <= umax; j++) {
+    const a = u0 + j * blockStep + K * len + (K - 1) * gap, b = a + w;
+    if (b < umin || a > umax) continue;
+    out.push([[a, vmin], [b, vmin], [b, vmax], [a, vmax]].map(p => fromRowFrame(p, A)));
+  }
+  return out;
 }
 
 function lowerBound(arr, x) {

@@ -9,6 +9,7 @@ import { siteFrame, crsState } from './areas.js';
 import { applyStandard, toolkitMinPitch, optimise, generateNow, last } from './field.js';
 import { moduleById, moduleLabel, defaultModuleId } from './modules.js';
 import { loadTerrain } from './terrain/terrain.js';
+import { suggestedRoad } from './infra.js';
 import { showStep } from './ui/rail.js';
 import { toast } from './ui/toast.js';
 
@@ -53,8 +54,15 @@ export async function runQuick({ technology = 'ground-fixed', pitch = null, terr
     const ok = await loadTerrain('esri');
     if (ok) change('terrain', q => { q.terrain.applySlopeLimit = true; });
   }
+  // perimeter road: the toolkit template for small plants — tried first, left out when the plant is larger
+  change('infra', q => { q.infra.perimeterRoad = true; });
   optimise();
-  const r = generateNow();
+  let r = generateNow();
+  if (r && suggestedRoad(r.dcMWp) === false) {
+    change('infra', q => { q.infra.perimeterRoad = false; });
+    optimise();
+    r = generateNow();
+  }
   showStep('fields');
   const res = document.getElementById('secResults');
   if (res) res.open = true;

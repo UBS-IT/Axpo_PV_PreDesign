@@ -3,7 +3,7 @@
 // network policy blocks js.arcgis.com / cdn.jsdelivr.net. Usage: node run.mjs [page ...] (default: every page).
 import { openPage, shutdown } from './page.mjs';
 
-const pages = process.argv.slice(2).length ? process.argv.slice(2) : ['/tests/', '/tests/modules.html', '/tests/sdk.html', '/tests/import.html', '/tests/terrain.html', '/tests/ui.html'];
+const pages = process.argv.slice(2).length ? process.argv.slice(2) : ['/tests/', '/tests/modules.html', '/tests/sdk.html', '/tests/import.html', '/tests/terrain.html', '/tests/infra.html', '/tests/ui.html'];
 let failed = 0;
 for (const pg of pages) {
   const { page, errors, close } = await openPage(pg);
