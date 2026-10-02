@@ -108,6 +108,13 @@ sight; glTF export. Checked by the user in a browser (WebGL does not run in the 
 
 A1 → A2 → A3 → A4 → B1 → B2 → A5 → B3 → C1 … Phase D runs alongside, as documents and decisions arrive.
 
+## UX refactor (from 2026-10-02)
+
+User tests raised two problems: the Terrain panel is not understood (what it does, when to use it) and the drawing
+tools are not intuitive. `docs/audit/2026-10-02-frontend-audit.md` holds the audit (bugs, workflow, WCAG) and the
+questions to answer before the refactor; `docs/knowledge.md` the knowledge base of the app. Phase 2 (proposal and
+prototype) starts once the questions are answered and the Geoportale (`UBS-IT/custom-AGOL-web-map`) can be read.
+
 ## Open questions
 
 - Owner of the catalog in the Design ESQ team.
