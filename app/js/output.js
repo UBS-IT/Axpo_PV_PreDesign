@@ -3,13 +3,14 @@ import { getSdk } from './sdk.js';
 import { store, change, on } from './state.js';
 import { t, fmt } from './i18n.js';
 import { NATIONAL, crsLabel } from './crs.js';
-import { crsState } from './areas.js';
+import { crsState, siteFrame } from './areas.js';
 import { last } from './field.js';
 import { toGeoJSON } from './geo/convert.js';
 import { moduleLabel } from './modules.js';
 import { layoutInfra } from './infra.js';
 import { exportReport } from './report.js';
 import { toast } from './ui/toast.js';
+import { stepProvider } from './ui/rail.js';
 import { loadJsZip } from './libs.js';
 import { exportModel, fileName } from './export/model.js';
 import { buildShapefiles } from './export/shp.js';
@@ -38,6 +39,11 @@ export function initOutput() {
   $('outBoq').onclick = () => exportEngineering('boq');
   on('crs', renderCrs);
   on('project', renderCrs);
+  // the rail: the outputs describe a layout, so the step waits for the site and then for the tables
+  stepProvider('output', () => {
+    if (!siteFrame()) return { state: 'locked', reason: t('gate.needSite') };
+    return last.result?.tables ? { state: 'ready' } : { state: 'locked', reason: t('gate.needLayout') };
+  });
   renderCrs();
 }
 

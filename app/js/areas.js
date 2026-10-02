@@ -1,6 +1,7 @@
-// Step 1 · Areas: objects by category (gross, net, exclusions, linear infrastructure, obstacles, access,
-// mitigation, agricultural zones, reference), import and drawing, drag and drop between categories, and the
-// buildable area in the local metric frame.
+// Step 1 · Site: objects by category (gross, net, exclusions, linear infrastructure, obstacles, access,
+// mitigation, agricultural zones, reference), import, drawing in two steps (what, then with which tool — the
+// Geoportale's Disegna pattern), undo / redo, drag and drop between categories, and the buildable area in the
+// local metric frame.
 import { getSdk } from './sdk.js';
 import { store, change, on, emit, uid, saveSoon, geomKind } from './state.js';
 import { t, tn, fmt } from './i18n.js';
@@ -11,11 +12,20 @@ import { readAnyFile } from './io/importers.js';
 import { suggestCrs, candidatesForProjected, crsLabel } from './crs.js';
 import { chooseCrs } from './ui/crsdialog.js';
 import { toast } from './ui/toast.js';
+import { stepProvider, refreshRail } from './ui/rail.js';
 
 let view, featLayer, sketchLayer, sketchVM;
 let drawing = null;          // { category, tool }
 let editing = null;          // { id }
+let drawCat = 'gross';       // ① the category the next drawings go into
+const drawDefaults = {};     // category -> attributes given to the next drawings (type, buffer, height, width)
+let lastId = null;           // the last object drawn (the «Last drawing» box)
+let statusNote = '';         // one-off note shown before the status of the tools (added, undone…)
+const TOOLS = ['point', 'polyline', 'polygon', 'rectangle'];
+const TOOL_KIND = { point: 'point', polyline: 'line', polygon: 'polygon', rectangle: 'polygon' };
 export const crsState = { alerts: [], suggested: null, iso: null };
+// figures of the step for the rail (buildable area in m², null without a site)
+export const areasState = { buildableArea: null };
 // Other cuts of the buildable area, registered by other steps (terrain: slopes over the limit of the structure;
 // infrastructure: fence clearance, stations). fn(frame, { base, pre }) -> null | { geometry (polygon in the frame),
 // kind, label } | { note } (a message for the results). pre = base minus the objects of the Areas step: the land
@@ -40,11 +50,47 @@ export function initAreas(mapView) {
   } catch (e) { console.warn('[areas] sketch options', e); }
   sketchVM.on('create', e => {
     if (e.state === 'complete') finishDraw(e.graphic);
-    else if (e.state === 'cancel') endDraw();
+    else if (e.state === 'cancel' && sketchVM.state !== 'active') endDraw();   // not the cancel made to re-arm
   });
   sketchVM.on('update', e => { if (e.state === 'complete') finishEdit(e); });
   window.__sketch = sketchVM;   // debug hook
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawing) { sketchVM.cancel(); endDraw(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && drawing) { stopDraw(); return; }
+    // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) on the objects of the site while this step is open, not while typing
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+    const sec = document.querySelector('.step[data-step="areas"]');
+    if (sec && sec.hidden) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { if (undo()) e.preventDefault(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { if (redo()) e.preventDefault(); }
+  });
+  // ① what you draw, ② with which tool, undo / redo, the last drawing
+  const dc = $('drawCats');
+  if (dc) {
+    dc.onclick = e => { const b = e.target.closest('[data-dcat]'); if (b) selectDrawCat(b.dataset.dcat); };
+    dc.onkeydown = e => {
+      if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+      e.preventDefault();
+      const i = CATEGORIES.findIndex(c => c.id === drawCat), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+      selectDrawCat(CATEGORIES[(i + d + CATEGORIES.length) % CATEGORIES.length].id);
+      dc.querySelector('[aria-checked="true"]')?.focus();
+    };
+    $('drawTools').onclick = e => { const b = e.target.closest('[data-dtool]'); if (b && !b.disabled) toggleTool(b.dataset.dtool); };
+    $('drawAttrs').onchange = e => {
+      const el = e.target.closest('[data-dattr]');
+      if (!el) return;
+      const d = drawDefaults[drawCat] || (drawDefaults[drawCat] = defaultAttrs(drawCat));
+      const v = el.type === 'number' ? (el.value === '' ? undefined : Math.max(0, Number(el.value))) : el.value;
+      if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete d[el.dataset.dattr]; else d[el.dataset.dattr] = v;
+    };
+    $('drawUndo').onclick = () => undo();
+    $('drawRedo').onclick = () => redo();
+    $('drawLast').addEventListener('click', onCatsClick);
+    $('drawLast').addEventListener('dblclick', onRename);
+    renderDraw();
+  }
 
   // file picker (the Import buttons) and drop on the category cards
   const input = $('fileImport');
@@ -109,7 +155,15 @@ export function initAreas(mapView) {
   on('infra', renderSummarySoon);
   on('field', renderSummarySoon);   // the slope limit depends on the structure
   on('settings', () => { $('boundarySetback').value = store.project.settings.boundarySetback; renderSummarySoon(); });
-  on('project', () => { render(); updateCrs(false); zoomToFeatures(); });
+  on('project', () => {
+    history.undo.length = 0; history.redo.length = 0; lastId = null; statusNote = '';
+    if (drawing) stopDraw();
+    render(); updateCrs(false); zoomToFeatures();
+  });
+  // the step is done once the site has a boundary; its figure is the buildable area
+  stepProvider('areas', () => (sitePolygons().length
+    ? { state: 'done', figure: areasState.buildableArea != null ? `${fmt(areasState.buildableArea / 1e4, 1)} ha` : '' }
+    : { state: 'ready' }));
   render();
   updateCrs(false);
 }
@@ -171,7 +225,7 @@ export async function importFiles(files, category = null) {
       Object.keys(byCat).forEach(c => openCats.add(c));
       // an untitled project takes the name of a Geoportale project, or of the first file imported into it
       const rename = !store.project.name || store.project.name === 'Untitled project' ? (r.type === 'axpo' || !store.project.features.length ? r.name : null) : null;
-      change('site', p => {
+      mutate(p => {
         p.features.push(...added);
         if (rename) p.name = rename;
       });
@@ -189,30 +243,90 @@ export async function importFiles(files, category = null) {
   return total;
 }
 
-// ── drawing ──
-function startDraw(category, tool) {
+// ── undo / redo (the objects of the site; 40 steps, Ctrl+Z / Ctrl+Y as in the Geoportale) ──
+const HIST = 40;
+const history = { undo: [], redo: [] };
+const snapshot = () => structuredClone(store.project.features);
+// Every change of the objects made in this step goes through here, so that it can be undone
+function mutate(fn) {
+  history.undo.push(snapshot());
+  if (history.undo.length > HIST) history.undo.shift();
+  history.redo.length = 0;
+  change('site', fn);
+  renderHistory();
+}
+function restoreFeatures(feats) { change('site', p => { p.features = feats; }); renderHistory(); }
+export function undo() {
+  if (drawing && typeof sketchVM.canUndo === 'function' && sketchVM.canUndo()) { sketchVM.undo(); return true; }   // a vertex of the shape being drawn
+  if (!history.undo.length) return false;
+  history.redo.push(snapshot());
+  restoreFeatures(history.undo.pop());
+  statusNote = t('undone');
+  renderStatus();
+  return true;
+}
+export function redo() {
+  if (drawing && typeof sketchVM.canRedo === 'function' && sketchVM.canRedo()) { sketchVM.redo(); return true; }
+  if (!history.redo.length) return false;
+  history.undo.push(snapshot());
+  restoreFeatures(history.redo.pop());
+  statusNote = t('redone');
+  renderStatus();
+  return true;
+}
+export const historySize = () => ({ undo: history.undo.length, redo: history.redo.length });
+function renderHistory() {
+  const u = $('drawUndo'), r = $('drawRedo');
+  if (u) u.disabled = !history.undo.length;
+  if (r) r.disabled = !history.redo.length;
+}
+// Removes objects with a way back: a message with ↶ Undo instead of a confirmation (they come back where they were)
+function removeFeatures(ids, text) {
+  const removed = [];
+  store.project.features.forEach((f, i) => { if (ids.includes(f.id)) removed.push({ i, f }); });
+  if (!removed.length) return;
+  mutate(p => { p.features = p.features.filter(f => !ids.includes(f.id)); });
+  toast(text, '', 8000, { action: { label: t('undo'), fn: () => mutate(p => { for (const { i, f } of removed) p.features.splice(Math.min(i, p.features.length), 0, f); }) } });
+}
+
+// ── drawing: ① the category, ② the tool; the tool stays armed until clicked again or Esc ──
+export function selectDrawCat(category) {
+  if (!CATEGORY[category]) return;
+  const tool = drawing && drawing.tool;
+  drawCat = category;
+  if (tool) { if (CATEGORY[category].geom.includes(TOOL_KIND[tool])) startDraw(category, tool); else stopDraw(); }
+  else renderDraw();
+}
+function toggleTool(tool) {
+  if (drawing && drawing.tool === tool) stopDraw(); else startDraw(drawCat, tool);
+}
+export function startDraw(category, tool) {
+  if (!TOOLS.includes(tool) || !CATEGORY[category] || !CATEGORY[category].geom.includes(TOOL_KIND[tool])) return;
   if (editing) sketchVM.complete();
-  if (drawing && drawing.category === category && drawing.tool === tool) { sketchVM.cancel(); endDraw(); return; }
   if (drawing) sketchVM.cancel();
   drawing = { category, tool };
+  drawCat = category;
   const c = CATEGORY[category].colour;
   sketchVM.polygonSymbol = { type: 'simple-fill', color: [...c, 0.12], outline: { color: c, width: 2 } };
   sketchVM.polylineSymbol = { type: 'simple-line', color: c, width: 2.5 };
   sketchVM.pointSymbol = { type: 'simple-marker', color: c, size: 9, outline: { color: [255, 255, 255], width: 1 } };
   sketchVM.create(tool, tool === 'point' ? undefined : { mode: 'click' });
-  markDrawButtons();
-  banner(t(tool === 'point' ? 'areas.drawPointBanner' : 'areas.drawBanner', { cat: esc(t('cat.' + category)) }));
+  renderDraw();
+  banner(t(tool === 'point' ? 'areas.drawPointBanner' : tool === 'rectangle' ? 'areas.drawRectBanner' : 'areas.drawBanner', { cat: esc(t('cat.' + category)) }));
 }
-function markDrawButtons() {
-  document.querySelectorAll('#areaCats .drawbtn[data-tool]').forEach(b => b.classList.toggle('active', !!drawing && b.dataset.cat === drawing.category && b.dataset.tool === drawing.tool));
+export function stopDraw() {
+  if (drawing) sketchVM.cancel();
+  endDraw();
 }
+export const drawingState = () => (drawing ? { ...drawing } : null);
 function endDraw() {
   drawing = null;
-  markDrawButtons();
+  renderDraw();
   banner(null);
 }
 function banner(html) {
   const b = $('banner');
+  if (!b) return;
   if (html) { b.innerHTML = html; b.hidden = false; } else b.hidden = true;
 }
 function finishDraw(graphic) {
@@ -221,11 +335,15 @@ function finishDraw(graphic) {
   const geometry = toGeoJSON(graphic.geometry);
   if (geometry && d) {
     const n = store.project.features.filter(f => f.category === d.category).length + 1;
+    const name = `${t('cat.' + d.category + '.one')} ${n}`;
+    const f = { id: uid(), name, category: d.category, geometry, source: 'drawn', sourceCategory: '', attrs: { ...defaultAttrs(d.category), ...(drawDefaults[d.category] || {}) } };
     openCats.add(d.category);
-    change('site', p => p.features.push({ id: uid(), name: `${t('cat.' + d.category + '.one')} ${n}`, category: d.category, geometry, source: 'drawn', sourceCategory: '', attrs: defaultAttrs(d.category) }));
+    lastId = f.id;
+    statusNote = t('draw.added', { name });
+    mutate(p => p.features.push(f));
   }
-  // points (trees, poles…) are placed one after the other until Esc; shapes stop after one
-  if (d && d.tool === 'point') { drawing = null; startDraw(d.category, d.tool); }
+  // the tool stays armed (points, lines and areas alike): click it again or Esc to stop
+  if (d) { drawing = null; startDraw(d.category, d.tool); }
   else endDraw();
 }
 function defaultAttrs(category) {
@@ -235,6 +353,59 @@ function defaultAttrs(category) {
   if (category === 'linear') return { type: 'other' };
   return {};
 }
+
+// the two steps of the drawing block, the status line and the history buttons
+const TOOL_ICON = {
+  polygon: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5l6-3 5 4-2 7-8 1z"/></svg>',
+  rectangle: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1"/></svg>',
+  polyline: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13l4-6 4 3 4-7"/></svg>',
+  point: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>',
+  import: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2M4.5 5.5L8 2l3.5 3.5M2.5 11v3h11v-3"/></svg>',
+  draw: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-4 7-7 3 3-7 7z"/><path d="M10 3l3 3"/></svg>',
+};
+function renderDraw() {
+  const box = $('drawCats');
+  if (!box) return;
+  box.innerHTML = CATEGORIES.map(c => `<button type="button" role="radio" aria-checked="${c.id === drawCat}" tabindex="${c.id === drawCat ? 0 : -1}" data-dcat="${c.id}" style="--c:rgb(${c.colour.join(',')})" title="${esc(t('cat.' + c.id + '.hint'))}">${esc(t('cat.' + c.id))}</button>`).join('');
+  const c = CATEGORY[drawCat];
+  $('drawTools').innerHTML = TOOLS.map(tool => {
+    const ok = c.geom.includes(TOOL_KIND[tool]), on = !!drawing && drawing.tool === tool;
+    const why = ok ? '' : t('areas.wrongGeom', { cat: t('cat.' + c.id), kind: t('geom.' + TOOL_KIND[tool]) });
+    return `<button type="button" class="tcard" data-dtool="${tool}" aria-pressed="${on}"${ok ? '' : ` disabled title="${esc(why)}"`}>${TOOL_ICON[tool]}<b>${esc(t('draw.tool.' + tool))}</b><small>${esc(ok ? t('draw.tool.' + tool + '.sub') : why)}</small></button>`;
+  }).join('');
+  const d = drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id));
+  const parts = [];
+  if (c.attrs.includes('type')) parts.push(`<div><label class="l" for="dAttr_type">${esc(t('attr.type'))}</label><select id="dAttr_type" data-dattr="type">${c.types.map(ty => `<option value="${ty}" ${d.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select></div>`);
+  for (const a of ['buffer', 'height', 'width']) if (c.attrs.includes(a)) parts.push(`<div><label class="l" for="dAttr_${a}">${esc(t('attr.' + a))}</label><input id="dAttr_${a}" type="number" min="0" step="0.5" data-dattr="${a}" value="${d[a] ?? ''}"></div>`);
+  $('drawAttrs').innerHTML = parts.join('');
+  $('drawAttrs').hidden = !parts.length;
+  document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
+  renderStatus();
+  renderHistory();
+}
+function renderStatus() {
+  const el = $('drawStatus');
+  if (!el) return;
+  const note = statusNote; statusNote = '';
+  const main = drawing
+    ? t('draw.armed', { cat: t('cat.' + drawing.category), tool: t('draw.tool.' + drawing.tool), how: t('draw.tool.' + drawing.tool + '.sub') })
+    : t('draw.idle');
+  el.textContent = note ? `${note} ${main}` : main;
+  el.className = 'status' + (note ? ' ok' : '');
+}
+function renderLast() {
+  const el = $('drawLast');
+  if (!el) return;
+  const f = lastId && store.project.features.find(x => x.id === lastId);
+  el.hidden = !f;
+  if (!f) return;
+  const c = CATEGORY[f.category] || CATEGORY.reference;
+  el.innerHTML = `<div class="ttl">${esc(t('draw.last'))}</div><div class="row"><span class="tag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>
+    <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>`;
+}
+const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">✎</button>
+    <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">⬠</button>
+    <button type="button" class="x" data-del="${f.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">×</button>`;
 
 // ── reshaping an existing object ──
 function startEdit(id) {
@@ -261,24 +432,36 @@ function finishEdit(e) {
   const gr = e.graphics && e.graphics[0];
   const geometry = gr && !e.aborted ? toGeoJSON(gr.geometry) : null;
   if (gr) sketchLayer.remove(gr);
-  if (geometry) change('site', p => { const f = p.features.find(x => x.id === id); if (f) f.geometry = geometry; });
+  if (geometry) mutate(p => { const f = p.features.find(x => x.id === id); if (f) f.geometry = geometry; });
   else render();
 }
 
 // ── list events ──
 function onCatsClick(e) {
-  const draw = e.target.closest('.drawbtn[data-tool]');
-  if (draw) { e.preventDefault(); startDraw(draw.dataset.cat, draw.dataset.tool); return; }
+  const sel = e.target.closest('.drawbtn[data-dsel]');
+  if (sel) {   // «Draw here» on a category card: ① takes the category, the drawing block opens
+    e.preventDefault();
+    selectDrawCat(sel.dataset.dsel);
+    const d = $('secDraw'); if (d) d.open = true;
+    $('drawTools')?.querySelector('[data-dtool]:not(:disabled)')?.focus();
+    return;
+  }
   const imp = e.target.closest('.drawbtn[data-imp]');
   if (imp) { e.preventDefault(); pickFiles(imp.dataset.imp); return; }
   const del = e.target.closest('button[data-del]');
-  if (del) { change('site', p => { p.features = p.features.filter(x => x.id !== del.dataset.del); }); return; }
+  if (del) {
+    const f = store.project.features.find(x => x.id === del.dataset.del);
+    if (f) removeFeatures([f.id], t('areas.removed', { name: f.name }));
+    return;
+  }
   const ed = e.target.closest('button[data-edit]');
   if (ed) { startEdit(ed.dataset.edit); return; }
+  const rn = e.target.closest('button[data-rename]');
+  if (rn) { renameInline(rn.dataset.rename, rn.closest('.it, .row')?.querySelector('.nm')); return; }
   const clr = e.target.closest('button[data-clear]');
   if (clr) {
-    const c = clr.dataset.clear, n = store.project.features.filter(f => f.category === c).length;
-    if (confirm(t('areas.clearConfirm', { n, cat: t('cat.' + c) }))) change('site', p => { p.features = p.features.filter(f => f.category !== c); });
+    const c = clr.dataset.clear, ids = store.project.features.filter(f => f.category === c).map(f => f.id);
+    removeFeatures(ids, t('areas.cleared', { n: ids.length, cat: t('cat.' + c) }));
     return;
   }
   const zoom = e.target.closest('[data-zoom]');
@@ -290,7 +473,7 @@ function onCatsChange(e) {
   if (!id) return;
   if (el.classList.contains('mv')) { moveFeature(id, el.value); return; }
   const attr = el.dataset.attr;
-  if (attr) change('site', p => {
+  if (attr) mutate(p => {
     const f = p.features.find(x => x.id === id);
     if (!f) return;
     f.attrs = f.attrs || {};
@@ -301,9 +484,12 @@ function onCatsChange(e) {
 }
 function onRename(e) {
   const nm = e.target.closest('.nm[data-zoom]');
-  if (!nm) return;
-  const f = store.project.features.find(x => x.id === nm.dataset.zoom);
-  if (!f) return;
+  if (nm) renameInline(nm.dataset.zoom, nm);
+}
+// the name becomes a text box in place (Enter keeps, Esc cancels)
+function renameInline(id, nm) {
+  const f = store.project.features.find(x => x.id === id);
+  if (!f || !nm) return;
   const inp = document.createElement('input');
   inp.type = 'text'; inp.value = f.name; inp.className = 'rename';
   nm.replaceWith(inp); inp.focus(); inp.select();
@@ -312,7 +498,7 @@ function onRename(e) {
     if (done) return;
     done = true;
     const v = inp.value.trim();
-    if (ok && v && v !== f.name) change('site', p => { const g = p.features.find(x => x.id === f.id); if (g) g.name = v; });
+    if (ok && v && v !== f.name) mutate(p => { const g = p.features.find(x => x.id === f.id); if (g) g.name = v; });
     else render();
   };
   inp.onkeydown = ev => { if (ev.key === 'Enter') finish(true); if (ev.key === 'Escape') finish(false); };
@@ -328,7 +514,7 @@ export function moveFeature(id, category) {
     return;
   }
   openCats.add(category);
-  change('site', p => {
+  mutate(p => {
     const g = p.features.find(x => x.id === id);
     g.category = category;
     g.attrs = { ...defaultAttrs(category), ...keepAttrs(g.attrs, category) };
@@ -383,25 +569,19 @@ export function render() {
   featLayer.addMany(graphics);
 
   $('areaCats').innerHTML = CATEGORIES.map(catCard).join('');
-  markDrawButtons();
+  document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
+  renderLast();
+  renderHistory();
   $('boundarySetback').value = store.project.settings.boundarySetback;
   const rb = $('railAreas');
   if (rb) rb.textContent = store.project.features.length || '';
   renderSummarySoon();
 }
 
-const TOOL_ICON = {
-  polygon: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5l6-3 5 4-2 7-8 1z"/></svg>',
-  polyline: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13l4-6 4 3 4-7"/></svg>',
-  point: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>',
-  import: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2M4.5 5.5L8 2l3.5 3.5M2.5 11v3h11v-3"/></svg>',
-};
 function catCard(c) {
   const items = store.project.features.filter(f => f.category === c.id);
-  const tools = c.geom.map(g => (g === 'line' ? 'polyline' : g));
-  const tip = tool => esc(t('areas.drawTool', { tool: t('tool.' + tool), cat: t('cat.' + c.id) }));
-  const imp = esc(t('areas.importInto', { cat: t('cat.' + c.id) }));
-  const draw = tools.map(tool => `<button type="button" class="drawbtn" data-cat="${c.id}" data-tool="${tool}" title="${tip(tool)}" aria-label="${tip(tool)}">${TOOL_ICON[tool]}<span>${esc(t('tool.' + tool + '.short'))}</span></button>`).join('')
+  const imp = esc(t('areas.importInto', { cat: t('cat.' + c.id) })), here = esc(t('draw.hereTitle', { cat: t('cat.' + c.id) }));
+  const draw = `<button type="button" class="drawbtn" data-dsel="${c.id}" title="${here}" aria-label="${here}">${TOOL_ICON.draw}<span>${esc(t('draw.here'))}</span></button>`
     + `<button type="button" class="drawbtn" data-imp="${c.id}" title="${imp}" aria-label="${imp}">${TOOL_ICON.import}<span>${esc(t('tool.import.short'))}</span></button>`;
   return `<details class="cat" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
     <summary><span class="ttl"><b>${esc(t('cat.' + c.id))}</b><small>${esc(t('cat.' + c.id + '.hint'))}</small></span>
@@ -430,8 +610,7 @@ function row(f, c) {
     <span class="grip" draggable="true" title="${esc(t('areas.dragTitle'))}" aria-hidden="true">⠿</span>
     <span class="nm" data-zoom="${f.id}" draggable="true" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
     <select class="mv" data-id="${f.id}" title="${esc(t('areas.moveTo'))}" aria-label="${esc(t('areas.moveTo'))}">${moveOpts}</select>
-    <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">✎</button>
-    <button type="button" class="x" data-del="${f.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">×</button>
+    <span class="acts">${rowButtons(f)}</span>
     ${inputs.length ? `<span class="attrs">${inputs.join('')}</span>` : ''}
   </div>`;
 }
@@ -445,8 +624,9 @@ function renderSummarySoon() { clearTimeout(sumTimer); sumTimer = setTimeout(ren
 function renderSummary() {
   const el = $('areaSummary');
   const frame = siteFrame();
-  if (!frame) { el.innerHTML = `<div class="hint">${esc(t('areas.noSite'))}</div>`; return; }
-  const r = computeArea(frame);
+  const r = frame ? computeArea(frame) : { error: 'noSite' };
+  areasState.buildableArea = r.error ? null : r.buildableArea;
+  refreshRail();
   if (r.error) { el.innerHTML = `<div class="hint">${esc(t('areas.noSite'))}</div>`; return; }
   const ha = m2 => `${fmt(m2 / 1e4, 2)} ha`;
   const minus = m2 => (m2 >= 5 ? `− ${fmt(m2 / 1e4, 2)} ha` : '0 ha');

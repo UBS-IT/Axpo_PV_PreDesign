@@ -1,7 +1,7 @@
 // Quick predesign: once the site is loaded, one dialog and one click — the group standard of the chosen technology,
 // the standard module at the power of the current semester, the toolkit minimum pitch of the country (fixed
 // structures) or the pitch agreed with the farm (trackers), optionally the terrain with its slope limit, then the
-// best grid position. Everything stays editable in 2 · Fields: these are defaults, never locks.
+// best grid position. Everything stays editable in 3 · Layout: these are defaults, never locks.
 import { store, change } from './state.js';
 import { t, fmt } from './i18n.js';
 import { countryValue, countryName, standardFor } from './catalog.js';
@@ -54,11 +54,13 @@ export async function runQuick({ technology = 'ground-fixed', pitch = null, terr
     const ok = await loadTerrain('esri');
     if (ok) change('terrain', q => { q.terrain.applySlopeLimit = true; });
   }
-  // perimeter road: the toolkit template for small plants — tried first, left out when the plant is larger
-  change('infra', q => { q.infra.perimeterRoad = true; });
+  // perimeter road: the toolkit template for small plants — tried first, left out when the plant is larger;
+  // a choice already made by the designer (true or false) is kept
+  const decided = store.project.infra.perimeterRoad != null;
+  if (!decided) change('infra', q => { q.infra.perimeterRoad = true; });
   optimise();
   let r = generateNow();
-  if (r && suggestedRoad(r.dcMWp) === false) {
+  if (!decided && r && suggestedRoad(r.dcMWp) === false) {
     change('infra', q => { q.infra.perimeterRoad = false; });
     optimise();
     r = generateNow();

@@ -11,7 +11,8 @@ import { initOutput } from './output.js';
 import { initTerrain } from './terrain/terrain.js';
 import { initQuick } from './quick.js';
 import { initInfra } from './infra.js';
-import { initRail, showStep } from './ui/rail.js';
+import { initRail, showStep, startStep } from './ui/rail.js';
+import { confirmDialog } from './ui/dialog.js';
 import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EXT } from './io/projectfile.js';
 import { toast } from './ui/toast.js';
 import { initBasemap } from './ui/basemap.js';
@@ -71,8 +72,8 @@ async function start() {
 
   // project file, import, coordinate system
   const projIn = $('fileProject');
-  $('btnNew').onclick = () => {
-    if (store.project.features.length && !confirm(t('confirm.new'))) return;
+  $('btnNew').onclick = async () => {
+    if (store.project.features.length && !(await confirmDialog({ title: t('top.newTitle'), text: t('confirm.new'), ok: t('top.new') }))) return;
     forgetHandle();
     replaceProject(defaultProject());
     showStep('areas');
@@ -101,6 +102,7 @@ async function start() {
     if (files.length) { showStep('areas'); await importFiles(files); }
   });
 
+  showStep(startStep());
   if (store.project.features.length) zoomToFeatures();
 }
 

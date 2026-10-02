@@ -12,12 +12,15 @@ import { countryValue, countryName, getCatalog, standardFor } from './catalog.js
 import { siteFrame, extraCuts, crsState, computeArea } from './areas.js';
 import { last } from './field.js';
 import { toast } from './ui/toast.js';
+import { stepProvider } from './ui/rail.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
 const STATION_COLOUR = { CC: [31, 153, 204], CU: [110, 170, 60], CT: [233, 120, 30] };
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let view = null, layer = null, placing = null, clickHandle = null;
+// figures of the step for the rail
+export const infraState = { fenceLength: 0, fences: 0 };
 
 // ── plain geometry in the local frame (no SDK) ──
 export function ringArea(r) { let s = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) s += r[j][0] * r[i][1] - r[i][0] * r[j][1]; return s / 2; }
@@ -404,6 +407,7 @@ function render() {
     ? t(c.road ? 'infra.clearWithRoad' : 'infra.clearNoRoad', { m: fmt(c.toolkit, 1), country })
     : t('infra.noClearance', { country });
   const fenceLen = L.fences.reduce((s, f) => s + f.length, 0);
+  infraState.fenceLength = fenceLen; infraState.fences = L.fences.length;
   $('infFenceInfo').innerHTML = L.fences.length
     ? `<div class="kpis">${kpi(`${fmt(fenceLen, 0)} m`, t('infra.fenceLength'))}${kpi(`${fmt(c.clearance ?? 0, 1)} m`, t('infra.fenceClear'))}</div>`
     : `<div class="hint">${esc(t(I.fence ? 'infra.noSite' : 'infra.fenceOff'))}</div>`;
@@ -586,6 +590,11 @@ export function initInfra(mapView) {
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && (placing || moving || editingRoad || sketchVM?.state === 'active')) { stopModes(); renderSoon(); } });
   for (const topic of ['infra', 'site', 'settings', 'project', 'crs', 'layout', 'terrain']) on(topic, () => renderSoon());
+  // the rail: locked without a site, done once the layout has its fence (figure: its length)
+  stepProvider('infra', () => {
+    if (!siteFrame()) return { state: 'locked', reason: t('gate.needSite') };
+    return last.result?.tables && store.project.infra.fence && infraState.fences ? { state: 'done', figure: `${fmt(infraState.fenceLength, 0)} m` } : { state: 'ready' };
+  });
   render();
 }
 let tm = 0;
