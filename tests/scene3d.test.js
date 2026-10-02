@@ -15,10 +15,9 @@ import { initField, last } from '../app/js/field.js';
 import { initInfra } from '../app/js/infra.js';
 import { initOutput } from '../app/js/output.js';
 import { initQuick, runQuick } from '../app/js/quick.js';
-import { showStep } from '../app/js/ui/rail.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
-import { initView3d, view3dState, scene3dConfig, reportWithViews } from '../app/js/view3d/scene.js';
+import { initView3d, view3dState, scene3dConfig, reportWithViews, set3d } from '../app/js/view3d/scene.js';
 import { groundAt } from '../app/js/view3d/geometry.js';
 
 const results = [];
@@ -131,7 +130,7 @@ const settle = async (ms = 60000) => {
 
 document.getElementById('sum').textContent = 'Running scene tests...';
 await test('step 4b opens a SceneView on the site, without errors of the scene', async () => {
-  showStep('3d');
+  set3d(true);
   for (let i = 0; i < 100 && !view3dState.scene; i++) await wait(100);
   assert(view3dState.scene, 'scene created');
   await settle();
@@ -212,7 +211,7 @@ await test('sun buttons, shading readout, ShadowCast, a saved view, the report w
   assert(rep && rep.doc.getNumberOfPages() === 2 && got.length === 1, `report: ${rep && rep.doc.getNumberOfPages()} pages, downloads ${got}`);
   const sc2 = document.getElementById('d3Shadow'); sc2.checked = false; sc2.dispatchEvent(new Event('change', { bubbles: true }));
   assert(!sceneErrors().length, 'errors: ' + sceneErrors().slice(0, 3).join(' | '));
-  showStep('output');
+  set3d(false);
   assert(!document.body.classList.contains('in-3d') && !s.map.layers.find(l => l.title === '3D layout').visible && s.map.layers.find(l => l.title === 'Tables').visible, 'back to 2D');
   return `${(rep.blob.size / 1024).toFixed(0)} KB report`;
 });

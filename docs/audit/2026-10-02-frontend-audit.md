@@ -157,3 +157,37 @@ Geoportale; mode banner over the map; tests on every push, including the real Sc
 8. **Repository**: the GitHub repository now lives at `UBS-IT/Axpo_PV_PreDesign` (`davo3188/…` redirects there);
    this session can push through the old URL only. `origin` stays on the old URL until a session is opened on the
    organisation repository.
+
+## 9. Status after phase 2 (2026-10-02, branch `claude/elegant-pascal-pu0yal`)
+
+The user answered the eight questions with "proceed with your proposals on all" (the repository question is a fact,
+not a choice). What the prototype of the same day did, and what stays open:
+
+| # | Status | How |
+|---|---|---|
+| L1 | done | Terrain is step 2, locked without a site (gate + link to 1 · Site), shows the technology its rule applies to (`#terTech`, same `applyStandard` as Layout) |
+| L2 | done | `startStep()`: last step unless locked, else the first still to do; 3D and electrical are no longer steps |
+| L3 | done | `quick.js` keeps a perimeter-road decision already made (`null` = not decided) |
+| L4 | done | ↶ ↷ undo / redo in 1 · Site (40 steps, Ctrl+Z / Ctrl+Y); removals with a toast + *Undo*; `confirmDialog` for new project and remove terrain |
+| L5 | done | `terrainStale()`: pill *to redo*, warning in the panel, *redo* on the rail |
+| L6 | open | `syncInputs()` still writes `field.moduleId` as a side effect (harmless; to move into a `change`) |
+| L7 | open | two `countryName()` |
+| L8 | done | dead keys removed (`field.rotation`, placeholders) |
+| L9 | done | status line `role=status` with `aria-busy`, source buttons disabled while loading |
+| P1 | done | see §2 proposal 1–4, all implemented |
+| P2 | done | see §3 direction: chips, tool cards (Point, Line, Area, Rectangle), armed tool, status, *Last drawing*, undo / redo, rename button, *Draw here* on the cards |
+| U1 | done | stepper states with key figures |
+| U2 | done | Layout: basic (technology, structure preset, module, tilt, azimuth, pitch, optimise) / *Advanced* folded; modules after the results |
+| U3 | partly | structure as a preset list with a custom escape; "GCR" and the EPSG badge unchanged |
+| U4 | open | outcomes still in toasts (drawing has its status line now) |
+| U5 | open | three import entry points, two labels |
+| U6 | kept | quick predesign in the top bar, 1 · Site and 3 · Layout (user's choice of 2026-09-25: one answer in three clicks) |
+| U7 | done | placeholders removed (contours, electrical) |
+| U8 | open | station buttons |
+| A1 | done | `--fill` / `--on-fill` / `--link` tokens (Geoportale rule), `.pill.ok` with a dot |
+| A2 | done | `:focus-visible` ring on every control; `#projName` keeps its ring |
+| A3 | done | row buttons and toast buttons ≥ 24 px; tool cards 64 px; chips 26 px |
+| A4 | open | font sizes unchanged |
+| A5 | partly | chips with arrow keys, rail with arrows / Home / End, Ctrl+Z / Y; drawing on the map still needs the mouse (SDK) |
+| A6 | done | error toasts `role=alert`; status lines `role=status` |
+| A7 | open | no help entry point yet (`i` windows planned) |

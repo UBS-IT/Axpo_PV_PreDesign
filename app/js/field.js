@@ -9,6 +9,7 @@ import { library, moduleById, moduleLabel, modulePower, modulePeriods, periodLab
 import { siteFrame, computeArea, crsState } from './areas.js';
 import { ringsOf } from './geo/localframe.js';
 import { toast } from './ui/toast.js';
+import { stepProvider } from './ui/rail.js';
 
 // Defaults when the technology changes: the group standard of the catalog, else these
 const TECH_FALLBACK = {
@@ -21,6 +22,7 @@ const HALF_SYMBOL = { type: 'simple-fill', color: [110, 120, 235, 0.72], outline
 const AREA_SYMBOL = { type: 'simple-fill', color: [45, 190, 126, 0.07], outline: { color: [45, 190, 126], width: 1.5, style: 'dash' } };
 
 let view, areaLayer, tableLayer;
+let customStructure = false;   // the designer typed a structure (or asked to): the notation box stays open
 export const last = { result: null };
 const $ = id => document.getElementById(id);
 
@@ -73,6 +75,13 @@ export function initField(mapView) {
   const set = (fn) => change('field', p => fn(p.field));
   const num = el => (el.value === '' ? null : Number(el.value));
   $('fTech').onchange = () => set(f => applyStandard(f, $('fTech').value));
+  // the structure: a toolkit preset of the technology, or «custom» that opens the notation box
+  $('fStructSel').onchange = () => {
+    const v = $('fStructSel').value;
+    if (v === '__custom') { customStructure = true; $('fStructBox').hidden = false; $('fStruct').focus(); return; }
+    customStructure = false;
+    set(f => { f.structure = v; applyPreset(f, presetFor(f.technology, v)); if (f.technology === 'agri-tracker') f.tiltDeg = 0; });
+  };
   $('fStruct').onchange = () => set(f => {
     f.structure = $('fStruct').value.trim();
     applyPreset(f, presetFor(f.technology, f.structure));
@@ -103,6 +112,13 @@ export function initField(mapView) {
 
   for (const topic of ['site', 'settings', 'field', 'modules', 'project', 'crs', 'terrain', 'infra']) on(topic, () => { syncInputs(); schedule(); });
   on('yield', () => renderResults(last.result));
+  on('project', () => { customStructure = false; });
+  // the rail: locked without a site, done once tables are laid out (figure: the DC capacity)
+  stepProvider('fields', () => {
+    if (!siteFrame()) return { state: 'locked', reason: t('gate.needSite') };
+    const r = last.result;
+    return r && r.tables ? { state: 'done', figure: `${fmt(r.dcMWp, 2)} MWp` } : { state: 'ready' };
+  });
   syncInputs();
   schedule();
 }
@@ -111,8 +127,12 @@ export function initField(mapView) {
 function syncInputs() {
   const f = store.project.field;
   $('fTech').value = f.technology;
-  const dl = $('structPresets');
-  dl.innerHTML = structurePresets(f.technology).map(s => `<option value="${escapeHtml(s.notation)}">${escapeHtml(s.label)}${s.verify ? ' (to verify)' : ''}</option>`).join('');
+  const presets = structurePresets(f.technology), match = presetFor(f.technology, f.structure);
+  $('structPresets').innerHTML = presets.map(s => `<option value="${escapeHtml(s.notation)}">${escapeHtml(s.label)}${s.verify ? ' (to verify)' : ''}</option>`).join('');
+  $('fStructSel').innerHTML = presets.map(s => `<option value="${escapeHtml(s.notation)}">${escapeHtml(s.label)} · ${escapeHtml(s.notation)}${s.verify ? ' (to verify)' : ''}</option>`).join('')
+    + `<option value="__custom">${escapeHtml(t('field.structureCustomOpt'))}</option>`;
+  $('fStructSel').value = match && !customStructure ? match.notation : '__custom';
+  $('fStructBox').hidden = !!match && !customStructure;
   if (document.activeElement !== $('fStruct')) $('fStruct').value = f.structure;
   structureHint(f.structure);
   // modules: planned first; a module of the project missing from the library is never replaced silently

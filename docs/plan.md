@@ -112,9 +112,15 @@ A1 → A2 → A3 → A4 → B1 → B2 → A5 → B3 → C1 … Phase D runs alon
 
 User tests raised two problems: the Terrain panel is not understood (what it does, when to use it) and the drawing
 tools are not intuitive. `docs/audit/2026-10-02-frontend-audit.md` holds the audit (bugs, workflow, WCAG) and the
-questions to answer before the refactor; `docs/knowledge.md` the knowledge base of the app, with the Geoportale
-(`UBS-IT/custom-AGOL-web-map`) as the reference for the UI patterns. Phase 2 (proposal and prototype) starts once
-the questions are answered.
+questions answered by the user; `docs/knowledge.md` the knowledge base of the app, with the Geoportale
+(`UBS-IT/custom-AGOL-web-map`) as the reference for the UI patterns.
+
+Phase 2 done 2026-10-02 (to be checked in a real browser): stepper rail (1 Site · 2 Terrain · 3 Layout · 4 Infra ·
+5 Outputs, states and gates from the panels), Terrain as step 2 with one primary action, the structure it applies to
+and a stale flag, 2D / 3D switch on the map, drawing in two steps as in the Geoportale with undo / redo and toasts
+with *Undo*, structure presets with a custom escape and the advanced options folded, contrast and focus fixes.
+Still open from the audit (§9): `i` help windows per step, errors shown at the control instead of a toast, keyboard
+drawing, one name for the import entry points, station buttons disabled with their reason.
 
 ## Open questions
 

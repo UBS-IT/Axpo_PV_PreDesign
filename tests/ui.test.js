@@ -6,7 +6,9 @@ import { loadCatalog } from '../app/js/catalog.js';
 import { applyI18n } from '../app/js/i18n.js';
 import { store, defaultProject, replaceProject, change } from '../app/js/state.js';
 import { loadCountries } from '../app/js/crs.js';
-import { initAreas } from '../app/js/areas.js';
+import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/areas.js';
+import { stepState, refreshRail } from '../app/js/ui/rail.js';
+import { structurePresets } from '../app/js/catalog.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
 import { initField, last } from '../app/js/field.js';
@@ -49,7 +51,8 @@ const html = await (await fetch('../app/index.html')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const box = document.createElement('div');
 box.style.display = 'none';
-box.append(doc.getElementById('top'), doc.getElementById('side'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'));
+box.append(doc.getElementById('top'), doc.getElementById('side'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
+  doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
 document.body.append(box);
@@ -80,6 +83,78 @@ await test('panels start: areas, terrain, modules, fields, output', async () => 
   return text('fPitchHint');
 });
 
+await test('stepper: states from the panels, gate of a locked step with its link', async () => {
+  const st = Object.fromEntries(['areas', 'terrain', 'fields', 'infra', 'output'].map(k => [k, stepState(k)]));
+  assert(st.areas.state === 'done' && /ha$/.test(st.areas.figure), `site drawn: ${JSON.stringify(st.areas)}`);
+  assert(st.terrain.state === 'optional' && st.fields.state === 'ready' && st.infra.state === 'ready', JSON.stringify(st));
+  assert(st.output.state === 'locked' && /3 · Layout/.test(st.output.reason), 'outputs wait for the layout: ' + JSON.stringify(st.output));
+  refreshRail();
+  const gate = document.querySelector('.step[data-step="output"] > .stepgate');
+  assert(gate && /Layout/.test(gate.textContent) && gate.querySelector('[data-goto="fields"]'), 'gate with a link to 3 · Layout');
+  assert(!document.querySelector('.step[data-step="fields"] > .stepgate'), 'no gate on an open step');
+  // without a site every step but the first is locked
+  const feats = store.project.features;
+  change('site', q => { q.features = []; });
+  await wait(250);
+  const locked = ['terrain', 'fields', 'infra', 'output'].map(k => stepState(k).state);
+  assert(stepState('areas').state === 'ready' && locked.every(x => x === 'locked'), `no site: ${locked}`);
+  change('site', q => { q.features = feats; });
+  await wait(250);
+  return `${st.areas.figure} buildable · outputs: ${st.output.reason}`;
+});
+
+await test('drawing in two steps: category chips, tools allowed by the category, defaults, undo / redo of a removal', async () => {
+  const chips = document.querySelectorAll('#drawCats [role=radio]');
+  assert(chips.length === 10 && document.querySelector('#drawCats [aria-checked="true"]').dataset.dcat === 'gross', 'one chip per category, gross first');
+  const tool = id => document.querySelector(`#drawTools [data-dtool="${id}"]`);
+  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled, 'a gross area takes polygons only');
+  assert(/polygons|points/.test(tool('point').title), 'the disabled card says why: ' + tool('point').title);
+  assert(document.getElementById('drawAttrs').hidden, 'no defaults for the gross area');
+  selectDrawCat('exclusion');
+  assert(['point', 'polyline', 'polygon', 'rectangle'].every(k => !tool(k).disabled), 'exclusions take every geometry');
+  const type = document.querySelector('#drawAttrs [data-dattr="type"]'), buf = document.querySelector('#drawAttrs [data-dattr="buffer"]');
+  assert(type && buf && !document.getElementById('drawAttrs').hidden, 'type and buffer defaults for exclusions');
+  assert(/Pick a category/.test(text('drawStatus')), 'status at rest: ' + text('drawStatus'));
+  assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
+  // «Draw here» on a card takes the category
+  document.querySelector('#areaCats .drawbtn[data-dsel="obstacle"]').click();
+  assert(document.querySelector('#drawCats [aria-checked="true"]').dataset.dcat === 'obstacle' && !tool('point').disabled, 'obstacle chosen from its card');
+  assert(!document.querySelector('#areaCats .drawbtn[data-tool]'), 'no drawing buttons left on the cards');
+  // remove the site: a message with Undo instead of a confirmation; Undo brings it back where it was
+  document.querySelector('#areaCats .it[data-id="g"] [data-del]').click();
+  await wait(250);
+  assert(store.project.features.length === 0 && stepState('areas').state === 'ready', 'site removed, step back to ready');
+  const tb = document.querySelector('#toast .toast.action .tact');
+  assert(tb && tb.textContent === 'Undo' && /removed/.test(document.querySelector('#toast .toast.action').textContent), 'toast with Undo');
+  tb.click();
+  await wait(250);
+  assert(store.project.features.length === 1 && store.project.features[0].id === 'g', 'site back');
+  assert(historySize().undo === 2 && !document.getElementById('drawUndo').disabled, 'two steps in the history');
+  assert(undo() && store.project.features.length === 0 && redo() && store.project.features.length === 1, 'undo / redo');
+  assert(/Redone/.test(text('drawStatus')), 'status says: ' + text('drawStatus'));
+  selectDrawCat('gross');
+  await wait(300);
+  return `${chips.length} chips · ${historySize().undo} undo steps`;
+});
+
+await test('layout: structure chosen from the toolkit presets, custom notation on request', async () => {
+  const sel = document.getElementById('fStructSel'), box = document.getElementById('fStructBox');
+  const presets = structurePresets('ground-fixed');
+  assert(sel.value === '3V9' && sel.options.length === presets.length + 1 && sel.options[sel.options.length - 1].value === '__custom', `options ${sel.options.length}`);
+  assert(box.hidden, 'notation box hidden for a preset');
+  sel.value = '__custom'; sel.dispatchEvent(new Event('change'));
+  assert(!box.hidden, 'notation box shown');
+  const inp = document.getElementById('fStruct');
+  inp.value = '4V7'; inp.dispatchEvent(new Event('change'));
+  await wait(400);
+  assert(store.project.field.structure === '4V7' && sel.value === '__custom' && /4 × 7 modules/.test(text('fStructHint')), 'custom structure: ' + text('fStructHint'));
+  sel.value = '3V9'; sel.dispatchEvent(new Event('change'));
+  await wait(400);
+  assert(store.project.field.structure === '3V9' && box.hidden, 'back to the preset');
+  assert(document.getElementById('fAdv') && document.getElementById('fAdv').contains(document.getElementById('fTarget')), 'target and gaps under Advanced');
+  return `${presets.length} presets + custom`;
+});
+
 // the quick predesign dialog: open it, check what it proposes, run it
 async function quickDialog(set = () => {}) {
   document.getElementById('btnQuick').click();
@@ -107,7 +182,9 @@ await test('quick predesign, fixed: 3V9, Italian minimum pitch, optimised positi
   await wait(300);
   assert(/1,600 m/.test(text('infFenceInfo')) && /4.0 m/.test(text('infFenceInfo')), 'fence panel: ' + text('infFenceInfo'));
   assert(/Suggested without/.test(text('infRoadInfo')), 'road panel: ' + text('infRoadInfo'));
-  return `${r.tables} tables, ${r.dcMWp.toFixed(2)} MWp, offsets ${f.rowOffset} / ${f.columnOffset}, no perimeter road`;
+  const st = ['fields', 'infra', 'output'].map(k => stepState(k));
+  assert(st[0].state === 'done' && /MWp$/.test(st[0].figure) && st[1].state === 'done' && /m$/.test(st[1].figure) && st[2].state === 'ready', 'rail after the layout: ' + JSON.stringify(st));
+  return `${r.tables} tables, ${r.dcMWp.toFixed(2)} MWp, offsets ${f.rowOffset} / ${f.columnOffset}, no perimeter road · rail ${st[0].figure}, fence ${st[1].figure}`;
 });
 
 await test('fields: 3V9 at the Italian minimum pitch fills the site', async () => {
@@ -122,13 +199,17 @@ await test('fields: 3V9 at the Italian minimum pitch fills the site', async () =
 
 await test('terrain: DTM loaded, slope map drawn, 3V cut (10 %), tracker kept (15 %)', async () => {
   const file = new File([await (await fetch('./fixtures/it_dtm_plane.tif')).blob()], 'it_dtm_plane.tif');
+  change('terrain', q => { q.terrain.cellSize = 10; });
   const g = gridForSite(10);
   const r = await sampleDtm(file, g.frame, g.def);
   await useGrid({ id: 'ui', lon0: g.frame.lon0, lat0: g.frame.lat0, ...g.def, source: 'dtm', name: file.name, loadedAt: new Date().toISOString(), zmin: 100, zmax: 220, missing: 0 }, r.z, { persist: false });
   await wait(800);
   const slopes = view.map.layers.find(l => l.title === 'Slopes');
   assert(slopes && slopes.graphics.length >= 2, `slope layer graphics: ${slopes && slopes.graphics.length}`);
-  assert(/Fixed 3V/.test(text('terRule')), 'rule shown: ' + text('terRule'));
+  assert(/Fixed 3V/.test(text('terRule')) && /Ground-mounted, fixed/.test(text('terRule')), 'rule shown with its technology: ' + text('terRule'));
+  assert(text('terPill') === 'loaded' && document.getElementById('terTech').value === 'ground-fixed' && /again/.test(text('terEsri')), 'panel: loaded, technology mirrored, «analyse again»');
+  const ts = stepState('terrain');
+  assert(ts.state === 'done' && /ha cut$/.test(ts.figure), 'rail: ' + JSON.stringify(ts));
   assert(/over the slope limit/.test(text('warns')), 'field warning: ' + text('warns'));
   assert(!last.result || last.result.tables === 0, 'no table on a 12 % slope for 3V');
   document.getElementById('fTech').value = 'agri-tracker';

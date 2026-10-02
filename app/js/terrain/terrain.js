@@ -1,7 +1,8 @@
-// Step 0 · Terrain (optional). The terrain is sampled on a grid in the local metric frame of the site, from Esri World
+// Step 2 · Terrain (optional). The terrain is sampled on a grid in the local metric frame of the site, from Esri World
 // Elevation or from a DTM / DSM of the user (GeoTIFF). From the grid come the slope map (classes in percent) and,
 // with the slope limit of the chosen structure (catalog slopeLimits: fixed 3V 10 % N-S and E-W, tracker 1V 15 % in
-// every direction), the areas cut from the buildable area. No terrain, no cut: the step is optional.
+// every direction), the areas cut from the buildable area. No terrain, no cut: the step is optional. It needs the
+// site (1 · Site) and the structure of 3 · Layout, which can also be chosen here.
 import { getSdk } from '../sdk.js';
 import { store, change, on, emit, uid } from '../state.js';
 import { t, tn, fmt } from '../i18n.js';
@@ -14,6 +15,9 @@ import { candidatesForProjected, crsLabel, looksProjected } from '../crs.js';
 import { projectPointToWgs84 } from '../geo/convert.js';
 import { chooseCrs } from '../ui/crsdialog.js';
 import { toast } from '../ui/toast.js';
+import { confirmDialog } from '../ui/dialog.js';
+import { stepProvider } from '../ui/rail.js';
+import { applyStandard } from '../field.js';
 import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
 import { openGeoTiff } from './dtm.js';
@@ -256,27 +260,45 @@ function drawMap() {
   layer.addMany(out);
 }
 
+// The grid no longer matches the site (it grew beyond it) or the grid cell chosen: the terrain is to be loaded again
+export function terrainStale() {
+  const m = store.project.terrain.grid;
+  if (!m || !terrainData.z || terrainData.meta?.id !== m.id) return false;
+  if (!coversSite()) return true;
+  const g = gridForSite();
+  return !!g && Math.abs(g.def.cell - m.cell) > 1e-6;
+}
+
 // ── panel ──
-function status(text) { const el = $('terStatus'); if (el) { el.textContent = text; el.hidden = !text; } }
+// the status line while a terrain loads; the two source buttons wait in the meantime
+function status(text) {
+  const el = $('terStatus');
+  if (el) { el.textContent = text; el.hidden = !text; el.setAttribute('aria-busy', text ? 'true' : 'false'); }
+  for (const id of ['terEsri', 'terDtm']) { const b = $(id); if (b) b.disabled = !!text; }
+}
 function render() {
   if (!$('terInfo')) return;
   const P = store.project, m = P.terrain.grid, have = !!(m && terrainData.z && terrainData.meta?.id === m.id);
+  const stale = have && terrainStale();
   $('terCell').value = P.terrain.cellSize;
   $('terShow').checked = !!P.terrain.showSlope;
   $('terApply').checked = !!P.terrain.applySlopeLimit;
   $('terMinPatch').value = P.terrain.minPatch;
+  $('terTech').value = P.field.technology;
   $('terClear').hidden = !m;
-  $('terPill').textContent = t(have ? 'terrain.pillOn' : m ? 'terrain.pillMissing' : 'terrain.pillOff');
-  $('terPill').className = 'pill' + (have ? ' ok' : '');
+  $('terEsri').textContent = t(m ? 'terrain.esriAgain' : 'terrain.esriBtn');
+  $('terPill').textContent = t(stale ? 'terrain.pillStale' : have ? 'terrain.pillOn' : m ? 'terrain.pillMissing' : 'terrain.pillOff');
+  $('terPill').className = 'pill' + (have && !stale ? ' ok' : '');
   $('terInfo').innerHTML = m ? `<div class="hint">${esc(t('terrain.info', { name: m.name, date: m.loadedAt.slice(0, 10), cells: fmt(m.nx * m.ny),
     cell: fmt(m.cell, 2), zmin: fmt(m.zmin, 1), zmax: fmt(m.zmax, 1) }))}${m.epsg ? esc(' · ' + crsLabel(m.epsg) + ' (EPSG:' + m.epsg + ')') : ''}</div>`
     + (m.missing ? `<div class="warn">${esc(tn('terrain.missingCells', m.missing))}</div>` : '')
+    + (stale ? `<div class="warn">${esc(t('terrain.stale'))}</div>` : '')
     + (!have ? `<div class="warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
   // legend
   $('terLegend').innerHTML = SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('');
   // slope limit of the structure
   const rule = currentSlopeRule();
-  $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(P.field.structure)}</b>: ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
+  $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(P.field.structure)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
     : `<div class="warn">${esc(t('terrain.noteNoRule', { structure: P.field.structure }))}</div>`;
   const o = have ? overLimit() : null;
   $('terCut').innerHTML = o ? `<div class="hint">${esc(t('terrain.overArea', { ha: fmt(o.cells * terrainData.meta.cell ** 2 / 1e4, 2) }))}</div>` : '';
@@ -292,13 +314,26 @@ export function initTerrain(mapView) {
   $('terEsri').onclick = () => loadTerrain('esri');
   $('terDtm').onclick = () => input.click();
   input.onchange = () => { const f = input.files && input.files[0]; input.value = ''; if (f) loadTerrain('dtm', f); };
-  $('terClear').onclick = () => { if (confirm(t('terrain.clearConfirm'))) removeTerrain(); };
+  $('terClear').onclick = async () => {
+    if (await confirmDialog({ title: t('terrain.clear'), text: t('terrain.clearConfirm'), ok: t('terrain.clear'), danger: true })) removeTerrain();
+  };
+  // the structure decides the slope limit: chosen here as in 3 · Layout (same group standard applied)
+  $('terTech').onchange = () => change('field', p => applyStandard(p.field, $('terTech').value));
   $('terCell').onchange = () => change('terrain', p => { p.terrain.cellSize = Math.min(50, Math.max(1, Number($('terCell').value) || 5)); });
   $('terShow').onchange = () => change('terrain', p => { p.terrain.showSlope = $('terShow').checked; });
   $('terApply').onchange = () => change('terrain', p => { p.terrain.applySlopeLimit = $('terApply').checked; });
   $('terMinPatch').onchange = () => change('terrain', p => { p.terrain.minPatch = Math.max(0, Number($('terMinPatch').value) || 0); });
   for (const topic of ['terrain', 'field', 'site']) on(topic, render);
   on('project', () => { cache.clear(); restore(); });
+  // the rail: locked without a site, optional until a terrain is loaded, then done with what it cuts
+  stepProvider('terrain', () => {
+    if (!siteFrame()) return { state: 'locked', reason: t('gate.needSite') };
+    const m = store.project.terrain.grid;
+    if (!m) return { state: 'optional' };
+    if (terrainStale()) return { state: 'done', figure: t('terrain.figStale') };
+    const o = terrainData.z && terrainData.meta?.id === m.id && store.project.terrain.applySlopeLimit ? overLimit() : null;
+    return { state: 'done', figure: o && o.cells ? t('terrain.figCut', { ha: fmt(o.cells * m.cell ** 2 / 1e4, 1) }) : (m.source === 'esri' ? 'Esri' : 'DTM') };
+  });
   restore();
 }
 

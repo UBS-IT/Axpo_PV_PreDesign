@@ -28,76 +28,48 @@
 
 <div id="body">
   <nav id="rail" data-i18n-aria="rail.label">
-    <button type="button" data-step="terrain"><span class="n">0</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19l6.5-10 4 6 2.5-3.5L22 19z"/><path d="M6 13.5c2-.8 3.5-.8 5 0"/></svg>
-      <span class="lb" data-i18n="step.terrain"></span></button>
     <button type="button" data-step="areas"><span class="n">1</span><span class="badge" id="railAreas"></span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 5-2.5 11L6 20z"/><path d="M10 10l4 1-1 4-3.5-1z"/></svg>
-      <span class="lb" data-i18n="step.areas"></span></button>
-    <button type="button" data-step="fields"><span class="n">2</span>
+      <span class="lb" data-i18n="step.areas"></span><span class="fig"></span><span class="sr"></span></button>
+    <button type="button" data-step="terrain"><span class="n">2</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19l6.5-10 4 6 2.5-3.5L22 19z"/><path d="M6 13.5c2-.8 3.5-.8 5 0"/></svg>
+      <span class="lb" data-i18n="step.terrain"></span><span class="fig"></span><span class="sr"></span></button>
+    <button type="button" data-step="fields"><span class="n">3</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14l-2 4H3z"/><path d="M5 10h14l-2 4H3z"/><path d="M5 16h14l-2 4H3z"/></svg>
-      <span class="lb" data-i18n="step.fields"></span></button>
-    <button type="button" data-step="infra"><span class="n">3</span>
+      <span class="lb" data-i18n="step.fields"></span><span class="fig"></span><span class="sr"></span></button>
+    <button type="button" data-step="infra"><span class="n">4</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21L9.5 3M19 21L14.5 3"/><path d="M12 6v2M12 11v2.5M12 17v3"/></svg>
-      <span class="lb" data-i18n="step.infra.short"></span></button>
-    <button type="button" data-step="output"><span class="n">4</span>
+      <span class="lb" data-i18n="step.infra.short"></span><span class="fig"></span><span class="sr"></span></button>
+    <button type="button" data-step="output"><span class="n">5</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M12 10v7M9 14l3 3 3-3"/></svg>
-      <span class="lb" data-i18n="step.output"></span></button>
-    <button type="button" data-step="3d"><span class="n">4b</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>
-      <span class="lb" data-i18n="step.3d"></span></button>
-    <div class="sp"></div>
-    <button type="button" data-step="electrical" class="later">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L5 13.5h6L10 22l8.5-12H12.5z"/></svg>
-      <span class="lb" data-i18n="step.electrical"></span></button>
+      <span class="lb" data-i18n="step.output"></span><span class="fig"></span><span class="sr"></span></button>
   </nav>
 
   <aside id="side">
 
-    <!-- 0 · Terrain -->
-    <section class="step" data-step="terrain" hidden>
-      <header class="stephd"><span class="num">0</span><div><h2 data-i18n="step.terrain"></h2><p data-i18n="step.terrain.sub"></p></div></header>
-      <p class="hint" data-i18n="terrain.optional"></p>
-      <div class="card">
-        <div class="cardhd"><b data-i18n="terrain.model"></b><span class="pill" id="terPill"></span></div>
-        <div class="btns col">
-          <button type="button" class="btn" id="terEsri" data-i18n="terrain.esriBtn"></button>
-          <button type="button" class="btn" id="terDtm" data-i18n="terrain.dtmBtn"></button>
-        </div>
-        <p class="hint" data-i18n="terrain.esriHint"></p>
-        <label class="l" for="terCell" data-i18n="terrain.cell"></label>
-        <input id="terCell" type="number" min="1" max="50" step="1">
-        <p class="hint" data-i18n="terrain.cellHint"></p>
-        <div id="terStatus" class="hint" hidden></div>
-        <div id="terInfo"></div>
-        <div class="btns"><button type="button" class="linkbtn" id="terClear" data-i18n="terrain.clear" hidden></button></div>
-      </div>
-      <div class="card">
-        <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
-        <label class="chk"><input type="checkbox" id="terShow"> <span data-i18n="terrain.show"></span></label>
-        <div class="legend" id="terLegend"></div>
-      </div>
-      <div class="card">
-        <div class="cardhd"><b data-i18n="terrain.limit"></b></div>
-        <div id="terRule"></div>
-        <label class="chk"><input type="checkbox" id="terApply"> <span data-i18n="terrain.apply"></span></label>
-        <label class="l" for="terMinPatch" data-i18n="terrain.minPatch"></label>
-        <input id="terMinPatch" type="number" min="0" step="50">
-        <p class="hint" data-i18n="terrain.minPatchHint"></p>
-        <div id="terCut"></div>
-      </div>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="terrain.contours"></b><span class="pill" data-i18n="soon"></span></div>
-        <p class="hint" data-i18n="terrain.contoursHint"></p>
-      </div>
-    </section>
-
-    <!-- 1 · Areas -->
+    <!-- 1 · site -->
     <section class="step" data-step="areas" hidden>
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
       <div class="btns"><button type="button" class="btn primary" id="areasImport" data-i18n="areas.import"></button>
         <button type="button" class="btn" id="areasQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></div>
       <p class="hint" data-i18n="areas.importHint"></p>
+      <details class="sec" id="secDraw" open>
+        <summary><span class="ico" aria-hidden="true">✎</span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
+        <div class="bd">
+          <div class="pstep">
+            <div class="pstep-h"><span class="pnum" aria-hidden="true">1</span><div class="pstep-t"><b data-i18n="draw.what"></b><small data-i18n="draw.whatSub"></small></div></div>
+            <div class="chips" id="drawCats" role="radiogroup" data-i18n-aria="draw.what"></div>
+            <div class="attrs2" id="drawAttrs" hidden></div>
+          </div>
+          <div class="pstep">
+            <div class="pstep-h"><span class="pnum" aria-hidden="true">2</span><div class="pstep-t"><b data-i18n="draw.how"></b><small data-i18n="draw.howSub"></small></div>
+              <div class="acts"><button type="button" class="gact" id="drawUndo" data-i18n-title="draw.undo" data-i18n-aria="draw.undo" disabled>↶</button><button type="button" class="gact" id="drawRedo" data-i18n-title="draw.redo" data-i18n-aria="draw.redo" disabled>↷</button></div></div>
+            <div class="cards" id="drawTools"></div>
+            <div class="status" id="drawStatus" role="status"></div>
+          </div>
+          <div class="last" id="drawLast" hidden></div>
+        </div>
+      </details>
       <div id="areaCats"></div>
       <div class="card">
         <div class="cardhd"><b data-i18n="areas.netTitle"></b></div>
@@ -108,11 +80,125 @@
       </div>
     </section>
 
-    <!-- 2 · Fields -->
+    <!-- 2 · terrain -->
+    <section class="step" data-step="terrain" hidden>
+      <header class="stephd"><span class="num">2</span><div><h2 data-i18n="step.terrain"></h2><p data-i18n="step.terrain.sub"></p></div></header>
+      <p class="hint" data-i18n="terrain.intro"></p>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="terrain.model"></b><span class="pill" id="terPill"></span></div>
+        <div id="terInfo"></div>
+        <div class="btns col">
+          <button type="button" class="btn primary" id="terEsri" data-i18n="terrain.esriBtn"></button>
+          <button type="button" class="btn" id="terDtm" data-i18n="terrain.dtmBtn"></button>
+        </div>
+        <div id="terStatus" class="status" role="status" hidden></div>
+        <p class="hint" data-i18n="terrain.esriHint"></p>
+        <details class="adv">
+          <summary data-i18n="terrain.adv"></summary>
+          <label class="l" for="terCell" data-i18n="terrain.cell"></label>
+          <input id="terCell" type="number" min="1" max="50" step="1">
+          <p class="hint" data-i18n="terrain.cellHint"></p>
+          <label class="l" for="terMinPatch" data-i18n="terrain.minPatch"></label>
+          <input id="terMinPatch" type="number" min="0" step="50">
+          <p class="hint" data-i18n="terrain.minPatchHint"></p>
+        </details>
+        <div class="btns"><button type="button" class="linkbtn" id="terClear" data-i18n="terrain.clear" hidden></button></div>
+      </div>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="terrain.limit"></b></div>
+        <label class="l" for="terTech" data-i18n="terrain.tech"></label>
+        <select id="terTech">
+          <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
+          <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
+          <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
+        </select>
+        <p class="hint" data-i18n="terrain.techHint"></p>
+        <div id="terRule"></div>
+        <label class="chk"><input type="checkbox" id="terApply"> <span data-i18n="terrain.apply"></span></label>
+        <div id="terCut"></div>
+      </div>
+      <div class="card">
+        <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
+        <label class="chk"><input type="checkbox" id="terShow"> <span data-i18n="terrain.show"></span></label>
+        <div class="legend" id="terLegend"></div>
+      </div>
+    </section>
+
+    <!-- 3 · layout -->
     <section class="step" data-step="fields" hidden>
-      <header class="stephd"><span class="num">2</span><div><h2 data-i18n="step.fields"></h2><p data-i18n="step.fields.sub"></p></div></header>
+      <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.fields"></h2><p data-i18n="step.fields.sub"></p></div></header>
       <div class="btns"><button type="button" class="btn primary" id="fQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></div>
       <p class="hint" data-i18n="quick.fieldsHint"></p>
+
+      <details class="sec" id="secField" open>
+        <summary><span class="ico" aria-hidden="true">☀</span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
+        <div class="bd">
+          <label class="l" for="fTech" data-i18n="field.tech"></label>
+          <select id="fTech">
+            <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
+            <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
+            <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
+          </select>
+          <label class="l" for="fStructSel" data-i18n="field.structure"></label>
+          <select id="fStructSel"></select>
+          <div id="fStructBox" hidden>
+            <label class="l" for="fStruct" data-i18n="field.structureCustom"></label>
+            <input id="fStruct" type="text" list="structPresets" autocomplete="off">
+            <datalist id="structPresets"></datalist>
+          </div>
+          <div class="hint" id="fStructHint"></div>
+          <label class="l" for="fModule" data-i18n="field.module"></label>
+          <select id="fModule"></select>
+          <div id="fPeriodBox" hidden>
+            <label class="l" for="fPeriod" data-i18n="field.period"></label>
+            <select id="fPeriod"></select>
+            <div class="hint" data-i18n="field.periodHint"></div>
+          </div>
+          <div class="row2">
+            <div id="fTiltBox"><label class="l" for="fTilt" data-i18n="field.tilt"></label><input id="fTilt" type="number" min="0" max="60" step="0.5"></div>
+            <div><label class="l" for="fAz" data-i18n="field.azimuth"></label><input id="fAz" type="number" min="0" max="360" step="1"></div>
+          </div>
+          <div class="hint" data-i18n="field.azimuthHint"></div>
+          <label class="l" for="fPitch" data-i18n="field.pitch"></label>
+          <input id="fPitch" type="number" min="0.5" step="0.01">
+          <div class="hint" id="fPitchHint"></div>
+          <div class="btns"><button type="button" class="btn" id="fOptimise" data-i18n="field.optimise"></button></div>
+          <div class="hint" id="fOptHint"></div>
+          <details class="adv" id="fAdv">
+            <summary data-i18n="field.adv"></summary>
+            <div class="row2">
+              <div><label class="l" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
+              <div><label class="l" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
+            </div>
+            <label class="chk"><input type="checkbox" id="fTracks"> <span data-i18n="field.tracks"></span></label>
+            <div class="row3">
+              <div><label class="l" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
+              <div><label class="l" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
+              <div><label class="l" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
+            </div>
+            <label class="chk"><input type="checkbox" id="fHalf"> <span data-i18n="field.half"></span></label>
+            <div class="hint" id="fHalfHint"></div>
+            <label class="l" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
+            <input id="fTarget" type="number" min="0" step="0.1">
+            <label class="l" data-i18n="field.position"></label>
+            <div class="row2">
+              <div><label class="l" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
+              <div><label class="l" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="sec" id="secResults" open>
+        <summary><span class="ico" aria-hidden="true">📊</span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
+        <div class="bd">
+          <div class="kpis" id="kpis"></div>
+          <label class="l" for="specYield" data-i18n="res.specYield"></label>
+          <input id="specYield" type="number" min="0" step="1">
+          <div class="hint" data-i18n="res.specYieldHint"></div>
+          <div class="warns" id="warns"></div>
+        </div>
+      </details>
 
       <details class="sec" id="secModules">
         <summary><span class="ico" aria-hidden="true">▦</span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
@@ -142,74 +228,11 @@
           <div class="hint" id="modHint" data-i18n="mod.hint"></div>
         </div>
       </details>
-
-      <details class="sec" id="secField" open>
-        <summary><span class="ico" aria-hidden="true">☀</span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
-        <div class="bd">
-          <label class="l" for="fTech" data-i18n="field.tech"></label>
-          <select id="fTech">
-            <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
-            <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
-            <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
-          </select>
-          <label class="l" for="fStruct" data-i18n="field.structure"></label>
-          <input id="fStruct" type="text" list="structPresets" autocomplete="off">
-          <datalist id="structPresets"></datalist>
-          <div class="hint" id="fStructHint"></div>
-          <label class="l" for="fModule" data-i18n="field.module"></label>
-          <select id="fModule"></select>
-          <div id="fPeriodBox" hidden>
-            <label class="l" for="fPeriod" data-i18n="field.period"></label>
-            <select id="fPeriod"></select>
-            <div class="hint" data-i18n="field.periodHint"></div>
-          </div>
-          <div class="row2">
-            <div id="fTiltBox"><label class="l" for="fTilt" data-i18n="field.tilt"></label><input id="fTilt" type="number" min="0" max="60" step="0.5"></div>
-            <div><label class="l" for="fAz" data-i18n="field.azimuth"></label><input id="fAz" type="number" min="0" max="360" step="1"></div>
-          </div>
-          <div class="hint" data-i18n="field.azimuthHint"></div>
-          <label class="l" for="fPitch" data-i18n="field.pitch"></label>
-          <input id="fPitch" type="number" min="0.5" step="0.01">
-          <div class="hint" id="fPitchHint"></div>
-          <div class="row2">
-            <div><label class="l" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
-            <div><label class="l" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
-          </div>
-          <label class="chk"><input type="checkbox" id="fTracks"> <span data-i18n="field.tracks"></span></label>
-          <div class="row3">
-            <div><label class="l" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
-            <div><label class="l" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
-            <div><label class="l" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
-          </div>
-          <label class="chk"><input type="checkbox" id="fHalf"> <span data-i18n="field.half"></span></label>
-          <div class="hint" id="fHalfHint"></div>
-          <label class="l" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
-          <input id="fTarget" type="number" min="0" step="0.1">
-          <label class="l" data-i18n="field.position"></label>
-          <div class="row2">
-            <div><label class="l" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
-            <div><label class="l" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
-          </div>
-          <div class="btns"><button type="button" class="btn" id="fOptimise" data-i18n="field.optimise"></button></div>
-          <div class="hint" id="fOptHint"></div>
-        </div>
-      </details>
-
-      <details class="sec" id="secResults" open>
-        <summary><span class="ico" aria-hidden="true">📊</span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
-        <div class="bd">
-          <div class="kpis" id="kpis"></div>
-          <label class="l" for="specYield" data-i18n="res.specYield"></label>
-          <input id="specYield" type="number" min="0" step="1">
-          <div class="hint" data-i18n="res.specYieldHint"></div>
-          <div class="warns" id="warns"></div>
-        </div>
-      </details>
     </section>
 
-    <!-- 3 · Infrastructure -->
+    <!-- 4 · infra -->
     <section class="step" data-step="infra" hidden>
-      <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.infra"></h2><p data-i18n="step.infra.sub"></p></div></header>
+      <header class="stephd"><span class="num">4</span><div><h2 data-i18n="step.infra"></h2><p data-i18n="step.infra.sub"></p></div></header>
       <p class="hint" data-i18n="infra.intro"></p>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.fence"></b></div>
@@ -256,15 +279,11 @@
         <div class="list" id="infStations" data-i18n-empty="infra.stationsNone"></div>
         <p class="hint" id="infStationsHint"></p>
       </div>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="infra.electrical"></b><span class="pill" data-i18n="later"></span></div>
-        <p class="hint" data-i18n="infra.electricalHint"></p>
-      </div>
     </section>
 
-    <!-- 4 · Output -->
+    <!-- 5 · output -->
     <section class="step" data-step="output" hidden>
-      <header class="stephd"><span class="num">4</span><div><h2 data-i18n="step.output"></h2><p data-i18n="step.output.sub"></p></div></header>
+      <header class="stephd"><span class="num">5</span><div><h2 data-i18n="step.output"></h2><p data-i18n="step.output.sub"></p></div></header>
       <div class="card">
         <div class="cardhd"><b data-i18n="out.crsTitle"></b></div>
         <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
@@ -283,7 +302,8 @@
         <div class="cardhd"><b data-i18n="out.engTitle"></b></div>
         <div class="btns col">
           <button type="button" class="btn" id="outShp" data-i18n="out.shp"></button>
-          <button type="button" class="btn" id="outGpkg" data-i18n="out.gpkg"></button>          <button type="button" class="btn" id="outDxf" data-i18n="out.dxf"></button>
+          <button type="button" class="btn" id="outGpkg" data-i18n="out.gpkg"></button>
+          <button type="button" class="btn" id="outDxf" data-i18n="out.dxf"></button>
           <button type="button" class="btn" id="outBoq" data-i18n="out.boq"></button>
         </div>
         <p class="hint" data-i18n="out.engHint"></p>
@@ -293,27 +313,22 @@
         <div class="btns col"><button type="button" class="btn primary" id="outReport" data-i18n="out.reportBtn"></button></div>
         <p class="hint" data-i18n="out.reportHint"></p>
       </div>
-    </section>
-
-    <!-- 4b · 3D -->
-    <section class="step" data-step="3d" hidden>
-      <header class="stephd"><span class="num">4b</span><div><h2 data-i18n="step.3d"></h2><p data-i18n="step.3d.sub"></p></div></header>
-      <div id="d3Panel"></div>
-    </section>
-
-    <!-- Electrical: kept open -->
-    <section class="step" data-step="electrical" hidden>
-      <header class="stephd"><span class="num">⚡</span><div><h2 data-i18n="step.electrical"></h2><p data-i18n="step.electrical.sub"></p></div></header>
-      <div class="card soon">
-        <div class="cardhd"><b data-i18n="elec.title"></b><span class="pill" data-i18n="later"></span></div>
-        <p class="hint" data-i18n="elec.hint"></p>
-      </div>
+      <p class="hint" data-i18n="elec.hint"></p>
     </section>
 
   </aside>
   <div id="mapStack">
     <div id="view"><div id="banner" hidden></div></div>
     <div id="view3d"></div>
+    <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
+    <div class="mapchips" role="group" data-i18n-aria="map.mode">
+      <button type="button" data-mode="2d" aria-pressed="true">2D</button>
+      <button type="button" data-mode="3d" aria-pressed="false">3D</button>
+    </div>
+    <aside id="d3Card" class="mapcard">
+      <div class="mapcard-h"><b data-i18n="d3.title"></b><button type="button" class="x" id="d3CardMin" data-i18n-title="d3.minimise" data-i18n-aria="d3.minimise">▾</button></div>
+      <div class="mapcard-b"><div id="d3Panel"></div></div>
+    </aside>
   </div>
 </div>
 

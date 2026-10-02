@@ -62,11 +62,15 @@ standalone e può non contenere la cartella sorella; in tal caso non bloccare il
   (report), sql.js 1.13.0 (SQLite in WebAssembly, con il suo `.wasm`: GeoPackage). Excel (.xlsx/.xlsm) letto da `app/js/io/xlsx.js` (JSZip + DOMParser, niente SheetJS: la 0.18.5 di npm ha
   falle note), CSV da `app/js/io/csv.js` (RFC 4180). Solo l'SDK ArcGIS arriva da CDN (js.arcgis.com).
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
-- `app/` l'applicazione (step nel rail: `terrain/` step 0 facoltativo, `areas.js` step 1, `field.js` step 2, `infra.js`
-  step 3, `output.js` step 4 con `export/` per Engineering: Shapefile, GeoPackage, DXF R12, computo Excel nel sistema nazionale
+- `app/` l'applicazione (step nel rail, uno stepper con stati locked / ready / optional / done forniti dai pannelli
+  con `stepProvider` di `ui/rail.js`: `areas.js` 1 · Site (disegno a due passi come il *Disegna* del Geoportale, undo/redo),
+  `terrain/` 2 · Terrain facoltativo, `field.js` 3 · Layout, `infra.js` 4 · Infrastructure, `output.js` 5 · Outputs con
+  `export/` per Engineering: Shapefile, GeoPackage, DXF R12, computo Excel nel sistema nazionale
   (niente .gdb: deciso dall'utente il 2026-09-28),
-  `.prj` da `app/catalog/prj.json` generato da `scripts/make_prj.py`; `quick.js` predesign rapido; `view3d/` step 4b 3D: SceneView sulla stessa mappa, altezze dal toolkit del paese,
-  sole NOAA verificato con pvlib, glTF) ·
+  `.prj` da `app/catalog/prj.json` generato da `scripts/make_prj.py`; `quick.js` predesign rapido; `view3d/` 3D come
+  interruttore 2D/3D sulla mappa, non uno step (deciso il 2026-10-02): SceneView sulla stessa mappa, altezze dal toolkit del paese,
+  sole NOAA verificato con pvlib, glTF). Niente `confirm()` nativi: `ui/dialog.js` per le conferme, toast con «Undo» per
+  le rimozioni. Decisioni UX del 2026-10-02 in `docs/decisions.md` e `docs/audit/` ·
   `app/catalog/` toolkit, contorni dei paesi, Länder tedeschi in zona 33 · `tests/` test nel browser ·
   `docs/` piano, decisioni, `toolkit/` archivio per paese · `scripts/` server locale e generatore dei fixture ·
   `tools/` strumenti di sviluppo (test headless, lettore DWG), non parte dell'app. Un eventuale `backups/` è
@@ -79,7 +83,7 @@ standalone e può non contenere la cartella sorella; in tal caso non bloccare il
 - Server locale: voce `pv-predesign` in `.claude/launch.json` (porta 8140, serve la radice del progetto).
   App: `http://localhost:8140/app/` · Test: `/tests/` (motore, mezze tabelle), `/tests/modules.html` (roadmap,
   catalogo per paese, moduli nel progetto), `/tests/sdk.html` (SDK), `/tests/import.html` (import, sistemi di
-  riferimento, area netta, round trip), `/tests/terrain.html` (step 0), `/tests/infra.html` (step 3), `/tests/view3d.html` (3D), `/tests/scene3d.html` (SceneView vera, WebGL software in headless), `/tests/ui.html` (pannelli veri su
+  riferimento, area netta, round trip), `/tests/terrain.html` (step 2), `/tests/infra.html` (step 4), `/tests/view3d.html` (3D), `/tests/scene3d.html` (SceneView vera, WebGL software in headless), `/tests/ui.html` (pannelli veri su
   una vista finta). Devono essere tutti verdi prima di un commit.
 - Senza browser o con js.arcgis.com bloccato (sessione cloud): da `tools/headless`, eseguire
   `npm ci && npm run build && npm test`. Il runner esegue le pagine di test in Chromium headless con l'SDK npm;

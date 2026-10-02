@@ -30,16 +30,23 @@ Everything electrical is deliberately left open (user survey, ~6 months).
 
 ```
 #top     project name · New Open Save Save as · Import… · ⚡ Quick predesign · EPSG badge · theme
-#rail    0 Terrain · 1 Areas · 2 Fields · 3 Infra · 4 Output · 4b 3D · (Electrical, placeholder)
+#rail    stepper 1 Site · 2 Terrain · 3 Layout · 4 Infra · 5 Outputs, each with a state from its panel
+         (locked / ready / optional / done + figure; a locked step opens with a gate and a link)
 #side    the panel of the active step (372 px), scrollable; clicking the active step again folds it
-#view    MapView (satellite without labels + opacity slider); #view3d SceneView shown in place of it in 4b
+#view    MapView (satellite without labels + opacity slider); #view3d SceneView in place of it behind the 2D / 3D
+         switch on the map (.mapchips); the 3D controls float in a card (#d3Card) over the scene
 #banner  one-line mode indicator over the map while drawing / placing / editing
 #toast   messages bottom right (ok / err / plain), 4 at most, 6–12 s
 ```
 
-Step switching: `ui/rail.js` (`showStep`, `onStep` listeners, last step remembered in `localStorage pvp.step`).
-Dialogs: `<dialog class="dlg">` built in JS (coordinate system `ui/crsdialog.js`, quick predesign `quick.js`);
-three native `confirm()` remain (new project, remove all of a category, remove terrain).
+Step switching: `ui/rail.js` (`showStep`, `onStep` listeners, `stepProvider(step, fn)` registered by each panel,
+`startStep()` = last step visited unless locked, else the first still to do; `localStorage pvp.step`).
+Dialogs: `<dialog class="dlg">` built in JS (coordinate system `ui/crsdialog.js`, quick predesign `quick.js`,
+confirmations `ui/dialog.js confirmDialog`); no native `confirm()`. Removals in 1 · Site show a toast with *Undo*
+(`ui/toast.js` `opts.action`); `areas.js` keeps an undo / redo history of the objects (40 steps, Ctrl+Z / Ctrl+Y).
+Drawing in 1 · Site: ① category chips (`#drawCats`, `role=radiogroup`) with the defaults of the next drawings,
+② tool cards (`#drawTools`, Point / Line / Area / Rectangle, `aria-pressed`, disabled with the reason), status line
+(`#drawStatus`, `role=status`), *Last drawing* box (`#drawLast`); the armed tool stays armed until Esc.
 
 ## 4. Data model (`state.js`)
 
@@ -75,27 +82,29 @@ Outside the project: the module library (`localStorage pvp.modules.v1`, `modules
 Topics: `site, settings, field, modules, project, crs, terrain, infra, layout, yield, name, view3d, views3d`.
 
 ```
-features (1 · Areas) ──► siteFrame() local TM frame ──► computeArea(frame)
+features (1 · Site) ──► siteFrame() local TM frame ──► computeArea(frame)
                                                           base = net given | gross − setback
                                                           pre  = base − cuts of the Areas categories (buffers)
                                                           buildable = pre − extraCuts  ◄── terrain cut (slope limit of field.structure)
                                                                                       ◄── infra cuts (fence band, drawn roads, stations)
-field (2 · Fields) + module + pitch ──► fillRows(buildable rings) ──► tables ──► KPIs, warnings, roads from corridors
+field (3 · Layout) + module + pitch ──► fillRows(buildable rings) ──► tables ──► KPIs, warnings, roads from corridors
                                                                             └──► emit('layout') ──► infra panel, 3D, exports, report
-infra (3) ──► layoutInfra(frame, pre, base): lots, fences (closing of grouped lots), clearance band, perimeter road,
+infra (4) ──► layoutInfra(frame, pre, base): lots, fences (closing of grouped lots), clearance band, perimeter road,
               gates at access points, stations (snap to fence) ──► feeds back into computeArea as extraCuts
-output (4): exportModel() projects everything to project.crs.wkid; GeoJSON/KMZ in WGS 84; report from last.result
-3D (4b): model3d() = tables/trackers at toolkit heights on the ground (step 0 grid or World Elevation) + infra meshes
+output (5): exportModel() projects everything to project.crs.wkid; GeoJSON/KMZ in WGS 84; report from last.result
+3D (map switch): model3d() = tables/trackers at toolkit heights on the ground (2 · Terrain grid or World Elevation) + infra meshes
 ```
 
 Hidden couplings worth knowing:
-- The **terrain cut depends on step 2** (`terrain.js currentSlopeRule()` reads `field.structure`): 3V fixed 10 %
-  N-S/E-W, 2V/AgriPV fixed/tracker 15 % any direction. With the default project it silently uses 3V9.
+- The **terrain cut depends on 3 · Layout** (`terrain.js currentSlopeRule()` reads `field.structure`): 3V fixed 10 %
+  N-S/E-W, 2V/AgriPV fixed/tracker 15 % any direction. The Terrain panel shows and can change the technology
+  (`applyStandard`, the same as the Layout select). `terrainStale()` flags a grid that no longer matches the site or
+  the cell size.
 - The **terrain grid is sampled over gross + net areas** (`gridForSite`): no site, no grid. If the site grows beyond
   the grid, the cut is suspended with a note (`coversSite`).
 - Every `field`, `infra`, `terrain` change regenerates the whole layout (`field.js schedule()`, 120 ms debounce).
 - The quick predesign (`quick.js runQuick`) writes `field`, may load Esri terrain, sets `infra.perimeterRoad`
-  (true, then false if the plant is over the template size), optimises the grid position and jumps to 2 · Fields.
+  (only when the designer has not decided: `null`), optimises the grid position and jumps to 3 · Layout.
 - `crsState` (`areas.js`) = country of the site (`crs.js countryAt`) → toolkit values of that country
   (`catalog.countryValue`), proposed export system, alerts. Values are never borrowed between countries.
 
@@ -124,13 +133,15 @@ Drawing uses two `SketchViewModel`s (areas, roads) with snapping on; one map mod
 |---|---|
 | Steps and panels markup | `app/index.html` |
 | All UI text | `app/js/i18n.js` |
-| Step 1 areas, import, drawing, buildable area, CRS of the site | `app/js/areas.js`, `categories.js`, `io/importers.js`, `crs.js`, `ui/crsdialog.js` |
-| Step 0 terrain | `app/js/terrain/terrain.js` (UI + analysis), `slope.js` (pure), `dtm.js` (GeoTIFF), `store.js` |
-| Step 2 fields, engine | `app/js/field.js`, `layout/rows.js` (pure engine), `layout/structures.js`, `modules.js` |
+| Stepper, step states, gates | `app/js/ui/rail.js` (`stepProvider`, `stepState`, `startStep`, `refreshRail`) |
+| Step 1 site, import, drawing, undo / redo, buildable area, CRS of the site | `app/js/areas.js`, `categories.js`, `io/importers.js`, `crs.js`, `ui/crsdialog.js` |
+| Step 2 terrain | `app/js/terrain/terrain.js` (UI + analysis), `slope.js` (pure), `dtm.js` (GeoTIFF), `store.js` |
+| Step 3 layout, engine | `app/js/field.js`, `layout/rows.js` (pure engine), `layout/structures.js`, `modules.js` |
 | Quick predesign | `app/js/quick.js` |
-| Step 3 infrastructure | `app/js/infra.js` |
-| Step 4 outputs | `app/js/output.js`, `report.js`, `export/{model,shp,gpkg,dxf,boq}.js` |
-| Step 4b 3D | `app/js/view3d/{sun,geometry,model,scene,glb}.js` |
+| Step 4 infrastructure | `app/js/infra.js` |
+| Step 5 outputs | `app/js/output.js`, `report.js`, `export/{model,shp,gpkg,dxf,boq}.js` |
+| 2D / 3D switch, scene | `app/js/view3d/{sun,geometry,model,scene,glb}.js` (`set3d`) |
+| Confirmations, toasts with Undo | `app/js/ui/dialog.js`, `ui/toast.js` |
 | Project files, state | `app/js/io/projectfile.js`, `state.js` |
 | Tests | `tests/*.test.js`, runner `tools/headless/run.mjs`, screenshots of the 3D scene `snap3d.mjs` |
 
@@ -148,4 +159,5 @@ verification is manual against the live portal. Not shared: parcel search (Zorna
 
 Pilot against a real engineering layout (A4) not done; piles per structure and Engineering's DXF layer names
 unknown; contour lines, DWG import, portal import, several fields per site, table-by-table edits not done; the
-UX audit of 2026-10-02 is in `docs/audit/2026-10-02-frontend-audit.md`.
+UX audit of 2026-10-02 is in `docs/audit/2026-10-02-frontend-audit.md` (its §9 says what the refactor of the same
+day fixed and what stays open: `i` help windows, inline errors at the controls, keyboard drawing).

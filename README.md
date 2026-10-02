@@ -6,8 +6,9 @@ Geoportale (`.axpo`), but does not depend on it. The predesign is for prospectio
 loading Engineering with embryonic projects, and later gives Engineering a useful starting point (they will still
 rely on the topographic survey).
 
-Status: **internal pilot candidate, not production-ready** (2026-09-28). The implemented workflow includes terrain,
-areas, fields, infrastructure, exports and a working 3D scene. The 3D browser regression check passed 5/5 after the
+Status: **internal pilot candidate, not production-ready** (2026-10-02). The implemented workflow includes the site,
+terrain, layout, infrastructure, exports and a working 3D scene; the UX refactor of 2026-10-02 (stepper, drawing in
+two steps, 2D / 3D toggle) is to be checked in a real browser. The 3D browser regression check passed 5/5 after the
 SceneView sizing fix; this does not establish production readiness or validate estimates against an Engineering design.
 See [Release readiness](#release-readiness) below and `docs/plan.md` for planned work.
 
@@ -16,28 +17,32 @@ See [Release readiness](#release-readiness) below and `docs/plan.md` for planned
 The map opens on satellite imagery without labels (a toggle switches to the topographic map); a slider on the map
 sets the opacity of the background, remembered in the browser, so the layout stays readable over busy imagery.
 
-The left rail holds the steps; clicking the active step again folds the panel away to give the map more room.
+The left rail is a **stepper** in the order of the dependencies: every step shows its state — *locked* (a
+prerequisite is missing: the step still opens, with a gate that says why and a link to the step to do first),
+*ready*, *optional*, *done* (a tick and its key figure: buildable hectares, MWp, fence length). Nothing forces the
+order: a designer can work in any sequence. The app reopens on the step last visited, or on the first still to do.
+Clicking the active step again folds the panel away to give the map more room. **2D / 3D** is a switch on the map,
+not a step: the panel keeps its step while the map turns into the scene.
 
 | Step | Today |
 |---|---|
-| **0 · Terrain** | Optional: Esri World Elevation or your DTM / DSM (GeoTIFF) on a grid over the site, slope map, slopes over the limit of the structure cut from the buildable area; contour lines come next |
-| **1 · Areas** | Import or draw the areas, sorted into categories (below); net area given or computed |
-| **2 · Fields** | Modules (power by semester), structure (3V9 / 1V28 by default), tilt, azimuth, pitch, half tables, parametric layout and results |
-| **3 · Infrastructure** | Fence with its clearance, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
-| **4 · Output** | Export coordinate system; one-page PDF report; KMZ, GeoJSON, Shapefile, GeoPackage, DXF and Excel bill of quantities |
-| **4b · 3D** | SceneView on the shared map, terrain, structures, sun and shadows, saved views, PNG/PDF and glTF export; editing remains in 2D |
-| **Electrical** | Kept open on purpose |
+| **1 · Site** | Import or draw the boundary and the constraints (two-step drawing: what, then with which tool; undo / redo), sorted into categories (below); net area given or computed |
+| **2 · Terrain** | Optional: analyse the slopes from Esri World Elevation or your own DTM / DSM (GeoTIFF) on a grid over the site; the areas too steep for the structure are cut from the buildable area; stale when the site changes |
+| **3 · Layout** | Technology, toolkit structure (3V9 / 1V28 by default, custom notation on request), module (power by semester), tilt, azimuth, pitch; advanced options folded (gaps, tracks, half tables, target, grid position); results |
+| **4 · Infrastructure** | Fence with its clearance, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
+| **5 · Outputs** | Export coordinate system; one-page PDF report; KMZ, GeoJSON, Shapefile, GeoPackage, DXF and Excel bill of quantities. The electrical design is not part of the predesign (kept open on purpose) |
+| **2D / 3D** (map switch) | SceneView on the shared map, terrain, structures, sun and shadows, saved views, PNG/PDF and glTF export; editing remains in 2D |
 
-**⚡ Quick predesign** (top bar, 1 · Areas, 2 · Fields): once the site is loaded, one dialog with three choices
+**⚡ Quick predesign** (top bar, 1 · Site, 3 · Layout): once the site is loaded, one dialog with three choices
 already filled in — technology (ground-mounted fixed 3V9, AgriPV tracker 1V28, AgriPV fixed), pitch (the toolkit
 minimum of the country for fixed structures; for trackers the one agreed with the farm, asked), terrain (optional:
 Esri World Elevation with the slope limit) — then one click: group standards, standard module at the power of the
-current semester, best grid position, results. Everything stays editable in 2 · Fields.
+current semester, best grid position, results. Everything stays editable in 3 · Layout.
 
 The top bar has **New / Open / Save / Save as** (project files `.pvpd`, a zip holding `project.json`; Ctrl+S,
 Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the exports.
 
-### 1 · Areas
+### 1 · Site
 
 - **Categories** — Gross area, Net area, Grid connection route (the cable route to the point of connection, estimated
   or confirmed: shown with its length in km, dashed until confirmed, never cut), Exclusion zones, Linear
@@ -58,14 +63,24 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   keep their category, type, buffer, height, width and voltage exactly; the site of work of an `.axpo` (an area of
   AREAS COLLECTION) becomes the gross area; older drawings with the Sites Notes categories are mapped by a fixed
   table (e.g. *DPA* → exclusion · DPA corridor), keywords only for anything else.
-- **Drawing** — polygon, line or points in any category (points are placed one after the other until Esc), reshape
-  with the ✎ button, rename with a double click.
+- **Drawing** — the pattern of the Geoportale's *Disegna*, in two numbered steps: **① What you draw** (the category
+  as a row of coloured chips, then the type and buffer / height / width given to the next drawings) and **② With
+  which tool** (Point, Line, Area, Rectangle cards: a card is disabled with the reason when the category does not take
+  that geometry). The armed tool stays armed after each drawing (a second click or Esc stops it); a status line says
+  what is going on and a *Last drawing* box where the object went. **↶ ↷ undo / redo** (Ctrl+Z / Ctrl+Y, 40 steps)
+  cover every change of the objects; removing one object or all of a category shows a message with *Undo* instead
+  of a confirmation. Each row has rename (✎), reshape (⬠) and remove (×); *Draw here* on a category card picks it.
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel
   shows gross area, setback, exclusions and the buildable area in hectares.
 
-### 0 · Terrain (optional)
+### 2 · Terrain (optional)
+
+The panel says what it does (cuts the areas too steep for the chosen structure), waits for the site (a gate with a
+link to 1 · Site until then), has one primary action (*Analyse the slopes*, Esri World Elevation) and one secondary
+(*Use my own model*, GeoTIFF), shows the structure it applies to (chosen here or in 3 · Layout), and flags the terrain
+as *to redo* when the site or the grid cell changed after the sampling. Grid cell and small patches are advanced options.
 
 - **Sources** — Esri World Elevation (global service, resolution depends on the country) or a DTM / DSM of your own
   (GeoTIFF in any system the SDK knows; files without a system go through the same dialog as other imports). The
@@ -78,7 +93,7 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   the panel says so. Cells over the limit (patches under 250 m² ignored, an app setting) are cut from the buildable area.
 - The grid is kept in the browser (IndexedDB) and inside the project file (`terrain/grid.f32`).
 
-### 2 · Fields
+### 3 · Layout
 
 - **Standards of the group** — module TOPCon 2382 × 1134 mm bifacial; ground-mounted 3V9 (27 modules) at 15°;
   tracker 1V28 ±55°, 0.50 m between trackers in line, at most 4 in line then a 4 m gap, 1.19 m drive gap (measured on
@@ -94,9 +109,9 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - **Half tables** — optional: where a whole table does not fit, a half one (1V14 for the 1V28) takes the grid place.
   The 3V9 is never split.
 
-### 3 · Infrastructure
+### 4 · Infrastructure
 
-- **Lots and fences** — the land the plant can use (base area minus the objects of 1 · Areas) often falls apart in
+- **Lots and fences** — the land the plant can use (base area minus the objects of 1 · Site) often falls apart in
   lots, e.g. between roads, lines and ditches: they are numbered on the map (north to south) and each has its own
   fence. Tick lots and **join them in one fence**: it runs around them and across the gaps between them, never outside
   the site nor over the lots of another fence. The band between fence and structures is cut from the buildable area:
@@ -104,7 +119,7 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   the fence off.
 - **Perimeter road** — a switch. It is the template for plants up to about 9 MWp: the panel shows the suggestion
   for the current layout and the quick predesign applies it; the designer decides.
-- **Roads** — the corridors across the rows of 2 · Fields (e.g. a 4 m gap after 4 trackers in line) are drawn and
+- **Roads** — the corridors across the rows of 3 · Layout (e.g. a 4 m gap after 4 trackers in line) are drawn and
   measured; any other road is drawn on the map (heavy 4 m or light 3 m in Italy), reshaped by its vertices, removed,
   and cut from the buildable area with its width.
 - **Gates** — one on the fence next to each site access (toolkit width, 6 m in Italy).
@@ -116,7 +131,7 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - Countries without toolkit values get no borrowed value: the panel says what is missing.
 - Fence, roads, stations and gates are part of the GeoJSON export.
 
-### 4 · Output
+### 5 · Outputs
 
 - **PDF report** — one A4 landscape page: the layout drawn to scale from the local metric frame (site, exclusions,
   lines, roads, buildable area, tables, fences, stations, gates, lot numbers; scale bar and north arrow), the key
@@ -139,12 +154,12 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
     X, Y; foundations, cables and earthworks listed as not included, never estimated.
   Checked with ezdxf (audit: no errors), pyshp and openpyxl.
 
-### 4b · 3D
+### 2D / 3D
 
-Opening the step turns the map into a 3D scene (same background and opacity); any other step goes back to 2D, where
-the editing stays.
+The 2D / 3D switch on the map turns it into a 3D scene (same background and opacity) with its controls in a card
+over the map; the side panel keeps its step and the editing stays in 2D.
 
-- **Ground** — a designer-uploaded GeoTIFF grid from step 0 overlays Esri World Elevation locally; if the step 0
+- **Ground** — a designer-uploaded GeoTIFF grid from 2 · Terrain overlays Esri World Elevation locally; if that
   grid was sampled from Esri World Elevation, the scene uses World Elevation directly. National CRS choices apply
   to imports and exports; the 3D scene uses the spatial reference of its basemap. Do not use Web Mercator to measure
   site areas or table spacing.
@@ -157,7 +172,7 @@ the editing stays.
   panel gives the sun position and the row-to-row shading at that moment; ShadowCast shows the hours of shadow over a
   period. Sun position from the NOAA calculator, within 0.01° of NREL SPA (pvlib), tracker angles as pvlib.
 - **Views** — viewpoints saved in the project, PNG pictures, a PDF report with one page per saved view, line of sight.
-- **glTF (.glb)** — terrain of step 0 around the site, modules, stations, fence, gates and obstacles in metres, Y up,
+- **glTF (.glb)** — terrain of 2 · Terrain around the site, modules, stations, fence, gates and obstacles in metres, Y up,
   with the origin and its national coordinates in the file (checked with the Khronos glTF validator).
 
 ### Coordinate systems
@@ -168,7 +183,7 @@ the editing stays.
   Brandenburg, Mecklenburg-Vorpommern and Saxony and 32N elsewhere, Bavaria included (`app/catalog/regions.json`);
   Poland CS92 (with a note on the CS2000 zone of the cadastre); Switzerland LV95; elsewhere WGS 84 / UTM.
   Alerts near borders, across zones and where regions use one zone for their whole territory. The system can be
-  changed by hand in 4 · Output.
+  changed by hand in 5 · Outputs.
 - **Files in metres without a system** (a Shapefile without `.prj`, a CSV in easting / northing): a dialog lists the
   national systems that put every object inside their own country (e.g. RDN2008, ETRS89 and WGS 84 UTM 32N for
   a site near Cremona), or takes any EPSG code.
@@ -223,11 +238,12 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, project file (14)
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
-- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, quick predesign, infrastructure,
-  KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on the terrain (13)
+- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, stepper states and gates, drawing
+  block (chips, tools by category, undo / redo), structure presets, quick predesign, infrastructure, KMZ and PDF
+  report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on the terrain (16)
 - `http://localhost:8140/tests/view3d.html` — sun and trackers against pvlib, row shading, heights by country,
   meshes, ground elevations, terrain tiles, glTF (8)
-- `http://localhost:8140/tests/scene3d.html` — the real SceneView of step 4b on the synthetic DTM: opens on the site
+- `http://localhost:8140/tests/scene3d.html` — the real SceneView (2D / 3D switch) on the synthetic DTM: opens on the site
   without errors, ground from the terrain model, AgriPV fixed heights, sun buttons, views, report, back to 2D (5)
 
 Without a browser, or where js.arcgis.com is blocked: `tools/headless` runs the browser test pages in headless
@@ -266,20 +282,21 @@ arcpy), which also writes the reference values in `expected.json`.
 ```
 app/                  the web app (index.html, css/, js/)
   catalog/            toolkit.json, countries.json (outlines), regions.json (German zone-33 Länder)
-  js/terrain/         step 0: grid sampling (Esri, GeoTIFF), slopes and masks (pure), storage
-  js/areas.js         step 1: categories, import, drawing, net area
+  js/terrain/         step 2: grid sampling (Esri, GeoTIFF), slopes and masks (pure), storage
+  js/areas.js         step 1: categories, import, drawing in two steps, undo / redo, net area
   js/categories.js    categories and automatic sorting (pure)
   js/crs.js           national systems, country detection, proposals and alerts (pure)
-  js/field.js         step 2: parametric layout and results
-  js/output.js        step 4: coordinate system for exports, export
+  js/field.js         step 3: parametric layout and results
+  js/infra.js         step 4: fence, roads, gates, stations
+  js/output.js        step 5: coordinate system for exports, export
   js/layout/          structures (notation, table geometry, pitch rule) and the row-fill engine
   js/geo/             local metric frame, GeoJSON <-> SDK conversion and reprojection
   js/io/              importers, Excel and CSV readers, Excel writer, project files
   js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
   vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
-  js/ui/              rail, coordinate system dialog, background map, toasts
-  js/view3d/          4b · 3D: sun and shading (pure), geometry, model, scene, glTF writer
+  js/ui/              stepper rail, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
+  js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
 docs/                 plan, decisions; toolkit/ = the toolkit archive by country
 scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts)

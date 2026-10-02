@@ -14,7 +14,6 @@ import { terrainData } from '../terrain/store.js';
 import { bilinear } from '../terrain/slope.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
-import { onStep, currentStep } from '../ui/rail.js';
 import { toast } from '../ui/toast.js';
 import { exportReport } from '../report.js';
 import { fileName } from '../export/model.js';
@@ -333,7 +332,7 @@ function toggleWidget(kind, on) {
   if (!on) { if (widgets[kind]) { scene.ui.remove(widgets[kind]); widgets[kind].destroy(); widgets[kind] = null; } return; }
   if (widgets[kind]) return;
   widgets[kind] = kind === 'shadow' ? new S.ShadowCast({ view: scene }) : new S.LineOfSight({ view: scene });
-  scene.ui.add(widgets[kind], kind === 'shadow' ? 'top-left' : 'bottom-left');
+  scene.ui.add(widgets[kind], 'bottom-right');
 }
 
 // ── viewpoints, pictures, report ──
@@ -412,10 +411,18 @@ export function initView3d(view) {
   mapView = view;
   initPanel();
   renderPanel();
-  onStep(step => { if (step === '3d') enter(); else if (active) leave(); });
+  // 2D / 3D switch on the map (the chips of both views) and the fold button of the 3D card
+  document.querySelectorAll('.mapchips [data-mode]').forEach(b => { b.onclick = () => set3d(b.dataset.mode === '3d'); });
+  const min = $('d3CardMin');
+  if (min) min.onclick = () => { const c = $('d3Card'); c.classList.toggle('min'); min.textContent = c.classList.contains('min') ? '▸' : '▾'; };
   for (const ev of ['layout', 'infra', 'terrain', 'site', 'field', 'crs', 'project']) on(ev, () => { if (active) later(); else renderPanel(); });
   // heights change the model; the tracker mode, the angle set by hand and the viewpoints only the panel
   on('view3d', () => { renderPanel(); if (active) later(); });
   on('views3d', renderPanel);
-  if (currentStep() === '3d') enter();
+}
+
+// The map in 3D (true) or 2D (false); the side panel keeps its step
+export function set3d(on) {
+  document.querySelectorAll('.mapchips [data-mode]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === '3d') === !!on)));
+  if (on && !active) enter(); else if (!on && active) leave();
 }
