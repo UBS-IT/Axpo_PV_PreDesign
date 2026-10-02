@@ -8,7 +8,9 @@ let failed = 0;
 for (const pg of pages) {
   const { page, errors, close } = await openPage(pg, { softwareWebGL: /scene3d/.test(pg) });
   try {
-    await page.waitForFunction(() => window.__results || /passed/.test(document.getElementById('sum')?.textContent || ''), null, { timeout: 240000 });
+    // the real SceneView drawn by the software WebGL of the runner takes minutes and varies with the machine: the
+    // same budget as snap3d.mjs (it timed out at 4 minutes on one of two runs of the same commit, 2026-10-02)
+    await page.waitForFunction(() => window.__results || /passed/.test(document.getElementById('sum')?.textContent || ''), null, { timeout: /scene3d/.test(pg) ? 600000 : 240000 });
     const rows = await page.$$eval('#out tr', trs => trs.map(t => t.innerText.replace(/\s+/g, ' ').trim()));
     const sum = (await page.textContent('#sum')).trim();
     console.log(`${pg}: ${sum}`);
