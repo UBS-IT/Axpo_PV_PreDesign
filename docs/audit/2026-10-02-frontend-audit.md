@@ -2,8 +2,8 @@
 
 Scope: `app/` on `main` (`d2a0862`). Method: code reading of every module, automated cross-checks (i18n keys
 vs. use, DOM ids vs. JS, WCAG contrast of the palette), the headless test suite (115 tests on 9 pages, all green on 2026-10-02), and the
-two problems reported from the user tests (P1 Terrain panel, P2 drawing tools). The reference Geoportale
-(`UBS-IT/custom-AGOL-web-map`) could not be read from this session: alignment items are marked **[needs Geoportale]**.
+two problems reported from the user tests (P1 Terrain panel, P2 drawing tools), and a reading of the reference
+Geoportale (`UBS-IT/custom-AGOL-web-map`, `dbf5198`, its `README.md` and the *Disegna* tab of `geoportale_axpo.html`).
 
 Severity: **S1** blocks or misleads users · **S2** costs clicks or trust · **S3** polish. Refs are `file:line`.
 
@@ -66,11 +66,26 @@ drawing (decision before action), finish with double-click, cancel everything wi
 reshape through a ✎ in the row, rename by **double-click on the name** (hidden), move through drag or a select.
 No keyboard shortcuts except Ctrl+S / Ctrl+O. The map banner is the only mode indicator.
 
-**Direction (to align with the Geoportale — [needs Geoportale]):** one drawing toolbar for the Site step
-(polygon, line, point, select/edit, delete, undo vertex, finish) with the same icons, names and shortcuts as the
-Geoportale; the category is the *active chip* above the map (default: the category whose card is open), changeable
-after drawing; `Enter` finishes, `Backspace` removes the last vertex, `Esc` cancels; rename through the ✎ menu;
-one gesture per element in the list (click = zoom); touch-safe (no dblclick / drag-only actions).
+**What the Geoportale does** (its *Disegna* tab, refactored from its own user tests on 2026-10-01): two numbered
+steps in one panel — **① Cosa disegni**: the category as a row of coloured chips (`role=radiogroup`, one active,
+remembered), then only the type and attributes that apply, the source and a note; **② Con quale strumento**: five
+tool cards (Punto, Linea, Area, Rettangolo, Cerchio — icon, name and the gesture in one line, `aria-pressed`,
+disabled with the reason when the category does not take that geometry); the armed tool stays armed after each
+drawing, a second click disarms it, Esc ends; ↶ ↷ undo/redo (Ctrl+Z / Ctrl+Y, 40 steps) in the header of step ②;
+a status line under the cards (`role=status`: "Disegnato · Esclusione · Vincolo. Continua o cambia strumento.");
+an **Ultimo disegno** box (category tag, name, zoom, ×) answering "where did it go"; a sticky **Supporto al
+disegno** dock (snapping, typed lengths and angles with Tab, metric grid); a small mode banner on the top edge
+of the map; drawings clicked on the map with no tool move and reshape, Delete removes; a sketch interrupted by
+another tool is completed, not dropped. Keyboard shortcuts: Ctrl+S/O, Ctrl+Z/Y only; letters are not used.
+
+**Direction:** port that pattern into step 1 of PV Predesign, with the same names, icons and gestures: the nine
+category cards become one **① What you draw** block (chips + type/attributes of the active category), one
+**② With which tool** block (Point, Line, Area, Rectangle; the circle has no use here), the armed tool stays
+armed, ↶ ↷ with Ctrl+Z/Y, status line, *Last drawing* box, the list of objects grouped by category below (the
+Geoportale keeps it in the Raccolta drawer; here the panel is the only home, so the list stays in the step).
+Rename moves from the hidden double-click to the ✎ of the row; one gesture per element (click = zoom); import
+stays one button plus drop. Not ported: rectangles/circles with exact measures and the metric grid (no use in a
+predesign; the layout engine makes the geometry), the working-site row (the site is the project).
 
 ## 4. Heuristics and interaction (Nielsen, Hick, Fitts)
 
@@ -101,12 +116,27 @@ Palette fix that keeps the Axpo look: accent for text and primary buttons ≥ 4.
 = 4.6:1; dark theme accent used as a fill with dark text, or `#2A9CD6` text on `#18232E` = 6.7:1), focus ring
 `2px solid` accent + 2 px offset on every control, 24 px minimum hit areas.
 
-## 6. Consistency with the Geoportale **[needs Geoportale]**
+## 6. Consistency with the Geoportale
 
-The stylesheet already borrows the Geoportale tokens (gradient, light/dark, `.sec` collapsibles). What cannot be
-checked without reading `geoportale_axpo.html`: the drawing toolbar (tools, icons, shortcuts, finish/cancel
-gestures), the layer list and visibility pattern, the import dialog, the attribute editing of site features, the
-basemap control, how 2D/3D (if any) is switched, and the naming of the site-features categories in the UI.
+The stylesheet already shares the tokens (gradient, light/dark, `.sec` collapsibles ≈ `.imod`). Patterns of the
+Geoportale worth porting, and what they replace here:
+
+| Geoportale (validated with users) | PV Predesign today | Port |
+|---|---|---|
+| Numbered steps inside a panel (`.gpstep` ①②③), each card stating its own condition and disabled with the reason until the previous step fits | Flat cards; prerequisites invisible (Terrain) | Yes: Site ①②, Terrain, Layout (basic ① / advanced ②) |
+| Category chips + tool cards (§3) | Per-category draw buttons | Yes |
+| Status line `role=status` under the action, with a coloured dot, and "Vedi nella Raccolta ›" | Toasts | Yes: outcomes at the control, toasts only for background events |
+| `i` buttons per module opening a "how it works" window with a drawn example | Hints in grey text | Yes, for Terrain, Layout, Infrastructure |
+| Filled buttons: white on `--accent-strong #3945CF` (7.2:1); accent texts use `--link`; dark theme: dark text on the accent | White on `--accent` (3.2:1) | Yes, same tokens, no palette change |
+| Mode banner small on the top edge of the map, `role=status` | Centred box | Yes |
+| Rail: `role=tablist`/`tab`, roving tabindex, arrows/Home/End; `aria-expanded` on drawers | Buttons without roles | Yes |
+| Undo/redo of drawings (own history, Ctrl+Z/Y); × with "↶ Annulla" | No undo | Yes |
+| Raccolta drawer (noun) separate from Disegna (verb); Tools speed-dial; 🗺 map selector | — | No: one panel per step is enough here; the map toggle 2D/3D is the only "map selector" |
+| Save/open project, Ctrl+S/O, name in the top bar | Same | Already aligned |
+
+Names of the categories in the UI: the Geoportale uses the Italian labels of the shared model (Area lorda, Area
+netta, Percorso di connessione, Esclusione, Infrastruttura lineare, Ostacolo, Accesso e punto di connessione,
+Mitigazione, Zona agricola, Nota e riferimento); PV Predesign the English ones (`cat.*`). Same order, same colours.
 
 ## 7. Good things to keep
 
@@ -116,15 +146,14 @@ Geoportale; mode banner over the map; tests on every push, including the real Sc
 
 ## 8. Questions before the refactor (end of phase 1)
 
-1. **Access**: this session cannot read `UBS-IT/custom-AGOL-web-map` nor `UBS-IT/Axpo_PV_PreDesign` (access denied),
-   and `git push` to `davo3188/Axpo_PV_PreDesign` now answers 403. Options: grant the session access to the two
-   UBS-IT repositories, or start a new session with `UBS-IT/Axpo_PV_PreDesign` as its source (the same-name checkout
-   limit prevents attaching it here), or paste `README.md` and `geoportale_axpo.html` of the Geoportale.
-2. **Terrain placement**: step 2 "Terrain & slopes" between Site and Layout (proposal), or a card inside Site?
-3. **3D**: a 2D/3D toggle on the map (proposal) or keep it as a step?
-4. **Stepper**: locked steps openable with an explanation (proposal) or hidden until ready?
-5. **Drawing**: category chosen before drawing (today) or after (chip / dialog, as proposed)? Which gestures and
-   shortcuts does the Geoportale use? (polygon, line, point, edit, delete, finish, undo vertex)
-6. **Structure selection**: a list of toolkit presets with a "custom nVm" escape, or keep the free text?
-7. **Deletions**: undo via toast ("Removed Exclusion 3 · Undo") instead of confirms — acceptable?
-8. **Palette**: may the accent darken to reach 4.5:1 on white (`#1A7FAB`), or must the Geoportale accent stay?
+1. **Terrain placement**: step 2 "Terrain & slopes" between Site and Layout (proposal), or a card inside Site?
+2. **3D**: a 2D/3D toggle on the map (proposal) or keep it as a step?
+3. **Stepper**: locked steps openable with an explanation (proposal) or hidden until ready?
+4. **Drawing**: port the Geoportale's two-step *Disegna* (category chips, then tool cards; §3) as it is — confirm.
+5. **Structure selection**: a list of toolkit presets with a "custom nVm" escape, or keep the free text?
+6. **Deletions**: undo via ↶ and a toast ("Removed Exclusion 3 · Undo") instead of confirms — confirm.
+7. **Palette**: the Geoportale solved the same contrast failures with its own tokens (`--accent-strong` for filled
+   buttons, `--link` for accent texts) — adopt the same, no new colour. Confirm.
+8. **Repository**: the GitHub repository now lives at `UBS-IT/Axpo_PV_PreDesign` (`davo3188/…` redirects there);
+   this session can push through the old URL only. `origin` stays on the old URL until a session is opened on the
+   organisation repository.

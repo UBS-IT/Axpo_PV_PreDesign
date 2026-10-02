@@ -134,7 +134,17 @@ Drawing uses two `SketchViewModel`s (areas, roads) with snapping on; one map mod
 | Project files, state | `app/js/io/projectfile.js`, `state.js` |
 | Tests | `tests/*.test.js`, runner `tools/headless/run.mjs`, screenshots of the 3D scene `snap3d.mjs` |
 
-## 10. Known gaps (from the plan and the audit)
+## 10. The Geoportale, the reference for UI patterns
+
+`UBS-IT/custom-AGOL-web-map` (`geoportale_axpo.html`, one file, ~7 600 lines, SDK 4.34 AMD; its `README.md` §4
+documents every pattern and §7 every audit). Shared with this app: the site-features model (categories, types,
+attributes, colours), the `.axpo` project import, the palette tokens. Its *Disegna* tab (two steps: category chips,
+then tool cards, armed tool, undo/redo, status line, *Ultimo disegno*), its three-step geoprocessing (`.gpstep`,
+cards disabled with the reason), its `i` windows, its contrast rules (`--accent-strong` for filled buttons, `--link`
+for accent texts) and its mode banner are the patterns to port here (audit §3 and §6). It has no tests and no CI:
+verification is manual against the live portal. Not shared: parcel search (Zornade), AGOL write-back, DWG reader.
+
+## 11. Known gaps (from the plan and the audit)
 
 Pilot against a real engineering layout (A4) not done; piles per structure and Engineering's DXF layer names
 unknown; contour lines, DWG import, portal import, several fields per site, table-by-table edits not done; the
