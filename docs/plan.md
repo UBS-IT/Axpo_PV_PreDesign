@@ -87,7 +87,7 @@ toolkit has no pile count per structure yet, so the bill of quantities lists fou
 
 | # | What | Why | Size | Needs |
 |---|---|---|---|---|
-| D1 | **Country toolkits**: each new document goes into `docs/toolkit/<country>.md`, then the catalog (shading angle, roads, stations, setbacks) | PL, ES, DE, CH get country rules instead of «no rule yet» | S per country | the documents, a referent per country |
+| D1 | **Country toolkits**: each new document goes into `docs/toolkit/<country>.md`, then the workbook `docs/toolkit/toolkit.xlsx` (done 2026-10-02: `scripts/make_toolkit.py` writes the catalog, the CI checks it) | PL, ES, DE, CH get country rules instead of «no rule yet», without a coding session | S per country | the documents, a referent per country |
 | D2 | **Hosting and sign-in**: static hosting on the company cloud (e.g. Azure Static Web Apps) with Entra ID; ArcGIS licence / API key for basemaps and World Elevation in production; repository moved to the company organisation | Colleagues use it without a local server; Esri terms for production use | M | IT department, ArcGIS organisation |
 | D3 | **Pilots per country**: Poland against a HelioScope design, Spain against a RatedPower one | Trust of the country teams | S each | one site per country |
 

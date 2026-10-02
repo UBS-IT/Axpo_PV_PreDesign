@@ -45,7 +45,6 @@
  "modules": [
   {
    "id": "std-topcon-2382",
-   "manufacturer": "",
    "model": "TOPCon 132c bifacial (roadmap CS - PPA FR et EU)",
    "length": 2.382,
    "width": 1.134,
@@ -53,6 +52,9 @@
    "technology": "TOPCon",
    "cells": 132,
    "roadmapColumn": "CS - PPA FR et EU",
+   "importedAt": "2026-09-25",
+   "source": "ROADMAP",
+   "note": "Powers are updated every six months: the app warns when they are more than six months old. The NZIA variant of the roadmap is ignored (USER)",
    "powers": [
     [
      "2024-S2",
@@ -94,10 +96,7 @@
      "2029",
      675
     ]
-   ],
-   "importedAt": "2026-09-25",
-   "source": "ROADMAP",
-   "note": "Powers are updated every six months: the app warns when they are more than six months old. The NZIA variant of the roadmap is ignored (USER)"
+   ]
   }
  ],
  "defaults": {
@@ -158,20 +157,20 @@
     "technology": "ground-fixed",
     "across": 2
    },
-   "maxAny": 15,
    "unit": "%",
    "source": "USER",
-   "text": "Fixed 2V: 15% in every direction"
+   "text": "Fixed 2V: 15% in every direction",
+   "maxAny": 15
   },
   {
    "id": "agri-fixed",
    "applies": {
     "technology": "agri-fixed"
    },
-   "maxAny": 15,
    "unit": "%",
    "source": "USER",
-   "text": "AgriPV fixed: 15% in every direction"
+   "text": "AgriPV fixed: 15% in every direction",
+   "maxAny": 15
   },
   {
    "id": "tracker-1v",
@@ -179,10 +178,10 @@
     "technology": "agri-tracker",
     "across": 1
    },
-   "maxAny": 15,
    "unit": "%",
    "source": "USER, IT-PC",
-   "text": "Tracker 1V: 15% in every direction"
+   "text": "Tracker 1V: 15% in every direction",
+   "maxAny": 15
   }
  ],
  "structures": [
@@ -207,21 +206,21 @@
    "notation": "2V13",
    "tiltDeg": 15,
    "azimuthDeg": 180,
+   "source": "CS",
+   "reference": {
+    "tableLength": 14.98,
+    "planDepth": 4.62,
+    "source": "CS",
+    "moduleWidth": 1.134,
+    "moduleLength": 2.382,
+    "highEdge": 2.37
+   },
    "foundations": [
     "piles",
     "concrete-longrine",
     "shallow"
    ],
-   "note": "for 144-cell M10 modules, bifacial or monofacial",
-   "reference": {
-    "moduleWidth": 1.134,
-    "moduleLength": 2.382,
-    "tableLength": 14.98,
-    "planDepth": 4.62,
-    "highEdge": 2.37,
-    "source": "CS"
-   },
-   "source": "CS"
+   "note": "for 144-cell M10 modules, bifacial or monofacial"
   },
   {
    "id": "3V6",
@@ -230,20 +229,20 @@
    "notation": "3V6",
    "tiltDeg": 15,
    "azimuthDeg": 180,
+   "source": "CS",
+   "reference": {
+    "tableLength": 6.97,
+    "planDepth": 6.12,
+    "source": "CS",
+    "highEdge": 2.77,
+    "verify": true
+   },
    "foundations": [
     "piles",
     "concrete-longrine",
     "shallow"
    ],
-   "note": "for 'Europe PERC' modules",
-   "reference": {
-    "tableLength": 6.97,
-    "planDepth": 6.12,
-    "highEdge": 2.77,
-    "source": "CS",
-    "verify": true
-   },
-   "source": "CS"
+   "note": "for 'Europe PERC' modules"
   },
   {
    "id": "3V12",
@@ -252,20 +251,20 @@
    "notation": "3V12",
    "tiltDeg": 15,
    "azimuthDeg": 180,
+   "source": "CS",
+   "reference": {
+    "tableLength": 13.96,
+    "planDepth": 6.12,
+    "source": "CS",
+    "highEdge": 2.77,
+    "verify": true
+   },
    "foundations": [
     "piles",
     "concrete-longrine",
     "shallow"
    ],
-   "note": "for 'Europe PERC' modules",
-   "reference": {
-    "tableLength": 13.96,
-    "planDepth": 6.12,
-    "highEdge": 2.77,
-    "source": "CS",
-    "verify": true
-   },
-   "source": "CS"
+   "note": "for 'Europe PERC' modules"
   },
   {
    "id": "3V9",
@@ -274,23 +273,23 @@
    "notation": "3V9",
    "tiltDeg": 15,
    "azimuthDeg": 180,
+   "source": "CS",
+   "reference": {
+    "tableLength": 10.37,
+    "planDepth": 6.94,
+    "source": "CS",
+    "moduleWidth": 1.134,
+    "moduleLength": 2.382,
+    "highEdge": 2.99,
+    "interRowGap": 2.66,
+    "pitch": 9.6
+   },
    "foundations": [
     "piles",
     "concrete-longrine",
     "shallow"
    ],
    "note": "Group standard (27 modules), never split: no half table (USER). for 132-cell M10 bifacial modules",
-   "reference": {
-    "moduleWidth": 1.134,
-    "moduleLength": 2.382,
-    "tableLength": 10.37,
-    "planDepth": 6.94,
-    "interRowGap": 2.66,
-    "pitch": 9.6,
-    "highEdge": 2.99,
-    "source": "CS"
-   },
-   "source": "CS",
    "standard": true,
    "half": false
   },
@@ -301,20 +300,20 @@
    "notation": "3V18",
    "tiltDeg": 15,
    "azimuthDeg": 180,
+   "source": "CS",
+   "reference": {
+    "tableLength": 20.75,
+    "planDepth": 6.94,
+    "source": "CS",
+    "moduleWidth": 1.134,
+    "moduleLength": 2.382
+   },
    "foundations": [
     "piles",
     "concrete-longrine",
     "shallow"
    ],
-   "note": "for 132-cell M10 bifacial modules",
-   "reference": {
-    "moduleWidth": 1.134,
-    "moduleLength": 2.382,
-    "tableLength": 20.75,
-    "planDepth": 6.94,
-    "source": "CS"
-   },
-   "source": "CS"
+   "note": "for 132-cell M10 bifacial modules"
   },
   {
    "id": "AGRI-SHADE-CATTLE-2V9",
@@ -323,9 +322,9 @@
    "notation": "2V9",
    "tiltDeg": 20,
    "azimuthDeg": 180,
-   "minPitch": 12,
-   "note": "Ombriere elevage bovin, south. 12 m minimum pitch, adjusted case by case to keep PV coverage <= 40%",
    "source": "AGRI",
+   "note": "Ombriere elevage bovin, south. 12 m minimum pitch, adjusted case by case to keep PV coverage <= 40%",
+   "minPitch": 12,
    "verify": true
   },
   {
@@ -335,9 +334,9 @@
    "notation": "2V9",
    "tiltDeg": 20,
    "azimuthDeg": 180,
-   "minPitch": 13,
-   "note": "Ombriere elevage ovin, south; module 2.382 x 1.134 (projected 2.238 x 1.134). Minimum pitch 12 or 13 m in the sheet - to confirm",
    "source": "AGRI",
+   "note": "Ombriere elevage ovin, south; module 2.382 x 1.134 (projected 2.238 x 1.134). Minimum pitch 12 or 13 m in the sheet - to confirm",
+   "minPitch": 13,
    "verify": true
   },
   {
@@ -347,9 +346,9 @@
    "notation": "3H8",
    "tiltDeg": 20,
    "azimuthDeg": 180,
-   "minPitch": 8.1,
-   "note": "Version charte FNO, 3 modules landscape, south",
    "source": "AGRI",
+   "note": "Version charte FNO, 3 modules landscape, south",
+   "minPitch": 8.1,
    "verify": true
   },
   {
@@ -359,8 +358,8 @@
    "notation": "10H1",
    "tiltDeg": 11.3,
    "azimuthDeg": 180,
-   "note": "Voliere PV / bird shed, 10 modules landscape (example module 1.762 x 1.134), tilt 20% = 11.3 deg. Heights may vary",
    "source": "AGRI",
+   "note": "Voliere PV / bird shed, 10 modules landscape (example module 1.762 x 1.134), tilt 20% = 11.3 deg. Heights may vary",
    "verify": true
   },
   {
@@ -368,31 +367,34 @@
    "technology": "agri-tracker",
    "label": "AgriPV tracker canopy 1V",
    "notation": "1V26",
-   "rotationDeg": 60,
-   "axis": "north-south",
-   "note": "Canopee trackers, 1 module portrait, east/west one-axis tracking, tilt +60/-60 deg. Spacing between structures on the north/south facade 6, 9 or 12 m (single or double post variants)",
    "source": "AGRI",
-   "verify": true
+   "note": "Canopee trackers, 1 module portrait, east/west one-axis tracking, tilt +60/-60 deg. Spacing between structures on the north/south facade 6, 9 or 12 m (single or double post variants)",
+   "verify": true,
+   "rotationDeg": 60,
+   "axis": "north-south"
   },
   {
    "id": "AGRI-TRACKER-2V26",
    "technology": "agri-tracker",
    "label": "AgriPV tracker 2V26",
    "notation": "2V26",
+   "source": "AGRI",
+   "note": "2 modules portrait, east/west one-axis tracking, tilt +55/-55 deg: low point 0.5 m, median 2.37 m",
+   "verify": true,
    "rotationDeg": 55,
    "axis": "north-south",
    "lowPointAtMaxRotation": 0.5,
-   "axisHeight": 2.37,
-   "note": "2 modules portrait, east/west one-axis tracking, tilt +55/-55 deg: low point 0.5 m, median 2.37 m",
-   "source": "AGRI",
-   "verify": true
+   "axisHeight": 2.37
   },
   {
    "id": "TRACKER-1V28",
    "technology": "agri-tracker",
    "label": "Tracker 1V28 (standard)",
    "notation": "1V28",
+   "source": "USER, IT-PC",
+   "note": "Tracker length = 28 modules + 27 gaps of 0.02 m + 1.19 m drive gap (measured on the 1V27 of the IT DWG: 32.33 m; same gap for the 1V28 confirmed by the user). 0.50 m between trackers in line, at most 4 in line then a 4 m gap (IT-PC). Half tracker 1V14 (half strings, confirmed by the user). Pitch agreed with the farm (IT drawings: 5.50 or 6.00 m)",
    "standard": true,
+   "half": "1V14",
    "rotationDeg": 55,
    "axis": "north-south",
    "driveGap": 1.19,
@@ -400,16 +402,18 @@
    "corridor": {
     "tables": 4,
     "width": 4
-   },
-   "half": "1V14",
-   "source": "USER, IT-PC",
-   "note": "Tracker length = 28 modules + 27 gaps of 0.02 m + 1.19 m drive gap (measured on the 1V27 of the IT DWG: 32.33 m; same gap for the 1V28 confirmed by the user). 0.50 m between trackers in line, at most 4 in line then a 4 m gap (IT-PC). Half tracker 1V14 (half strings, confirmed by the user). Pitch agreed with the farm (IT drawings: 5.50 or 6.00 m)"
+   }
   },
   {
    "id": "TRACKER-1V27-IT",
    "technology": "agri-tracker",
    "label": "Tracker 1V27 (IT toolkit)",
    "notation": "1V27",
+   "source": "IT-PC",
+   "reference": {
+    "tableLength": 32.33,
+    "source": "IT-PC DWG block extents"
+   },
    "rotationDeg": 55,
    "axis": "north-south",
    "driveGap": 1.19,
@@ -417,11 +421,6 @@
    "corridor": {
     "tables": 4,
     "width": 4
-   },
-   "source": "IT-PC",
-   "reference": {
-    "tableLength": 32.33,
-    "source": "IT-PC DWG block extents"
    }
   }
  ],
@@ -438,7 +437,7 @@
      "note": "Sections 'T 15 deg / AO 29 deg SUD' (old version 25 deg); pitches 2V 6.85 m, 3V 10.30 m"
     },
     "lowEdgeHeight": {
-     "value": 1.0,
+     "value": 1,
      "unit": "m",
      "source": "IT-PC, USER",
      "note": "Ground clearance of the fixed structures, confirmed by the user"
@@ -495,12 +494,8 @@
      "value": 4,
      "detail": "heavy traffic road"
     },
-    "fenceToStructuresWithoutRoad": {
-     "value": 4
-    },
-    "greenStripToStructures": {
-     "value": 4
-    },
+    "fenceToStructuresWithoutRoad": 4,
+    "greenStripToStructures": 4,
     "nsRoadToTrackerEnds": {
      "value": 2,
      "detail": "plus the 4 m road"
@@ -516,13 +511,26 @@
      "detail": "kept free of modules around a station (3 m behind and beside, 1 m to the road): 3 m all around in the app"
     }
    },
+   "fence": {
+    "height": 2,
+    "mesh": "welded mesh 50/50 galvanised (or 100/50 grey)",
+    "postSpacing": 2.5,
+    "wildlifePassages": true,
+    "source": "IT-PC"
+   },
+   "cameras": {
+    "fixed": 3,
+    "dome": 6,
+    "source": "IT-PC",
+    "verify": true
+   },
    "buildings": [
     {
      "id": "CT-IT",
      "kind": "transformer-station",
      "label": "Transformer station (CT), concrete",
      "length": 8.7,
-     "width": 3.0,
+     "width": 3,
      "area": 26.1,
      "height": 3.5,
      "belowGround": 0.6,
@@ -538,7 +546,7 @@
      "kind": "delivery-station",
      "label": "Delivery station (CC), concrete",
      "length": 7.5,
-     "width": 3.0,
+     "width": 3,
      "area": 22.5,
      "height": 3.21,
      "belowGround": 0.6,
@@ -553,7 +561,7 @@
      "kind": "user-station",
      "label": "User station (CU), concrete",
      "length": 7.5,
-     "width": 3.0,
+     "width": 3,
      "area": 22.5,
      "height": 3.21,
      "belowGround": 0.6,
@@ -561,8 +569,8 @@
       11.9,
       7.4
      ],
-     "maxDistanceToDelivery": 20,
-     "source": "IT-PC"
+     "source": "IT-PC",
+     "maxDistanceToDelivery": 20
     }
    ],
    "stationRules": [
@@ -574,40 +582,27 @@
     {
      "id": "unloading-area",
      "source": "IT-PC",
-     "verify": true,
-     "text": "Crane unloading zone 12 m along the road (overall 12 x 8 m with 1 m margins); 3 m behind and beside the station and 1 m to the road kept free of modules"
+     "text": "Crane unloading zone 12 m along the road (overall 12 x 8 m with 1 m margins); 3 m behind and beside the station and 1 m to the road kept free of modules",
+     "verify": true
     },
     {
      "id": "transformer-stations-per-mwp",
      "source": "USER",
+     "text": "About one transformer station every 3 MWp (2.5-5 MWp depending on the transformers): electrical design, used only if the designer places stations",
      "value": 3,
-     "unit": "MWp",
-     "text": "About one transformer station every 3 MWp (2.5-5 MWp depending on the transformers): electrical design, used only if the designer places stations"
+     "unit": "MWp"
     }
    ],
-   "fence": {
-    "height": 2.0,
-    "mesh": "welded mesh 50/50 galvanised (or 100/50 grey)",
-    "postSpacing": 2.5,
-    "wildlifePassages": true,
-    "source": "IT-PC"
-   },
    "gates": [
     {
      "id": "GATE-IT-6",
-     "width": 6.0,
-     "height": 2.0,
+     "width": 6,
+     "height": 2,
      "type": "two swing leaves, vertical bars, RAL 6005",
      "source": "IT-PC",
      "note": "da definirsi secondo progetto"
     }
-   ],
-   "cameras": {
-    "fixed": 3.0,
-    "dome": 6.0,
-    "source": "IT-PC",
-    "verify": true
-   }
+   ]
   },
   "FR": {
    "name": "France",
@@ -629,6 +624,13 @@
      "source": "CS"
     }
    },
+   "fence": {
+    "height": 2,
+    "unit": "m",
+    "mesh": "welded mesh 100/50, galvanized steel posts",
+    "colour": "light grey (galvanized)",
+    "source": "PC"
+   },
    "rules": [
     {
      "id": "transversal-track",
@@ -648,51 +650,51 @@
       "agri-fixed",
       "agri-tracker"
      ],
-     "value": 0.4,
      "source": "AGRI",
-     "text": "40% de couverture PV maximum"
+     "text": "40% de couverture PV maximum",
+     "value": 0.4
     },
     {
      "id": "agri-crop-slope",
      "applies": [
       "agri-fixed"
      ],
-     "value": 5,
-     "max": 6,
      "unit": "%",
      "source": "AGRI",
-     "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only"
+     "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only",
+     "value": 5,
+     "max": 6
     },
     {
      "id": "tracker-2v-azimuth",
      "applies": [
       "agri-tracker"
      ],
-     "value": 30,
      "unit": "deg",
      "source": "AGRI",
-     "text": "Tracker 2V: at most +30 deg (south = 0) towards east or west"
+     "text": "Tracker 2V: at most +30 deg (south = 0) towards east or west",
+     "value": 30
     },
     {
      "id": "canopy-expansion-joint",
      "applies": [
       "agri-fixed"
      ],
-     "value": 0.3,
-     "every": 100,
      "unit": "m",
      "source": "AGRI",
-     "text": "30 cm expansion joint for canopies longer than 100 m, repeated every 100 m"
+     "text": "30 cm expansion joint for canopies longer than 100 m, repeated every 100 m",
+     "value": 0.3,
+     "every": 100
     },
     {
      "id": "fire-tank-near-entrance",
      "applies": [
       "all"
      ],
-     "maxDistance": 50,
      "unit": "m",
      "source": "NORMES",
-     "text": "Fire water tank always close to the entrance and a track (max 50 m)"
+     "text": "Fire water tank always close to the entrance and a track (max 50 m)",
+     "maxDistance": 50
     },
     {
      "id": "delivery-station-at-entrance",
@@ -733,9 +735,9 @@
      "id": "PDL-A",
      "kind": "delivery-station",
      "label": "Delivery station (PDL) type A",
-     "length": 5.0,
+     "length": 5,
      "width": 2.6,
-     "area": 13.0,
+     "area": 13,
      "source": "PC"
     },
     {
@@ -752,9 +754,9 @@
      "id": "PDT-500",
      "kind": "transformer-station",
      "label": "Transformer station 5.00 x 2.60",
-     "length": 5.0,
+     "length": 5,
      "width": 2.6,
-     "area": 13.0,
+     "area": 13,
      "source": "PC",
      "verify": true
     },
@@ -763,7 +765,7 @@
      "kind": "transformer-station",
      "label": "Transformer station 5.30 x 3.00",
      "length": 5.3,
-     "width": 3.0,
+     "width": 3,
      "area": 15.9,
      "source": "PC",
      "verify": true
@@ -773,10 +775,26 @@
      "kind": "transformer-station",
      "label": "Transformer station 6.50 x 3.00",
      "length": 6.5,
-     "width": 3.0,
+     "width": 3,
      "area": 19.5,
      "source": "PC",
      "verify": true
+    }
+   ],
+   "gates": [
+    {
+     "id": "GATE-6",
+     "width": 6,
+     "type": "double swing, vertical bars",
+     "source": "PC",
+     "note": "to be defined per project"
+    },
+    {
+     "id": "GATE-7",
+     "width": 7,
+     "type": "double swing, vertical bars",
+     "source": "PC",
+     "note": "to be defined per project"
     }
    ],
    "transformerTypes": [
@@ -821,35 +839,12 @@
      "source": "PC"
     }
    ],
-   "fence": {
-    "height": 2.0,
-    "unit": "m",
-    "mesh": "welded mesh 100/50, galvanized steel posts",
-    "colour": "light grey (galvanized)",
-    "source": "PC"
-   },
-   "gates": [
-    {
-     "id": "GATE-6",
-     "width": 6.0,
-     "type": "double swing, vertical bars",
-     "source": "PC",
-     "note": "to be defined per project"
-    },
-    {
-     "id": "GATE-7",
-     "width": 7.0,
-     "type": "double swing, vertical bars",
-     "source": "PC",
-     "note": "to be defined per project"
-    }
-   ],
    "fireTanks": [
     {
      "id": "TANK-60-H",
      "volume": 60,
      "shape": "horizontal cylinder",
-     "diameter": 3.0,
+     "diameter": 3,
      "length": 9.03,
      "source": "PC"
     },
@@ -857,7 +852,7 @@
      "id": "TANK-120-H",
      "volume": 120,
      "shape": "horizontal cylinder",
-     "diameter": 3.0,
+     "diameter": 3,
      "length": 17.67,
      "source": "PC"
     },
@@ -866,16 +861,16 @@
      "volume": 60,
      "shape": "vertical cylinder",
      "diameter": 7.02,
-     "height": 1.78,
-     "source": "PC"
+     "source": "PC",
+     "height": 1.78
     },
     {
      "id": "TANK-120-V",
      "volume": 120,
      "shape": "vertical cylinder",
      "diameter": 7.02,
-     "height": 3.57,
-     "source": "PC"
+     "source": "PC",
+     "height": 3.57
     }
    ]
   },
@@ -915,41 +910,41 @@
     "agri-fixed",
     "agri-tracker"
    ],
-   "value": 0.4,
    "source": "AGRI",
-   "text": "40% de couverture PV maximum"
+   "text": "40% de couverture PV maximum",
+   "value": 0.4
   },
   {
    "id": "agri-crop-slope",
    "applies": [
     "agri-fixed"
    ],
-   "value": 5,
-   "max": 6,
    "unit": "%",
    "source": "AGRI",
-   "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only"
+   "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only",
+   "value": 5,
+   "max": 6
   },
   {
    "id": "tracker-2v-azimuth",
    "applies": [
     "agri-tracker"
    ],
-   "value": 30,
    "unit": "deg",
    "source": "AGRI",
-   "text": "Tracker 2V: at most +30 deg (south = 0) towards east or west"
+   "text": "Tracker 2V: at most +30 deg (south = 0) towards east or west",
+   "value": 30
   },
   {
    "id": "canopy-expansion-joint",
    "applies": [
     "agri-fixed"
    ],
-   "value": 0.3,
-   "every": 100,
    "unit": "m",
    "source": "AGRI",
-   "text": "30 cm expansion joint for canopies longer than 100 m, repeated every 100 m"
+   "text": "30 cm expansion joint for canopies longer than 100 m, repeated every 100 m",
+   "value": 0.3,
+   "every": 100
   }
  ]
 }

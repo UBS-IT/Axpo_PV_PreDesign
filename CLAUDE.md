@@ -11,7 +11,10 @@ Italia, Polonia, Francia, Spagna, Germania e Svizzera. **Indipendente** dal Geop
 2. **Solo il toolkit interno.** Strutture, edifici, recinzioni e regole vengono da `app/catalog/toolkit.json`,
    trascritto dai toolkit del gruppo (Design ESQ, `../AGOL Axpo/toolkit`; toolkit IT). **Archivio per paese in
    `docs/toolkit/`** (un file per paese + `group.md` per le scelte di gruppo + `sources.md`): ogni informazione nuova
-   si scrive lì con fonte e stato (confirmed / verify / open), poi passa nel catalogo quando serve all'app. Valori di
+   si scrive lì con fonte e stato (confirmed / verify / open), poi passa nel catalogo quando serve all'app.
+   **Il catalogo si modifica dal workbook `docs/toolkit/toolkit.xlsx`** (fogli Values e record), poi
+   `python scripts/make_toolkit.py` rigenera il JSON; la CI verifica che coincidano (`--check`). Se si tocca il JSON
+   direttamente, `--export` riallinea il workbook. Valori di
    gruppo in cima al catalogo, valori di paese in `countries.<ISO>`: **mai prestati da un paese all'altro** (se manca,
    l'app dice che manca). Ogni valore porta la sua fonte; i non verificati hanno `"verify": true`. Non inventare
    parametri: se manca, chiederlo.
