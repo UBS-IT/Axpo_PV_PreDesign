@@ -27,6 +27,9 @@ Thumbs.db
 
 # synthetic test fixtures are fine to keep (scripts/make_fixtures.py)
 !tests/fixtures/*
+# the toolkit workbook is the editable source of app/catalog/toolkit.json (scripts/make_toolkit.py)
+!docs/toolkit/toolkit.xlsx
+__pycache__/
 
 # development tools: dependencies and bundles are rebuilt with npm install / npm run build
 node_modules/

@@ -195,7 +195,9 @@ over the map; the side panel keeps its step and the editing stays in 2D.
 ## How it works
 
 - **Toolkit archive and catalog** — `docs/toolkit/` collects the design rules by country (IT, FR, PL, ES, DE, CH)
-  and for the whole group, each value with its source and status; `app/catalog/toolkit.json` holds the values the app
+  and for the whole group, each value with its source and status; `docs/toolkit/toolkit.xlsx` is the workbook
+  people edit (one row per value, one sheet per kind of record; `python scripts/make_toolkit.py` writes the JSON and
+  the CI checks that both match); `app/catalog/toolkit.json` holds the values the app
   uses: group values at the top, country values under `countries.<ISO>` (never borrowed by another country). Values
   still to be checked have `"verify": true`. `tools/cad/dwg_dump.mjs` reads toolkit DWGs.
   Table sizes are not stored: they come from the module, `n × W + (n − 1) × 0.02`, which reproduces every table
@@ -298,8 +300,8 @@ app/                  the web app (index.html, css/, js/)
   js/ui/              stepper rail, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
   js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
-docs/                 plan, decisions; toolkit/ = the toolkit archive by country
-scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts)
+docs/                 plan, decisions; toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)
+scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts), make_toolkit.py (workbook <-> toolkit.json)
 tools/                headless test runner and vendor builder, CAD (DWG) reader — development tools, not part of the app
 ```
 

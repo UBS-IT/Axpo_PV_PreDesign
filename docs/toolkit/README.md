@@ -11,6 +11,7 @@ can be traced back to where it came from, and so that new information has an obv
 | [`FR.md`](FR.md) | France — Design ESQ toolkit sheets (CS, AGRI, NORMES, PC) |
 | [`PL.md`](PL.md) · [`ES.md`](ES.md) · [`DE.md`](DE.md) · [`CH.md`](CH.md) | Nothing received yet: what is needed |
 | [`sources.md`](sources.md) | Every file received: name, date, what was read from it, where it is kept |
+| `toolkit.xlsx` | **The workbook: the editable source of `app/catalog/toolkit.json`** (see below) |
 
 ## How a value enters the app
 
@@ -22,6 +23,36 @@ can be traced back to where it came from, and so that new information has an obv
    and `"verify": true` when its status is *verify*. Country values live under `countries.<ISO>`; values that hold
    everywhere live at the top level (`standards`, `modules`, `slopeLimits`, `defaults`).
 4. The app never invents a value that is missing for a country: it says that the toolkit has no rule for it.
+
+## Updating the values without touching code: the workbook
+
+`toolkit.xlsx` (this folder) holds every value of `app/catalog/toolkit.json` in sheets people can edit in Excel:
+
+| Sheet | Holds |
+|---|---|
+| `README` | these instructions |
+| `Meta` | schema, version, `updated`, owner, notes of the catalog |
+| `Values` | one row per value: Country (blank = the group) · Section · Key (dotted path, e.g. `roads.heavy.width`) · Value · Unit · Source · Status · Note · Detail |
+| `Structures`, `SlopeLimits`, `Modules`, `ModulePowers`, `Rules`, `Buildings`, `StationRules`, `Gates`, `TransformerTypes`, `FireTanks` | one row per record, Country first; `ModulePowers` is the power roadmap of the modules (one row per module and semester) |
+
+Rules of the sheets: numbers and TRUE/FALSE as such, the word `null` for null, a JSON list such as `[6.85, 10.3]`
+for lists; a blank cell is a key left out; a value with a unit, source, status, note or detail becomes
+`{ value, unit, source, verify, note, detail }` in the JSON, a bare one stays a plain value. **Status** is blank or
+`confirmed`, `verify` (the JSON gets `"verify": true`, the app says "to verify") or `open` (no value yet: the key is
+left out of the JSON, the app says the toolkit has no rule, the row stays as a placeholder). Values of one country
+are never copied to another. Prices are never written.
+
+Then, from the project root (Python with openpyxl; the ArcGIS Pro Python has it):
+
+```
+python scripts/make_toolkit.py            # workbook -> app/catalog/toolkit.json
+python scripts/make_toolkit.py --check    # are the two files the same? (the CI runs this on every push)
+python scripts/make_toolkit.py --export   # JSON -> workbook, when a session edited the JSON directly (overwrites it)
+```
+
+Commit both files together. A row with a wrong Status, a duplicate key or a bad list is reported with its row
+number and nothing is written. DWG drawings cannot be read into the workbook automatically: `tools/cad/dwg_dump.mjs`
+lists their texts and dimensions, a person writes the values.
 
 Toolkit files themselves are **not** kept in the repository (internal documents, large binaries): `sources.md`
 says where they are.
