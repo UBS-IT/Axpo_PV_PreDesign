@@ -50,14 +50,42 @@ export async function readAxpo(file) {
     // drawings with the site-features model carry their codes (sf_*): no guessing
     const properties = a.sf_cat ? { category: a.sf_cat, type: a.sf_type, buffer: a.sf_buffer, height: a.sf_height, width: a.sf_width,
       voltage: a.sf_voltage, project_code: a.sf_site && a.sf_site.code, note: a.note } : {};
+    // an exclusion made by the Geoportale's «Pendenze da DTM» tool says how it was computed (sf_slope, 2026-10-04)
+    const sl = a.sf_slope;
+    if (sl && sl.limit) properties.slope = { limit: slopeLimitOf(sl.limit), cell: num(sl.cell), minPatch: num(sl.min_patch), buffer: num(sl.buffer),
+      grid: sl.grid || null, source: sl.source || null, dtm: sl.dtm || null, area: sl.area || null, date: sl.date || null };
     features.push({ name: String(name), geometry: g, sourceCategory: a.categoria || '', kind: a._kind || '', properties });
+  }
+  // the elevation grids of the Geoportale (progetto.json «terrain», elevations in terreno/<id>.f32: Float32 little
+  // endian, row by row from the south-west cell, NaN without data: the layout of terrain/grid.f32 of the .pvpd).
+  // The DTM pictures of images[] (slp) are only its drawing on the Geoportale map: ignored.
+  const terrain = [];
+  for (const rec of st.terrain || []) {
+    if (!rec || !rec.id || !(rec.nx > 0) || !(rec.ny > 0)) continue;
+    const zf = zip.file(rec.file || `terreno/${rec.id}.f32`);
+    if (!zf) continue;
+    const z = new Float32Array(await zf.async('arraybuffer'));
+    if (z.length !== rec.nx * rec.ny) { console.warn('[axpo] terrain', rec.id, 'has', z.length, 'values for', rec.nx * rec.ny, 'cells: ignored'); continue; }
+    const meta = { id: String(rec.id), lon0: num(rec.lon0), lat0: num(rec.lat0), x0: num(rec.x0), y0: num(rec.y0), cell: num(rec.cell), nx: rec.nx, ny: rec.ny,
+      zmin: num(rec.zmin), zmax: num(rec.zmax), missing: rec.missing || 0, loadedAt: rec.loadedAt || new Date().toISOString(),
+      source: rec.source || 'esri', name: rec.name || 'Esri World Elevation', buffer: num(rec.buffer), areaName: rec.area_name || null };
+    if (![meta.lon0, meta.lat0, meta.x0, meta.y0, meta.cell].every(Number.isFinite)) continue;
+    terrain.push({ meta, z, limit: rec.limit ? slopeLimitOf(rec.limit) : null, minPatch: num(rec.min_patch), areaGeom: rec.area_geom || null });
   }
   for (const p of st.parcels || []) {
     if (!p.geometry) continue;
     const name = `Parcel ${p.comune || ''} ${p.foglio ?? ''}/${p.particella ?? ''}`.replace(/\s+/g, ' ').trim();
     features.push({ name, geometry: p.geometry, sourceCategory: 'parcel', kind: 'parcel', properties: {} });
   }
-  return { type: 'axpo', name: st.nome || file.name.replace(/\.axpo$/i, ''), features, site: st.site || null };
+  return { type: 'axpo', name: st.nome || file.name.replace(/\.axpo$/i, ''), features, site: st.site || null, terrain };
+}
+const num = v => (v == null || v === '' ? null : Number(v));
+// { maxAny } or { maxNS, maxEW } in percent, numbers only; null when nothing usable
+function slopeLimitOf(l) {
+  if (!l || typeof l !== 'object') return null;
+  if (l.maxAny != null && isFinite(Number(l.maxAny))) return { maxAny: Number(l.maxAny) };
+  if (l.maxNS != null && l.maxEW != null && isFinite(Number(l.maxNS)) && isFinite(Number(l.maxEW))) return { maxNS: Number(l.maxNS), maxEW: Number(l.maxEW) };
+  return null;
 }
 
 // ── GeoJSON (a legacy "crs" member with an EPSG code is honoured) ──

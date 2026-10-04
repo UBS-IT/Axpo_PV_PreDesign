@@ -67,7 +67,9 @@ standalone e può non contenere la cartella sorella; in tal caso non bloccare il
 - Niente build: moduli ES nativi, più file. Serve un server http (non `file://`).
 - `app/` l'applicazione (step nel rail, uno stepper con stati locked / ready / optional / done forniti dai pannelli
   con `stepProvider` di `ui/rail.js`: `areas.js` 1 · Site (disegno a due passi come il *Disegna* del Geoportale, undo/redo),
-  `terrain/` 2 · Terrain facoltativo, `field.js` 3 · Layout, `infra.js` 4 · Infrastructure, `output.js` 5 · Outputs con
+  `terrain/` 2 · Terrain facoltativo (limite di pendenza: regola del toolkit della struttura, oppure scelto a mano nei
+  due modi del Geoportale, con l'avviso sempre a vista di cosa prevede il toolkit; i progetti `.axpo` con «Pendenze da
+  DTM» portano griglia e limite, decisioni del 2026-10-04), `field.js` 3 · Layout, `infra.js` 4 · Infrastructure, `output.js` 5 · Outputs con
   `export/` per Engineering: Shapefile, GeoPackage, DXF R12, computo Excel nel sistema nazionale
   (niente .gdb: deciso dall'utente il 2026-09-28),
   `.prj` da `app/catalog/prj.json` generato da `scripts/make_prj.py`; `quick.js` predesign rapido; `view3d/` 3D come

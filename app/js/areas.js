@@ -31,6 +31,9 @@ export const areasState = { buildableArea: null };
 // kind, label } | { note } (a message for the results). pre = base minus the objects of the Areas step: the land
 // the plant can use, around which the fence runs.
 export const extraCuts = [];
+// Called after a file was imported: fn(result of readAnyFile, features added). The terrain step adopts the
+// elevation grid of a Geoportale project here (registered there, so that this module does not import it).
+export const importHooks = [];
 const openCats = new Set(['gross', 'net', 'exclusion']);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -217,8 +220,11 @@ export async function importFiles(files, category = null) {
           if (accepts(category, f.geometry)) cls = { category, attrs: cls.category === category ? cls.attrs : defaultAttrs(category) };
           else refused++;
         }
-        added.push({ id: uid(), name: f.name, category: cls.category, geometry: f.geometry, source: r.type,
-          sourceCategory: f.sourceCategory || '', attrs: cls.attrs || {} });
+        const feat = { id: uid(), name: f.name, category: cls.category, geometry: f.geometry, source: r.type,
+          sourceCategory: f.sourceCategory || '', attrs: cls.attrs || {} };
+        // a slope exclusion of the Geoportale keeps how it was computed (limit, grid), outside the attributes
+        if (f.properties && f.properties.slope && cls.category === 'exclusion') feat.slope = f.properties.slope;
+        added.push(feat);
       }
       const byCat = {};
       added.forEach(a => { byCat[a.category] = (byCat[a.category] || 0) + 1; });
@@ -234,6 +240,7 @@ export async function importFiles(files, category = null) {
       const summary = CATEGORIES.filter(c => byCat[c.id]).map(c => `${t('cat.' + c.id)} ${byCat[c.id]}`).join(', ');
       toast(tn('areas.imported', added.length, { file: file.name, summary }), 'ok', 9000);
       if (refused) toast(tn('areas.refused', refused, { cat: t('cat.' + category) }), '', 9000);
+      for (const hook of importHooks) { try { await hook(r, added); } catch (e) { console.error('[import hook]', e); } }
     } catch (e) {
       console.error(e);
       toast(t('toast.importFail', { file: file.name, err: e.message || e }), 'err', 10000);
@@ -281,7 +288,7 @@ function renderHistory() {
   if (r) r.disabled = !history.redo.length;
 }
 // Removes objects with a way back: a message with ↶ Undo instead of a confirmation (they come back where they were)
-function removeFeatures(ids, text) {
+export function removeFeatures(ids, text) {
   const removed = [];
   store.project.features.forEach((f, i) => { if (ids.includes(f.id)) removed.push({ i, f }); });
   if (!removed.length) return;

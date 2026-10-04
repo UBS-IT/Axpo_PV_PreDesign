@@ -6,7 +6,7 @@
 import { getSdk } from '../sdk.js';
 import { store, change, on, emit, uid } from '../state.js';
 import { t, tn, fmt } from '../i18n.js';
-import { siteFrame, extraCuts } from '../areas.js';
+import { siteFrame, extraCuts, importHooks, removeFeatures } from '../areas.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
 import { slopeLimitFor } from '../catalog.js';
@@ -169,6 +169,7 @@ export async function loadTerrain(kind, file = null) {
     await useGrid(meta, z);
     if (g.def.grown) toast(t('terrain.cellGrown', { cell: fmt(g.def.cell, 2) }), '', 9000);
     toast(t('terrain.loaded', { name: meta.name, cells: fmt(meta.nx * meta.ny), cell: fmt(meta.cell, 2) }), 'ok', 8000);
+    replaceImportedSlopeExclusions();
     return true;
   } catch (e) {
     console.error(e);
@@ -188,6 +189,34 @@ export function currentSlopeRule() {
   const f = store.project.field;
   return slopeLimitFor(f.technology, parseNotation(f.structure));
 }
+// the limit of a toolkit rule as the object the mask takes: { maxAny } or { maxNS, maxEW }
+export function ruleLimit(rule) {
+  if (!rule) return null;
+  if (rule.maxAny != null) return { maxAny: rule.maxAny };
+  if (rule.maxNS != null || rule.maxEW != null) return { maxNS: rule.maxNS ?? rule.maxEW, maxEW: rule.maxEW ?? rule.maxNS };
+  return null;
+}
+export function sameLimit(a, b) {
+  if (!a || !b) return false;
+  if (a.maxAny != null || b.maxAny != null) return a.maxAny != null && b.maxAny != null && Math.abs(a.maxAny - b.maxAny) < 1e-9;
+  return Math.abs(a.maxNS - b.maxNS) < 1e-9 && Math.abs(a.maxEW - b.maxEW) < 1e-9;
+}
+export function limitText(l) {
+  if (!l) return '';
+  return l.maxAny != null ? t('terrain.limitAny', { v: fmt(l.maxAny, l.maxAny % 1 ? 1 : 0) }) : t('terrain.limitNsew', { ns: fmt(l.maxNS, l.maxNS % 1 ? 1 : 0), ew: fmt(l.maxEW, l.maxEW % 1 ? 1 : 0) });
+}
+// The slope limit in force: the toolkit rule of the structure of 3 · Layout unless the designer (or a Geoportale
+// project) chose one. { limit, rule (toolkit rule of the structure or null), custom, same (custom equals the rule),
+// from: 'toolkit' | 'custom' | 'geoportale', text }
+export function effectiveLimit() {
+  const T = store.project.terrain, rule = currentSlopeRule(), tk = ruleLimit(rule);
+  if (T.limit) return { limit: T.limit, rule, custom: true, same: sameLimit(T.limit, tk), from: T.limitFrom || 'custom', text: limitText(T.limit) };
+  return { limit: tk, rule, custom: false, same: !!tk, from: 'toolkit', text: limitText(tk) };
+}
+// chosen by hand (limit null = back to the toolkit rule)
+export function setLimit(limit, from = 'custom') {
+  change('terrain', p => { p.terrain.limit = limit ? { ...limit } : null; p.terrain.limitFrom = limit ? from : null; });
+}
 function gridFrame(m) { return memo('f:' + m.id, () => makeLocalFrame({ lon0: m.lon0, lat0: m.lat0 })); }
 function minCells(m) { return Math.ceil((store.project.terrain.minPatch || 0) / (m.cell * m.cell)); }
 // polygon (in the frame of the grid) of the cells of a mask; null when empty
@@ -197,16 +226,17 @@ function maskPolygon(m, mask) {
   if (!rings.length) return null;
   return simplifyOperator.execute(new Polygon({ rings, spatialReference: gridFrame(m).sr }));
 }
-// The cells over the slope limit of the structure, as a polygon in the frame of the grid: { polygon, rule, cells }
+// The cells over the slope limit in force, as a polygon in the frame of the grid:
+// { polygon, limit, rule, cells, text, own (not the toolkit rule) }
 export function overLimit() {
-  const m = terrainData.meta, g = grads(), rule = currentSlopeRule();
-  if (!m || !g || !rule) return null;
-  const key = `o:${m.id}:${rule.id}:${store.project.terrain.minPatch}`;
+  const m = terrainData.meta, g = grads(), L = effectiveLimit();
+  if (!m || !g || !L.limit) return null;
+  const key = `o:${m.id}:${JSON.stringify(L.limit)}:${store.project.terrain.minPatch}`;
   return memo(key, () => {
-    const { mask } = limitMask(g, rule);
+    const { mask } = limitMask(g, L.limit);
     dropSmallPatches(mask, m.nx, m.ny, minCells(m));
     let cells = 0; for (const v of mask) cells += v;
-    return { polygon: cells ? maskPolygon(m, mask) : null, rule, cells };
+    return { polygon: cells ? maskPolygon(m, mask) : null, limit: L.limit, rule: L.rule, cells, text: L.text, own: L.custom && !L.same };
   });
 }
 
@@ -216,8 +246,8 @@ extraCuts.push(frame => {
   if (!P.terrain.grid || !terrainData.z || P.terrain.grid.id !== terrainData.meta?.id) {
     return P.terrain.grid && !terrainData.z ? { note: t('terrain.noteMissing') } : null;
   }
-  const rule = currentSlopeRule();
-  if (!rule) return { note: t('terrain.noteNoRule', { structure: P.field.structure }) };
+  const L = effectiveLimit();
+  if (!L.limit) return { note: t('terrain.noteNoRule', { structure: P.field.structure }) };
   if (!P.terrain.applySlopeLimit) return null;
   if (!coversSite()) return { note: t('terrain.noteOutside') };
   const o = overLimit();
@@ -225,18 +255,49 @@ extraCuts.push(frame => {
   const { projectOperator } = getSdk();
   const m = terrainData.meta;
   const same = Math.abs(m.lon0 - frame.lon0) < 1e-9 && Math.abs(m.lat0 - frame.lat0) < 1e-9;
-  const geometry = memo(`c:${m.id}:${rule.id}:${P.terrain.minPatch}:${frame.lon0},${frame.lat0}`, () => same ? o.polygon : projectOperator.execute(o.polygon, frame.sr));
-  return { geometry, kind: 'slope', label: rule.text };
+  const geometry = memo(`c:${m.id}:${JSON.stringify(L.limit)}:${P.terrain.minPatch}:${frame.lon0},${frame.lat0}`, () => same ? o.polygon : projectOperator.execute(o.polygon, frame.sr));
+  // label: the limit in use (the toolkit rule's own words when it is the rule); own + rule: for the warnings
+  return { geometry, kind: 'slope', label: o.own || !L.rule ? o.text : L.rule.text, own: o.own, rule: L.rule ? L.rule.text : null };
 });
 
 // Does the grid still cover the gross and net areas? (they may have grown since the terrain was loaded)
-function coversSite() {
-  const m = terrainData.meta;
+function coversSite(m = terrainData.meta) {
   if (!m) return true;
   const box = siteBox(gridFrame(m));
   if (!box) return true;
   const tol = m.cell;
   return box.xmin >= m.x0 - tol && box.ymin >= m.y0 - tol && box.xmax <= m.x0 + m.nx * m.cell + tol && box.ymax <= m.y0 + m.ny * m.cell + tol;
+}
+
+// ── a Geoportale project with slopes from its DTM (import hook, 2026-10-04) ──
+// The elevation grid of the project becomes the terrain of this step (no new download), its limit the limit in
+// use (chosen by hand on the Geoportale: compared with the toolkit here), and the imported «steep slope» exclusion
+// gives way to the live cut, so that the slope is cut once. Without a usable grid the exclusion stays as it is.
+async function adoptGeoportaleTerrain(r, added) {
+  if (r.type !== 'axpo' || !r.terrain || !r.terrain.length) return;
+  if (store.project.terrain.grid) { toast(t('terrain.geoKept'), '', 9000); return; }
+  const gross = added.find(f => f.category === 'gross');
+  const sameGeom = rec => gross && rec.areaGeom && JSON.stringify(rec.areaGeom.coordinates) === JSON.stringify(gross.geometry.coordinates);
+  const rec = r.terrain.find(sameGeom) || r.terrain[0];
+  if (!siteFrame() || !coversSite(rec.meta)) { toast(t('terrain.geoNoCover'), '', 10000); return; }
+  await useGrid(rec.meta, rec.z);
+  change('terrain', p => {
+    p.terrain.cellSize = rec.meta.cell;
+    if (rec.minPatch != null) p.terrain.minPatch = rec.minPatch;
+    p.terrain.applySlopeLimit = true;
+    if (rec.limit) { p.terrain.limit = { ...rec.limit }; p.terrain.limitFrom = 'geoportale'; }
+  });
+  toast(t('terrain.geoAdopted', { cells: fmt(rec.meta.nx * rec.meta.ny), cell: fmt(rec.meta.cell, 2), limit: limitText(rec.limit) || '—' }), 'ok', 10000);
+  replaceImportedSlopeExclusions();
+}
+importHooks.push(adoptGeoportaleTerrain);
+// With a terrain loaded and the cut on, an imported slope exclusion would cut the same ground twice: it is removed
+// (with Undo), the live cut of this step takes its place
+function replaceImportedSlopeExclusions() {
+  if (!store.project.terrain.grid || !store.project.terrain.applySlopeLimit) return;
+  const slope = store.project.features.filter(f => f.slope && f.category === 'exclusion');
+  if (!slope.length) return;
+  removeFeatures(slope.map(f => f.id), slope.length === 1 ? t('terrain.slopeReplaced', { name: slope[0].name }) : t('terrain.slopeDropped', { n: slope.length }));
 }
 
 // ── map ──
@@ -296,10 +357,27 @@ function render() {
     + (!have ? `<div class="warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
   // legend
   $('terLegend').innerHTML = SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('');
-  // slope limit of the structure
-  const rule = currentSlopeRule();
-  $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(P.field.structure)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
-    : `<div class="warn">${esc(t('terrain.noteNoRule', { structure: P.field.structure }))}</div>`;
+  // the slope limit: what the toolkit says for the structure, the limit in use, and whether they agree
+  const L = effectiveLimit(), rule = L.rule, S = P.field.structure;
+  $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(S)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
+    : `<div class="warn">${esc(t('terrain.noRuleChoose', { structure: S }))}</div>`;
+  const mode = !L.custom ? 'toolkit' : L.limit.maxAny != null ? 'any' : 'nsew';
+  document.querySelectorAll('#terLimitMode [data-lmode]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.lmode === mode)); b.tabIndex = b.dataset.lmode === mode ? 0 : -1; });
+  $('terLimitAny').hidden = mode !== 'any';
+  $('terLimitNsew').hidden = mode !== 'nsew';
+  if (mode === 'any' && document.activeElement !== $('terMaxAny')) $('terMaxAny').value = L.limit.maxAny;
+  if (mode === 'nsew') {
+    if (document.activeElement !== $('terMaxNS')) $('terMaxNS').value = L.limit.maxNS;
+    if (document.activeElement !== $('terMaxEW')) $('terMaxEW').value = L.limit.maxEW;
+  }
+  const st = $('terLimitStatus');
+  let text, cls = 'status';
+  if (!L.custom) { text = rule ? t('terrain.toolkitRule', { structure: S, rule: rule.text }) : t('terrain.noRuleChoose', { structure: S }); cls += rule ? ' ok' : ' err'; }
+  else if (!rule) { text = `${L.text}. ${t('terrain.noRuleCustom', { structure: S })}`; }
+  else if (L.same) { text = `${L.text}. ${t('terrain.sameToolkit', { structure: S })}`; cls += ' ok'; }
+  else { text = `${L.text}. ${t('terrain.diffToolkit', { structure: S, rule: rule.text })}`; cls += ' err'; }
+  if (L.from === 'geoportale') text += ' ' + t('terrain.fromGeoportale');
+  st.textContent = text; st.className = cls;
   const o = have ? overLimit() : null;
   $('terCut').innerHTML = o ? `<div class="hint">${esc(t('terrain.overArea', { ha: fmt(o.cells * terrainData.meta.cell ** 2 / 1e4, 2) }))}</div>` : '';
   drawMap();
@@ -319,6 +397,28 @@ export function initTerrain(mapView) {
   };
   // the structure decides the slope limit: chosen here as in 3 · Layout (same group standard applied)
   $('terTech').onchange = () => change('field', p => applyStandard(p.field, $('terTech').value));
+  // the limit in use: the toolkit rule, or one chosen by hand in the two ways of the Geoportale
+  const pct = (id, fallback) => { const v = Number($(id).value); return Number.isFinite(v) && v >= 0 ? v : fallback; };
+  $('terLimitMode').onclick = e => {
+    const b = e.target.closest('[data-lmode]');
+    if (!b) return;
+    const L = effectiveLimit(), tk = ruleLimit(L.rule), cur = L.limit;
+    const any = cur?.maxAny ?? tk?.maxAny ?? (cur ? Math.max(cur.maxNS, cur.maxEW) : null) ?? (tk ? Math.max(tk.maxNS, tk.maxEW) : 10);
+    const ns = cur?.maxNS ?? tk?.maxNS ?? any, ew = cur?.maxEW ?? tk?.maxEW ?? any;
+    if (b.dataset.lmode === 'toolkit') setLimit(null);
+    else if (b.dataset.lmode === 'any') setLimit({ maxAny: any });
+    else setLimit({ maxNS: ns, maxEW: ew });
+    b.focus();
+  };
+  $('terLimitMode').onkeydown = e => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const all = [...$('terLimitMode').querySelectorAll('[data-lmode]')], i = all.findIndex(b => b.getAttribute('aria-checked') === 'true');
+    all[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length].click();
+  };
+  $('terMaxAny').onchange = () => setLimit({ maxAny: pct('terMaxAny', 10) });
+  $('terMaxNS').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
+  $('terMaxEW').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terCell').onchange = () => change('terrain', p => { p.terrain.cellSize = Math.min(50, Math.max(1, Number($('terCell').value) || 5)); });
   $('terShow').onchange = () => change('terrain', p => { p.terrain.showSlope = $('terShow').checked; });
   $('terApply').onchange = () => change('terrain', p => { p.terrain.applySlopeLimit = $('terApply').checked; });
@@ -332,7 +432,7 @@ export function initTerrain(mapView) {
     if (!m) return { state: 'optional' };
     if (terrainStale()) return { state: 'done', figure: t('terrain.figStale') };
     const o = terrainData.z && terrainData.meta?.id === m.id && store.project.terrain.applySlopeLimit ? overLimit() : null;
-    return { state: 'done', figure: o && o.cells ? t('terrain.figCut', { ha: fmt(o.cells * m.cell ** 2 / 1e4, 1) }) : (m.source === 'esri' ? 'Esri' : 'DTM') };
+    return { state: 'done', figure: o && o.cells ? t(o.own ? 'terrain.figCutOwn' : 'terrain.figCut', { ha: fmt(o.cells * m.cell ** 2 / 1e4, 1) }) : (m.source === 'esri' ? 'Esri' : 'DTM') };
   });
   restore();
 }
