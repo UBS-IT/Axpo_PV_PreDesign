@@ -1,14 +1,17 @@
-// Step 0 · Terrain: slopes, masks and outlines (pure), then GeoTIFF sampling, the Esri sampler, the cut of the
-// buildable area by the slope limit of the structure and the project file (SDK). Fixture: fixtures/it_dtm_plane.tif,
-// a synthetic plane rising 12 % to the north in EPSG:32633 (tools/headless/make_terrain_fixture.mjs).
+// Step 2 · Terrain: slopes, masks and outlines (pure), then GeoTIFF sampling, the Esri sampler, the cut of the
+// buildable area by the slope limit (the toolkit rule of the structure or one chosen by hand), the project file and
+// the Geoportale projects with slopes from their DTM (SDK). Fixtures: fixtures/it_dtm_plane.tif, a synthetic plane
+// rising 12 % to the north in EPSG:32633 (tools/headless/make_terrain_fixture.mjs); fixtures/it_slope*.axpo, a plane
+// rising 9 % east and 5 % north with the grid of the Geoportale (scripts/make_axpo_slope_fixture.py).
 import { loadSdk, getSdk } from '../app/js/sdk.js';
 import { loadCatalog } from '../app/js/catalog.js';
-import { store, defaultProject } from '../app/js/state.js';
+import { store, defaultProject, upgrade } from '../app/js/state.js';
 import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, ringArea, gridOver, bilinear } from '../app/js/terrain/slope.js';
 import { openGeoTiff } from '../app/js/terrain/dtm.js';
-import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule } from '../app/js/terrain/terrain.js';
+import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale } from '../app/js/terrain/terrain.js';
 import { terrainData, setTerrainData } from '../app/js/terrain/store.js';
-import { computeArea, siteFrame } from '../app/js/areas.js';
+import { computeArea, siteFrame, importFiles } from '../app/js/areas.js';
+import { readAnyFile } from '../app/js/io/importers.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 import { projectBlob, openProjectFile } from '../app/js/io/projectfile.js';
@@ -230,6 +233,126 @@ await test('no-data of the model: cells outside it are unknown, never cut', asyn
   assert(m.unknown === missing && m.over === g.def.nx * g.def.ny - missing, `over ${m.over}, unknown ${m.unknown}`);
   store.project = defaultProject();
   return `${missing} of ${g.def.nx * g.def.ny} cells without data`;
+});
+
+// ── the limit chosen by hand (as on the Geoportale) and the comparison with the toolkit ──
+await test('slope limit chosen by hand, in every direction or north-south / east-west, compared with the toolkit rule', async () => {
+  useSite(317500, 5063500);
+  const g = gridForSite(10);
+  const r = await sampleDtm(file, g.frame, g.def);
+  await useGrid({ id: 'plane2', lon0: g.frame.lon0, lat0: g.frame.lat0, ...g.def, source: 'dtm', name: 'plane', loadedAt: '2026-10-04T00:00:00Z', zmin: 0, zmax: 1, missing: 0 }, r.z, { persist: false });
+  const gross = computeArea(siteFrame()).grossArea;
+  let L = effectiveLimit();
+  assert(!L.custom && L.same && L.from === 'toolkit' && L.rule.id === 'fixed-3v' && L.limit.maxNS === 10, 'toolkit rule of the 3V9 by default: ' + JSON.stringify(L));
+  assert(computeArea(siteFrame()).buildableArea < 1, 'the 12 % plane is cut by the toolkit rule');
+  // 13 % north-south / 13 % east-west by hand: nothing cut, said to differ from the toolkit
+  setLimit({ maxNS: 13, maxEW: 13 });
+  L = effectiveLimit();
+  assert(L.custom && !L.same && L.from === 'custom' && L.text === '13 % north–south and 13 % east–west', JSON.stringify(L));
+  let a = computeArea(siteFrame());
+  near(a.buildableArea, gross, 1e-6 * gross, 'nothing over 13 %');
+  // 10 % in every direction: all cut, the cut says it is an own limit and which rule the toolkit has
+  setLimit({ maxAny: 10 });
+  a = computeArea(siteFrame());
+  assert(a.buildableArea < 1 && a.extras[0].own && a.extras[0].label === '10 % in every direction' && /Fixed 3V/.test(a.extras[0].rule), JSON.stringify(a.extras[0]));
+  // the same values as the toolkit, typed by hand: same, the toolkit's words
+  setLimit({ maxNS: 10, maxEW: 10 });
+  L = effectiveLimit();
+  a = computeArea(siteFrame());
+  assert(L.custom && L.same && !a.extras[0].own && /Fixed 3V/.test(a.extras[0].label), 'same as the toolkit');
+  // a structure without a toolkit rule: nothing cut unless a limit is chosen by hand
+  store.project.field = { ...store.project.field, structure: '4H6' };
+  setLimit(null);
+  a = computeArea(siteFrame());
+  assert(!effectiveLimit().limit && a.notes.some(n => /no slope limit for 4H6/.test(n)) && !a.extras.length, 'no rule, no cut, said');
+  setLimit({ maxAny: 15 });
+  a = computeArea(siteFrame());
+  L = effectiveLimit();
+  near(a.buildableArea, gross, 1e-6 * gross, '12 % < 15 % by hand');
+  assert(L.custom && !L.rule && !L.same, 'own limit without a rule');
+  setLimit({ maxAny: 11 });
+  a = computeArea(siteFrame());
+  assert(a.buildableArea < 1 && a.extras[0].own && a.extras[0].rule === null, 'cut by the own limit, no rule to compare');
+  // the limit travels in the project; old projects get the toolkit rule
+  const blob = await projectBlob();
+  const JSZip = (await import('../app/js/libs.js')).loadJsZip;
+  const pj = JSON.parse(await (await (await JSZip()).loadAsync(blob)).file('project.json').async('text'));
+  assert(pj.terrain.limit.maxAny === 11 && pj.terrain.limitFrom === 'custom', 'limit in the .pvpd');
+  const old = upgrade({ format: 'pv-predesign-project', version: 2, features: [], terrain: { grid: null, cellSize: 5 } });
+  assert(old.terrain.limit === null && old.terrain.limitFrom === null, 'old project: toolkit rule');
+  store.project.field = { ...store.project.field, structure: '3V9' };
+  setLimit(null);
+  await removeTerrain();
+  return `${limitText({ maxAny: 10 })} · ${limitText({ maxNS: 10, maxEW: 12 })}`;
+});
+
+// ── Geoportale projects with slopes from their DTM («Pendenze da DTM», 2026-10-04) ──
+const expected = await (await fetch('./fixtures/expected.json')).json();
+const axpo = async name => new File([await (await fetch('./fixtures/' + name)).blob()], name);
+const E = expected.it_slope;
+
+await test('Geoportale project with slopes from its DTM: the exclusion says how it was made, the grid is read, the pictures are ignored', async () => {
+  const r = await readAnyFile(await axpo('it_slope.axpo'));
+  const ex = r.features.find(f => f.properties.category === 'exclusion');
+  assert(ex && ex.properties.type === 'steep-slope' && ex.properties.slope, 'steep-slope exclusion with its slope record');
+  assert(ex.properties.slope.limit.maxAny === E.limit.maxAny && ex.properties.slope.grid === E.grid && ex.properties.slope.cell === E.cell && ex.properties.slope.minPatch === E.min_patch, JSON.stringify(ex.properties.slope));
+  assert(r.terrain.length === 1, 'one grid');
+  const g = r.terrain[0];
+  assert(g.meta.id === E.grid && g.meta.nx === E.nx && g.meta.ny === E.ny && g.meta.cell === E.cell && g.z.length === E.nx * E.ny, JSON.stringify({ ...g.meta, z: g.z.length }));
+  assert(g.limit.maxAny === E.limit.maxAny && g.minPatch === E.min_patch && g.areaGeom && g.meta.buffer === 25, 'limit, patch, area and buffer of the record');
+  const gr = gradients({ ...g.meta, z: g.z });
+  const k = Math.floor(gr.gx.length / 2);
+  near(gr.gx[k], E.slopeEast, 1e-4, 'east slope'); near(gr.gy[k], E.slopeNorth, 1e-4, 'north slope');
+  near(Math.hypot(gr.gx[k], gr.gy[k]) * 100, E.steepest, 0.01, 'steepest');
+  return `${g.meta.nx} × ${g.meta.ny} cells of ${g.meta.cell} m, ${(Math.hypot(gr.gx[k], gr.gy[k]) * 100).toFixed(3)} % steepest`;
+});
+
+await test('importing it: the grid becomes the terrain, the limit the one chosen on the Geoportale (compared with the toolkit), the exclusion gives way to the live cut', async () => {
+  store.project = defaultProject();
+  const n = await importFiles([await axpo('it_slope.axpo')]);
+  assert(n === 2, `${n} objects imported`);
+  const P = store.project;
+  assert(P.features.length === 1 && P.features[0].category === 'gross', 'the imported slope exclusion was replaced: ' + P.features.map(f => f.category));
+  assert(terrainData.meta && terrainData.meta.id === E.grid && P.terrain.grid && P.terrain.grid.id === E.grid, 'grid adopted without a download');
+  assert(P.terrain.limit.maxAny === 10 && P.terrain.limitFrom === 'geoportale' && P.terrain.applySlopeLimit, 'limit of the Geoportale in use: ' + JSON.stringify(P.terrain));
+  assert(P.terrain.cellSize === E.cell && P.terrain.minPatch === E.min_patch && !terrainStale(), 'cell and patch aligned, not stale');
+  const L = effectiveLimit();
+  assert(L.custom && !L.same && L.from === 'geoportale' && L.rule.id === 'fixed-3v', 'different from the toolkit rule of the 3V9: ' + JSON.stringify(L));
+  let a = computeArea(siteFrame());
+  const gross = a.grossArea;
+  near(gross, E.gross_m2, E.gross_m2 * 1e-4, 'gross area of the fixture');
+  assert(a.buildableArea < 1 && a.extras.length === 1 && a.extras[0].kind === 'slope' && a.extras[0].own, `10 % in every direction cuts everything: ${a.buildableArea} m² left`);
+  near(a.extras[0].area, gross, gross * 1e-4, 'cut once, by the live cut');
+  // back to the toolkit rule: 9 % east and 5 % north are under 10 % N-S and 10 % E-W
+  setLimit(null);
+  a = computeArea(siteFrame());
+  near(a.buildableArea, gross, 1e-6 * gross, 'toolkit rule: nothing cut');
+  assert(effectiveLimit().same && !effectiveLimit().custom, 'toolkit rule in use');
+  setLimit({ maxNS: 10, maxEW: 8 });
+  assert(computeArea(siteFrame()).buildableArea < 1, '8 % east-west by hand cuts everything');
+  await removeTerrain();
+  store.project = defaultProject();
+  return `${(gross / 1e4).toFixed(2)} ha, ${E.nx * E.ny} cells adopted, limit ${limitText({ maxAny: 10 })}`;
+});
+
+await test('a Geoportale grid that does not cover the site is not used; a project without a grid keeps its exclusion', async () => {
+  // a project whose site reaches far beyond the grid of the Geoportale project
+  useSite(317500, 5063500, 1500);
+  await importFiles([await axpo('it_slope.axpo')]);
+  let P = store.project;
+  assert(!P.terrain.grid && !terrainData.meta, 'grid not adopted');
+  let ex = P.features.filter(f => f.category === 'exclusion');
+  assert(ex.length === 1 && ex[0].slope && ex[0].slope.limit.maxAny === 10, 'exclusion kept with its slope record');
+  assert(P.terrain.limit === null, 'limit untouched');
+  // an older export: the exclusion alone cuts the site, the terrain step has nothing yet
+  store.project = defaultProject();
+  await importFiles([await axpo('it_slope_noterrain.axpo')]);
+  P = store.project;
+  ex = P.features.filter(f => f.category === 'exclusion');
+  assert(ex.length === 1 && ex[0].attrs.type === 'steep-slope' && ex[0].slope && !P.terrain.grid, 'exclusion with its record, no grid');
+  const a = computeArea(siteFrame());
+  assert(a.buildableArea < 1 && !a.extras.length, 'cut once, by the exclusion');
+  store.project = defaultProject();
 });
 
 const ok = results.filter(r => r.ok).length;

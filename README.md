@@ -62,7 +62,8 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   `schemas/site_features_model.json`), also used by the AGOL layer *IT - Site Features*. Drawings saved with it
   keep their category, type, buffer, height, width and voltage exactly; the site of work of an `.axpo` (an area of
   AREAS COLLECTION) becomes the gross area; older drawings with the Sites Notes categories are mapped by a fixed
-  table (e.g. *DPA* → exclusion · DPA corridor), keywords only for anything else.
+  table (e.g. *DPA* → exclusion · DPA corridor), keywords only for anything else. Slope exclusions made by the
+  Geoportale's *Pendenze da DTM* come with their grid and limit: see 2 · Terrain.
 - **Drawing** — the pattern of the Geoportale's *Disegna*, in two numbered steps: **① What you draw** (the category
   as a row of coloured chips, then the type and buffer / height / width given to the next drawings) and **② With
   which tool** (Point, Line, Area, Rectangle cards: a card is disabled with the reason when the category does not take
@@ -82,6 +83,14 @@ link to 1 · Site until then), has one primary action (*Analyse the slopes*, Esr
 (*Use my own model*, GeoTIFF), shows the structure it applies to (chosen here or in 3 · Layout), and flags the terrain
 as *to redo* when the site or the grid cell changed after the sampling. Grid cell and small patches are advanced options.
 
+The **slope limit in use** is chosen the same two ways as the Geoportale's *Pendenze da DTM*: the toolkit rule of the
+structure (default), one value in every direction, or north–south and east–west apart (a cell is cut when it is over
+either). A status line always says whether the limit in use is the toolkit's and what the toolkit says for the
+structure ("Same as the toolkit for 3V9" / "Different from the toolkit: Fixed 3V is 10 % north-south and 10 %
+east-west"); the layout warnings, the rail figure ("1.2 ha · own limit") and the report repeat it. The limit is kept in
+the project file. Geoportale and PV Predesign compute slopes the same way (the Geoportale ported this module); the
+toolkit values live only here.
+
 - **Sources** — Esri World Elevation (global service, resolution depends on the country) or a DTM / DSM of your own
   (GeoTIFF in any system the SDK knows; files without a system go through the same dialog as other imports). The
   terrain is sampled on a grid of the local metric frame over the gross and net areas plus 30 m (cell 5 m by default;
@@ -89,8 +98,14 @@ as *to redo* when the site or the grid cell changed after the sampling. Grid cel
 - **Slopes** — steepest slope and its north–south / east–west components per cell (Horn's weights), shown in classes
   0–5–10–15–25 %.
 - **Slope limit of the structure** — from the catalog: fixed 3V at most 10 % north–south and 10 % east–west,
-  fixed 2V, AgriPV fixed and tracker 1V at most 15 % in every direction; structures without a rule are not cut and
-  the panel says so. Cells over the limit (patches under 250 m² ignored, an app setting) are cut from the buildable area.
+  fixed 2V, AgriPV fixed and tracker 1V at most 15 % in every direction; structures without a rule are not cut
+  unless a limit is chosen by hand, and the panel says so. Cells over the limit (patches under 250 m² ignored, an app
+  setting) are cut from the buildable area.
+- **From the Geoportale** — a project whose slopes were computed there (*Pendenze da DTM*: a «steep slope» exclusion
+  with how it was made, the elevation grid in `terreno/<id>.f32`) brings its grid as the terrain of this step when it
+  covers the site (no new download) and its limit as the limit in use (compared with the toolkit); the imported
+  exclusion is replaced by the live cut (with Undo), so the slope is cut once. A grid that does not cover the site, or
+  an older export without one, leaves the exclusion as it is.
 - The grid is kept in the browser (IndexedDB) and inside the project file (`terrain/grid.f32`).
 
 ### 3 · Layout
@@ -237,7 +252,8 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
 - `http://localhost:8140/tests/import.html` — classification, v1 → v2 migration, countries and proposed systems,
   every national EPSG code, the import fixtures against the ArcGIS reference areas, Geoportale projects with the
   site-features model, net area, grid connection route, project and GeoJSON round trips (25)
-- `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, project file (14)
+- `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, limit chosen
+  by hand against the toolkit, project file, Geoportale projects with slopes from their DTM (18)
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
 - `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, stepper states and gates, drawing
@@ -277,7 +293,8 @@ widely or relying on its estimates, track and verify these gates:
 
 No build step is needed to serve `app/`; use an HTTP(S) server rather than opening it as a file.
 The fixtures in `tests/fixtures` are synthetic and rebuilt with `scripts/make_fixtures.py` (ArcGIS Pro Python,
-arcpy), which also writes the reference values in `expected.json`.
+arcpy), which also writes the reference values in `expected.json`; the Geoportale projects with slopes from a DTM
+with `scripts/make_axpo_slope_fixture.py` (plain Python with pyproj).
 
 ## Project layout
 

@@ -96,10 +96,17 @@ output (5): exportModel() projects everything to project.crs.wkid; GeoJSON/KMZ i
 ```
 
 Hidden couplings worth knowing:
-- The **terrain cut depends on 3 · Layout** (`terrain.js currentSlopeRule()` reads `field.structure`): 3V fixed 10 %
-  N-S/E-W, 2V/AgriPV fixed/tracker 15 % any direction. The Terrain panel shows and can change the technology
-  (`applyStandard`, the same as the Layout select). `terrainStale()` flags a grid that no longer matches the site or
-  the cell size.
+- The **terrain cut depends on 3 · Layout** unless a limit was chosen by hand: `terrain.js effectiveLimit()` =
+  `project.terrain.limit` (`{ maxAny }` or `{ maxNS, maxEW }`, `limitFrom` custom / geoportale) when set, else the
+  toolkit rule of `field.structure` (`currentSlopeRule()`: 3V fixed 10 % N-S/E-W, 2V/AgriPV fixed/tracker 15 % any
+  direction); `same` says whether they agree, `overLimit().own` marks a cut by an own limit (warnings, rail, report).
+  The Terrain panel shows and can change the technology (`applyStandard`, the same as the Layout select).
+  `terrainStale()` flags a grid that no longer matches the site or the cell size.
+- A **Geoportale project with slopes from its DTM** (`readAxpo`: `sf_slope` on the exclusion → `feature.slope`,
+  `terrain[]` records + `terreno/<id>.f32` → `result.terrain`) goes through `areas.importHooks`: `terrain.js
+  adoptGeoportaleTerrain` adopts the grid that covers the site (`useGrid`, cell and patch aligned, the limit as
+  `limitFrom: 'geoportale'`) and removes the imported slope exclusion with Undo (`replaceImportedSlopeExclusions`,
+  also after any terrain load), so the slope is cut once. The Geoportale computes slopes with a port of this module.
 - The **terrain grid is sampled over gross + net areas** (`gridForSite`): no site, no grid. If the site grows beyond
   the grid, the cut is suspended with a note (`coversSite`).
 - Every `field`, `infra`, `terrain` change regenerates the whole layout (`field.js schedule()`, 120 ms debounce).

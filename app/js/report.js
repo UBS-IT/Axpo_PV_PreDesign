@@ -9,7 +9,7 @@ import { crsState } from './areas.js';
 import { last } from './field.js';
 import { moduleLabel, powerAge, periodLabel } from './modules.js';
 import { layoutInfra, clearances } from './infra.js';
-import { currentSlopeRule } from './terrain/terrain.js';
+import { effectiveLimit, limitText } from './terrain/terrain.js';
 import { crsLabel } from './crs.js';
 import { toSdk } from './geo/convert.js';
 import { toast } from './ui/toast.js';
@@ -51,8 +51,11 @@ export function reportData() {
   const age = powerAge(r.module);
   a.push(r.power?.period ? t('rep.aPower', { wp: fmt(r.power.wp), period: periodLabel(r.power.period), date: age.date || '—' }) : t('rep.aPowerManual', { wp: fmt(r.power?.wp) }));
   if (L.fences.length) a.push(c.clearance != null ? t('rep.aFence', { m: fmt(c.clearance, 1), src: c.source === 'custom' ? t('rep.custom') : country, road: t(c.road ? 'rep.withRoad' : 'rep.withoutRoad') }) : t('infra.noClearance', { country }));
-  const rule = currentSlopeRule();
-  if (P.terrain.grid) a.push(rule && P.terrain.applySlopeLimit ? t('rep.aSlope', { rule: rule.text, src: P.terrain.grid.name }) : t('rep.aSlopeOff', { src: P.terrain.grid.name }));
+  const lim = effectiveLimit();
+  if (P.terrain.grid && lim.limit && P.terrain.applySlopeLimit) {
+    if (!lim.custom || lim.same) a.push(t('rep.aSlope', { rule: lim.rule ? lim.rule.text : limitText(lim.limit), src: P.terrain.grid.name }));
+    else a.push(t(lim.rule ? 'rep.aSlopeOwn' : 'rep.aSlopeOwnNoRule', { limit: limitText(lim.limit), rule: lim.rule ? lim.rule.text : '', structure: f.structure, src: P.terrain.grid.name }));
+  } else if (P.terrain.grid) a.push(t('rep.aSlopeOff', { src: P.terrain.grid.name }));
   else a.push(t('rep.aNoTerrain'));
   a.push(t('rep.aCrs', { label: crsLabel(P.crs.wkid), wkid: P.crs.wkid || '—' }));
   // checks still to do

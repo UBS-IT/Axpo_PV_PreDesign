@@ -91,5 +91,19 @@
     {}
    ]
   }
+ },
+ "it_slope": {
+  "grid": "g-0000-slope-test",
+  "nx": 76,
+  "ny": 56,
+  "cell": 5.0,
+  "slopeEast": 0.09,
+  "slopeNorth": 0.05,
+  "steepest": 10.296,
+  "limit": {
+   "maxAny": 10
+  },
+  "min_patch": 250,
+  "gross_m2": 70400.0
  }
 }

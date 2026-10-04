@@ -114,6 +114,21 @@
         </select>
         <p class="hint" data-i18n="terrain.techHint"></p>
         <div id="terRule"></div>
+        <label class="l" id="terLimitLabel" data-i18n="terrain.limitMode"></label>
+        <div class="chips plain" id="terLimitMode" role="radiogroup" aria-labelledby="terLimitLabel">
+          <button type="button" role="radio" data-lmode="toolkit" aria-checked="true" data-i18n="terrain.modeToolkit"></button>
+          <button type="button" role="radio" data-lmode="any" aria-checked="false" data-i18n="terrain.modeAny"></button>
+          <button type="button" role="radio" data-lmode="nsew" aria-checked="false" data-i18n="terrain.modeNsew"></button>
+        </div>
+        <div class="row2" id="terLimitAny" hidden>
+          <div><label class="l" for="terMaxAny" data-i18n="terrain.maxAny"></label><input id="terMaxAny" type="number" min="0" max="100" step="0.5"></div>
+        </div>
+        <div class="row2" id="terLimitNsew" hidden>
+          <div><label class="l" for="terMaxNS" data-i18n="terrain.maxNS"></label><input id="terMaxNS" type="number" min="0" max="100" step="0.5"></div>
+          <div><label class="l" for="terMaxEW" data-i18n="terrain.maxEW"></label><input id="terMaxEW" type="number" min="0" max="100" step="0.5"></div>
+        </div>
+        <div class="status" id="terLimitStatus" role="status"></div>
+        <p class="hint" data-i18n="terrain.limitHint"></p>
         <label class="chk"><input type="checkbox" id="terApply"> <span data-i18n="terrain.apply"></span></label>
         <div id="terCut"></div>
       </div>
