@@ -40,7 +40,8 @@ export function defaultProject() {
     // browser (IndexedDB) and in the project file, the project holds its description. limit: the slope limit in use,
     // null = the toolkit rule of the structure of step 3, else { maxAny } or { maxNS, maxEW } in percent chosen by
     // the designer (limitFrom 'custom') or brought by a Geoportale project ('geoportale')
-    terrain: { source: null, cellSize: 5, applySlopeLimit: true, minPatch: 250, showSlope: true, grid: null, limit: null, limitFrom: null },
+    // view: the terrain image on the map, 's' slope classes or 'z' hill-shaded elevations (as on the Geoportale)
+    terrain: { source: null, cellSize: 5, applySlopeLimit: true, minPatch: 250, showSlope: true, view: 's', grid: null, limit: null, limitFrom: null },
     // step 3: fences around the lots of the usable land (fenceGroups: lots sharing one fence, kept as points
     // [lon, lat] inside them), perimeter road (null = not decided: off, the app shows its suggestion), fence →
     // structures clearance (null = the toolkit value of the country), stations { id, kind CC|CU|CT, lon, lat, rot },

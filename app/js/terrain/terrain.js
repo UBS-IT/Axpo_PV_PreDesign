@@ -1,10 +1,12 @@
 // Step 2 · Terrain (optional). The terrain is sampled on a grid in the local metric frame of the site, from Esri World
-// Elevation or from a DTM / DSM of the user (GeoTIFF). From the grid come the slope map (classes in percent) and,
-// with the slope limit of the chosen structure (catalog slopeLimits: fixed 3V 10 % N-S and E-W, tracker 1V 15 % in
-// every direction), the areas cut from the buildable area. No terrain, no cut: the step is optional. It needs the
-// site (1 · Site) and the structure of 3 · Layout, which can also be chosen here.
+// Elevation or from a DTM / DSM of the user (GeoTIFF), or comes with a Geoportale project (its «Pendenze da DTM»
+// tool is a port of this module: same grid, same slopes, same limit object). From the grid come the terrain image
+// on the map (hill-shaded elevations or slope classes, as on the Geoportale), the figures inside the site and,
+// with the slope limit in use (the toolkit rule of the chosen structure, or one chosen by hand), the areas cut from
+// the buildable area. No terrain, no cut: the step is optional. It needs the site (1 · Site) and the structure of
+// 3 · Layout, which can also be chosen here.
 import { getSdk } from '../sdk.js';
-import { store, change, on, emit, uid } from '../state.js';
+import { store, change, on, emit, uid, geomKind } from '../state.js';
 import { t, tn, fmt } from '../i18n.js';
 import { siteFrame, extraCuts, importHooks, removeFeatures } from '../areas.js';
 import { makeLocalFrame } from '../geo/localframe.js';
@@ -18,7 +20,7 @@ import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { stepProvider } from '../ui/rail.js';
 import { applyStandard } from '../field.js';
-import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
+import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
 import { openGeoTiff } from './dtm.js';
 
@@ -26,7 +28,7 @@ const ESRI_ELEVATION = 'https://elevation3d.arcgis.com/arcgis/rest/services/Worl
 const CLASS_COLOURS = [[46, 160, 67], [160, 200, 60], [240, 190, 40], [235, 110, 40], [190, 30, 60]];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let view = null, layer = null, busy = false;
+let view = null, layer = null, imageLayer = null, busy = false;
 
 // ── grid of the site ──
 // Local bounding box of the gross and net areas in the frame of the site
@@ -60,8 +62,10 @@ function centres(frame, def, k = 1) {
 function describe(frame, def, z, extra) {
   let zmin = Infinity, zmax = -Infinity, missing = 0;
   for (const v of z) { if (Number.isFinite(v)) { if (v < zmin) zmin = v; if (v > zmax) zmax = v; } else missing++; }
+  // site: the box of the site at sampling time (frame of the grid): a site that grows beyond it is flagged as to redo
   return { id: uid(), lon0: frame.lon0, lat0: frame.lat0, x0: def.x0, y0: def.y0, cell: def.cell, nx: def.nx, ny: def.ny,
-    zmin: Number.isFinite(zmin) ? zmin : null, zmax: Number.isFinite(zmax) ? zmax : null, missing, loadedAt: new Date().toISOString(), ...extra };
+    zmin: Number.isFinite(zmin) ? zmin : null, zmax: Number.isFinite(zmax) ? zmax : null, missing, loadedAt: new Date().toISOString(),
+    site: siteBox(frame), ...extra };
 }
 
 // ── sources ──
@@ -236,7 +240,7 @@ export function overLimit() {
     const { mask } = limitMask(g, L.limit);
     dropSmallPatches(mask, m.nx, m.ny, minCells(m));
     let cells = 0; for (const v of mask) cells += v;
-    return { polygon: cells ? maskPolygon(m, mask) : null, limit: L.limit, rule: L.rule, cells, text: L.text, own: L.custom && !L.same };
+    return { polygon: cells ? maskPolygon(m, mask) : null, mask, limit: L.limit, rule: L.rule, cells, text: L.text, own: L.custom && !L.same };
   });
 }
 
@@ -249,24 +253,105 @@ extraCuts.push(frame => {
   const L = effectiveLimit();
   if (!L.limit) return { note: t('terrain.noteNoRule', { structure: P.field.structure }) };
   if (!P.terrain.applySlopeLimit) return null;
-  if (!coversSite()) return { note: t('terrain.noteOutside') };
-  const o = overLimit();
-  if (!o || !o.polygon) return null;
-  const { projectOperator } = getSdk();
   const m = terrainData.meta;
+  // a grid that covers only part of the site (a Geoportale grid made on one gross area, a site that grew): the part
+  // inside is cut, the rest is not checked, and the results say so
+  const out = [];
+  const cov = siteCoverage(m);
+  if (cov < 0.999) out.push({ note: t('terrain.notePartial', { pct: fmt(cov * 100, 0) }) });
+  const o = overLimit();
+  if (!o || !o.polygon) return out;
+  const { projectOperator } = getSdk();
   const same = Math.abs(m.lon0 - frame.lon0) < 1e-9 && Math.abs(m.lat0 - frame.lat0) < 1e-9;
   const geometry = memo(`c:${m.id}:${JSON.stringify(L.limit)}:${P.terrain.minPatch}:${frame.lon0},${frame.lat0}`, () => same ? o.polygon : projectOperator.execute(o.polygon, frame.sr));
   // label: the limit in use (the toolkit rule's own words when it is the rule); own + rule: for the warnings
-  return { geometry, kind: 'slope', label: o.own || !L.rule ? o.text : L.rule.text, own: o.own, rule: L.rule ? L.rule.text : null };
+  out.push({ geometry, kind: 'slope', label: o.own || !L.rule ? o.text : L.rule.text, own: o.own, rule: L.rule ? L.rule.text : null });
+  return out;
 });
 
-// Does the grid still cover the gross and net areas? (they may have grown since the terrain was loaded)
-function coversSite(m = terrainData.meta) {
-  if (!m) return true;
+// ── the site seen from the grid ──
+// signature of the gross and net areas: the caches of the site masks follow it
+function siteSig() {
+  return store.project.features.filter(f => (f.category === 'gross' || f.category === 'net') && geomKind(f.geometry) === 'polygon').map(f => f.id + ':' + JSON.stringify(f.geometry).length).join('|');
+}
+// the union of the gross and net polygons in the frame of the grid: { polygon, area } or null
+function siteInGrid(m) {
+  return memo(`s:${m.id}:${siteSig()}`, () => {
+    const S = getSdk(), fr = gridFrame(m);
+    const polys = store.project.features.filter(f => (f.category === 'gross' || f.category === 'net') && geomKind(f.geometry) === 'polygon')
+      .map(f => { const g = toSdk(f.geometry), l = g && fr.toLocal(g); return l ? S.simplifyOperator.execute(l) : null; }).filter(g => g && g.rings && g.rings.length);
+    if (!polys.length) return null;
+    const polygon = polys.length > 1 ? S.unionOperator.executeMany(polys) : polys[0];
+    return { polygon, area: S.areaOperator.execute(polygon) };
+  });
+}
+function gridRect(m) {
+  const { Polygon } = getSdk(), x1 = m.x0 + m.nx * m.cell, y1 = m.y0 + m.ny * m.cell;
+  return new Polygon({ rings: [[[m.x0, m.y0], [m.x0, y1], [x1, y1], [x1, m.y0], [m.x0, m.y0]]], spatialReference: gridFrame(m).sr });
+}
+// The share of the site (gross and net areas) that the grid covers, 0..1 (1 without a site)
+export function siteCoverage(m = terrainData.meta) {
+  if (!m) return 1;
+  const s = siteInGrid(m);
+  if (!s || !(s.area > 0)) return 1;
+  return memo(`cov:${m.id}:${siteSig()}`, () => {
+    const S = getSdk(), i = S.intersectionOperator.execute(s.polygon, gridRect(m));
+    return i && i.rings && i.rings.length ? Math.min(1, S.areaOperator.execute(i) / s.area) : 0;
+  });
+}
+// Has the site grown beyond what the grid was made for? (the box kept in the meta at sampling or adoption time;
+// older grids: the grid itself)
+function siteGrew(m) {
   const box = siteBox(gridFrame(m));
-  if (!box) return true;
-  const tol = m.cell;
-  return box.xmin >= m.x0 - tol && box.ymin >= m.y0 - tol && box.xmax <= m.x0 + m.nx * m.cell + tol && box.ymax <= m.y0 + m.ny * m.cell + tol;
+  if (!box) return false;
+  const ref = m.site || { xmin: m.x0, ymin: m.y0, xmax: m.x0 + m.nx * m.cell, ymax: m.y0 + m.ny * m.cell }, tol = m.cell;
+  return box.xmin < ref.xmin - tol || box.ymin < ref.ymin - tol || box.xmax > ref.xmax + tol || box.ymax > ref.ymax + tol;
+}
+// cells whose centre lies inside a polygon of the frame of the grid: the polygon painted on a canvas of one pixel per
+// cell (the Geoportale does the same)
+function insideMask(m, polygon) {
+  const mask = new Uint8Array(m.nx * m.ny);
+  if (!polygon || !polygon.rings || !polygon.rings.length || typeof document === 'undefined') return mask;
+  const cv = document.createElement('canvas');
+  cv.width = m.nx; cv.height = m.ny;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  c.fillStyle = '#000'; c.beginPath();
+  for (const r of polygon.rings) {
+    r.forEach((p, i) => { const x = (p[0] - m.x0) / m.cell, y = m.ny - (p[1] - m.y0) / m.cell; if (i) c.lineTo(x, y); else c.moveTo(x, y); });
+    c.closePath();
+  }
+  c.fill('evenodd');
+  const d = c.getImageData(0, 0, m.nx, m.ny).data;
+  for (let j = 0; j < m.ny; j++) for (let i = 0; i < m.nx; i++) if (d[4 * ((m.ny - 1 - j) * m.nx + i) + 3] > 127) mask[j * m.nx + i] = 1;
+  return mask;
+}
+function siteMask(m) { return memo(`sm:${m.id}:${siteSig()}`, () => insideMask(m, siteInGrid(m)?.polygon)); }
+function bufferMask(m) {
+  return memo(`bm:${m.id}:${siteSig()}`, () => {
+    const s = siteInGrid(m);
+    if (!s) return new Uint8Array(m.nx * m.ny).fill(1);
+    let b = null;
+    try { b = getSdk().bufferOperator.execute(s.polygon, m.buffer ?? 30); } catch {}
+    return insideMask(m, b || s.polygon);
+  });
+}
+// The figures inside the site, as the Geoportale shows them: { cells, mean, max (percent), overHa, overPct, coverage }
+export function siteStats() {
+  const m = terrainData.meta, g = grads();
+  if (!m || !g) return null;
+  const o = store.project.terrain.applySlopeLimit ? overLimit() : null;
+  return memo(`st:${m.id}:${o ? JSON.stringify(o.limit) + ':' + o.cells : '-'}:${store.project.terrain.minPatch}:${siteSig()}`, () => {
+    const inG = siteMask(m);
+    let over = 0, inside = 0, sum = 0, top = 0;
+    for (let k = 0; k < inG.length; k++) {
+      if (!inG[k]) continue;
+      const sl = Math.hypot(g.gx[k], g.gy[k]) * 100;
+      if (!Number.isFinite(sl)) continue;
+      inside++; sum += sl; if (sl > top) top = sl;
+      if (o && o.mask[k]) over++;
+    }
+    return { cells: inside, mean: inside ? sum / inside : 0, max: top, overHa: over * m.cell * m.cell / 1e4, overPct: inside ? over / inside * 100 : 0, coverage: siteCoverage(m) };
+  });
 }
 
 // ── a Geoportale project with slopes from its DTM (import hook, 2026-10-04) ──
@@ -274,20 +359,28 @@ function coversSite(m = terrainData.meta) {
 // use (chosen by hand on the Geoportale: compared with the toolkit here), and the imported «steep slope» exclusion
 // gives way to the live cut, so that the slope is cut once. Without a usable grid the exclusion stays as it is.
 async function adoptGeoportaleTerrain(r, added) {
-  if (r.type !== 'axpo' || !r.terrain || !r.terrain.length) return;
-  if (store.project.terrain.grid) { toast(t('terrain.geoKept'), '', 9000); return; }
-  const gross = added.find(f => f.category === 'gross');
-  const sameGeom = rec => gross && rec.areaGeom && JSON.stringify(rec.areaGeom.coordinates) === JSON.stringify(gross.geometry.coordinates);
-  const rec = r.terrain.find(sameGeom) || r.terrain[0];
-  if (!siteFrame() || !coversSite(rec.meta)) { toast(t('terrain.geoNoCover'), '', 10000); return; }
-  await useGrid(rec.meta, rec.z);
+  if (r.type !== 'axpo' || !r.terrain || !r.terrain.length || !siteFrame()) return;
+  // a model of the designer's own (GeoTIFF) is never replaced; an Esri grid of this app is: the Geoportale grid is
+  // the same data, chosen on purpose for this project
+  const cur = store.project.terrain.grid;
+  if (cur && cur.source === 'dtm') { toast(t('terrain.geoKeptDtm'), '', 10000); return; }
+  // the grid of the imported slope exclusion, else the one made on the imported gross area, else the first
+  const slope = added.find(f => f.slope && f.slope.grid), grosses = added.filter(f => f.category === 'gross');
+  const sameGeom = rec => rec.areaGeom && grosses.some(g => JSON.stringify(rec.areaGeom.coordinates) === JSON.stringify(g.geometry.coordinates));
+  const rec = (slope && r.terrain.find(x => x.meta.id === slope.slope.grid)) || r.terrain.find(sameGeom) || r.terrain[0];
+  cache.clear();
+  const cov = siteCoverage(rec.meta);
+  if (!(cov > 0.01)) { toast(t('terrain.geoNoCover'), '', 10000); return; }
+  await useGrid({ ...rec.meta, site: siteBox(gridFrame(rec.meta)) }, rec.z);
   change('terrain', p => {
     p.terrain.cellSize = rec.meta.cell;
     if (rec.minPatch != null) p.terrain.minPatch = rec.minPatch;
     p.terrain.applySlopeLimit = true;
     if (rec.limit) { p.terrain.limit = { ...rec.limit }; p.terrain.limitFrom = 'geoportale'; }
   });
-  toast(t('terrain.geoAdopted', { cells: fmt(rec.meta.nx * rec.meta.ny), cell: fmt(rec.meta.cell, 2), limit: limitText(rec.limit) || '—' }), 'ok', 10000);
+  const vars = { cells: fmt(rec.meta.nx * rec.meta.ny), cell: fmt(rec.meta.cell, 2), limit: limitText(rec.limit) || '—', pct: fmt(cov * 100, 0) };
+  toast(t(cov < 0.999 ? 'terrain.geoAdoptedPart' : 'terrain.geoAdopted', vars), 'ok', 12000);
+  if (cur) toast(t('terrain.geoReplaced'), '', 9000);
   replaceImportedSlopeExclusions();
 }
 importHooks.push(adoptGeoportaleTerrain);
@@ -300,34 +393,72 @@ function replaceImportedSlopeExclusions() {
   removeFeatures(slope.map(f => f.id), slope.length === 1 ? t('terrain.slopeReplaced', { name: slope[0].name }) : t('terrain.slopeDropped', { n: slope.length }));
 }
 
-// ── map ──
+// ── map: the terrain image (the Geoportale's own drawing: hill-shaded elevations or slope classes, transparent
+// outside the site plus its buffer, the cells over the limit hatched in red) and the outline of the cut ──
+const Z_RAMP = [[0, [38, 115, 72]], [0.3, [150, 190, 90]], [0.55, [238, 214, 120]], [0.8, [176, 128, 96]], [1, [245, 245, 240]]];
+export function terrainCanvas(m, kind, over) {
+  const g = grads(), z = terrainData.z, inB = bufferMask(m);
+  const k = Math.max(1, Math.min(8, Math.floor(1600 / Math.max(m.nx, m.ny)))), W = m.nx * k, H = m.ny * k;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data;
+  const zr = (m.zmax - m.zmin) || 1;
+  const ramp = v => {
+    for (let i = 1; i < Z_RAMP.length; i++) if (v <= Z_RAMP[i][0]) {
+      const a = Z_RAMP[i - 1], b = Z_RAMP[i], f = (v - a[0]) / ((b[0] - a[0]) || 1);
+      return [a[1][0] + (b[1][0] - a[1][0]) * f, a[1][1] + (b[1][1] - a[1][1]) * f, a[1][2] + (b[1][2] - a[1][2]) * f];
+    }
+    return Z_RAMP[Z_RAMP.length - 1][1];
+  };
+  const LX = -0.5, LY = 0.5, LZ = 0.7071, EX = 3;   // light from the north-west at 45°; relief exaggerated 3 times to read the shapes
+  for (let j = 0; j < m.ny; j++) for (let i = 0; i < m.nx; i++) {
+    const c = j * m.nx + i;
+    if (!inB[c]) continue;
+    const zc = z[c], gx = g.gx[c], gy = g.gy[c];
+    if (!Number.isFinite(zc) || !Number.isFinite(gx) || !Number.isFinite(gy)) continue;
+    let rgb;
+    if (kind === 'z') rgb = ramp((zc - m.zmin) / zr);
+    else { const sl = Math.hypot(gx, gy) * 100; let q = SLOPE_CLASSES.findIndex(x => sl >= x[0] && sl < x[1]); if (q < 0) q = SLOPE_CLASSES.length - 1; rgb = CLASS_COLOURS[q]; }
+    const ax = -gx * EX, ay = -gy * EX, hs = Math.max(0, (ax * LX + ay * LY + LZ) / Math.hypot(ax, ay, 1)), f = Math.min(1.3, Math.max(0.5, hs / LZ));
+    const bad = !!(over && over[c] === 1), py0 = (m.ny - 1 - j) * k, px0 = i * k;
+    for (let b = 0; b < k; b++) for (let a = 0; a < k; a++) {
+      const o = 4 * ((py0 + b) * W + px0 + a);
+      let r = rgb[0] * f, g2 = rgb[1] * f, b2 = rgb[2] * f;
+      if (bad) { const h = ((px0 + a + py0 + b) % 6) < 2; r = h ? 150 : r * 0.35 + 215 * 0.65; g2 = h ? 20 : g2 * 0.35 + 40 * 0.65; b2 = h ? 40 : b2 * 0.35 + 60 * 0.65; }
+      d[o] = r; d[o + 1] = g2; d[o + 2] = b2; d[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
 function drawMap() {
   if (!layer) return;
-  const { Graphic, projectOperator } = getSdk();
+  const { Graphic, projectOperator, ImageElement, CornersGeoreference, Point } = getSdk();
   layer.removeAll();
+  if (imageLayer && imageLayer.source && imageLayer.source.elements) imageLayer.source.elements.removeAll();
   const m = terrainData.meta, g = grads(), P = store.project;
   if (!m || !g) return;
-  const out = [];
-  if (P.terrain.showSlope) {
-    SLOPE_CLASSES.forEach(([lo, hi], c) => {
-      const mask = memo(`k:${m.id}:${c}:${P.terrain.minPatch}`, () => { const x = classMask(g, lo, hi); dropSmallPatches(x, m.nx, m.ny, minCells(m)); return x; });
-      const poly = memo(`kp:${m.id}:${c}:${P.terrain.minPatch}`, () => maskPolygon(m, mask));
-      if (poly) out.push(new Graphic({ geometry: projectOperator.execute(poly, view.spatialReference), symbol: { type: 'simple-fill', color: [...CLASS_COLOURS[c], 0.38], outline: { color: [0, 0, 0, 0], width: 0 } } }));
-    });
-  }
   const o = P.terrain.applySlopeLimit ? overLimit() : null;
-  if (o && o.polygon) out.push(new Graphic({ geometry: projectOperator.execute(o.polygon, view.spatialReference),
-    symbol: { type: 'simple-fill', style: 'backward-diagonal', color: [190, 30, 60, 0.75], outline: { color: [190, 30, 60, 0.9], width: 1.2, style: 'dash' } } }));
-  layer.addMany(out);
+  if (P.terrain.showSlope && imageLayer && typeof document !== 'undefined') {
+    const kind = P.terrain.view === 'z' ? 'z' : 's';
+    const cv = memo(`img:${m.id}:${kind}:${o ? JSON.stringify(o.limit) + ':' + o.cells : '-'}:${P.terrain.minPatch}:${siteSig()}`, () => terrainCanvas(m, kind, o ? o.mask : null));
+    const fr = gridFrame(m), xr = m.x0 + m.nx * m.cell, yt = m.y0 + m.ny * m.cell;
+    const pt = (x, y) => projectOperator.execute(new Point({ x, y, spatialReference: fr.sr }), view.spatialReference);
+    const el = new ImageElement({ image: cv, georeference: new CornersGeoreference({ topLeft: pt(m.x0, yt), topRight: pt(xr, yt), bottomRight: pt(xr, m.y0), bottomLeft: pt(m.x0, m.y0) }) });
+    if (imageLayer.source && imageLayer.source.elements) imageLayer.source.elements.add(el); else imageLayer.source = { elements: [el] };
+  }
+  if (o && o.polygon) layer.add(new Graphic({ geometry: projectOperator.execute(o.polygon, view.spatialReference),
+    symbol: { type: 'simple-fill', style: 'none', outline: { color: [190, 30, 60, 0.9], width: 1.2, style: 'dash' } } }));
 }
 
-// The grid no longer matches the site (it grew beyond it) or the grid cell chosen: the terrain is to be loaded again
+// The grid no longer matches the site (it grew beyond what the grid was made for) or the grid cell chosen: the
+// terrain is to be loaded again
 export function terrainStale() {
   const m = store.project.terrain.grid;
   if (!m || !terrainData.z || terrainData.meta?.id !== m.id) return false;
-  if (!coversSite()) return true;
   const g = gridForSite();
-  return !!g && Math.abs(g.def.cell - m.cell) > 1e-6;
+  if (g && Math.abs(g.def.cell - m.cell) > 1e-6) return true;
+  return siteGrew(m);
 }
 
 // ── panel ──
@@ -355,8 +486,13 @@ function render() {
     + (m.missing ? `<div class="warn">${esc(tn('terrain.missingCells', m.missing))}</div>` : '')
     + (stale ? `<div class="warn">${esc(t('terrain.stale'))}</div>` : '')
     + (!have ? `<div class="warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
-  // legend
-  $('terLegend').innerHTML = SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('');
+  // the image on the map: view and legend
+  const kind = P.terrain.view === 'z' ? 'z' : 's';
+  document.querySelectorAll('#terView [data-view]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.view === kind)); b.tabIndex = b.dataset.view === kind ? 0 : -1; });
+  $('terLegend').innerHTML = (kind === 's'
+    ? SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('')
+    : (m ? `<span class="lg bar"><i class="ramp"></i>${fmt(m.zmin, 0)} – ${fmt(m.zmax, 0)} m</span>` : ''))
+    + (P.terrain.applySlopeLimit ? `<span class="lg"><i class="hatch"></i>${esc(t('terrain.legendOver'))}</span>` : '');
   // the slope limit: what the toolkit says for the structure, the limit in use, and whether they agree
   const L = effectiveLimit(), rule = L.rule, S = P.field.structure;
   $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(S)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
@@ -378,16 +514,22 @@ function render() {
   else { text = `${L.text}. ${t('terrain.diffToolkit', { structure: S, rule: rule.text })}`; cls += ' err'; }
   if (L.from === 'geoportale') text += ' ' + t('terrain.fromGeoportale');
   st.textContent = text; st.className = cls;
-  const o = have ? overLimit() : null;
-  $('terCut').innerHTML = o ? `<div class="hint">${esc(t('terrain.overArea', { ha: fmt(o.cells * terrainData.meta.cell ** 2 / 1e4, 2) }))}</div>` : '';
+  // the figures inside the site (as the Geoportale shows them), and how much of the site the grid covers
+  const stats = have ? siteStats() : null;
+  $('terStats').innerHTML = stats && stats.cells
+    ? `<div class="hint">${esc(t('terrain.stats', { mean: fmt(stats.mean, 1), max: fmt(stats.max, 0) }))}${P.terrain.applySlopeLimit && L.limit ? ' ' + esc(t('terrain.statsOver', { ha: fmt(stats.overHa, 2), pct: fmt(stats.overPct, stats.overPct < 10 ? 1 : 0) })) : ''}</div>`
+      + (stats.coverage < 0.999 ? `<div class="warn">${esc(t('terrain.coverage', { pct: fmt(stats.coverage * 100, 0) }))}</div>` : '')
+    : '';
   drawMap();
 }
 
 export function initTerrain(mapView) {
   view = mapView;
-  const { GraphicsLayer } = getSdk();
+  const { GraphicsLayer, MediaLayer } = getSdk();
+  try { imageLayer = new MediaLayer({ title: 'Terrain image', listMode: 'hide', opacity: 0.8, source: [] }); view.map.add(imageLayer, 0); }
+  catch (e) { console.warn('[terrain] image layer', e); imageLayer = null; }
   layer = new GraphicsLayer({ title: 'Slopes', listMode: 'hide' });
-  view.map.add(layer, 0);
+  view.map.add(layer, imageLayer ? 1 : 0);
   const input = $('fileDtm');
   $('terEsri').onclick = () => loadTerrain('esri');
   $('terDtm').onclick = () => input.click();
@@ -421,6 +563,13 @@ export function initTerrain(mapView) {
   $('terMaxEW').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terCell').onchange = () => change('terrain', p => { p.terrain.cellSize = Math.min(50, Math.max(1, Number($('terCell').value) || 5)); });
   $('terShow').onchange = () => change('terrain', p => { p.terrain.showSlope = $('terShow').checked; });
+  $('terView').onclick = e => { const b = e.target.closest('[data-view]'); if (b) { change('terrain', p => { p.terrain.view = b.dataset.view; }); b.focus(); } };
+  $('terView').onkeydown = e => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const all = [...$('terView').querySelectorAll('[data-view]')], i = all.findIndex(b => b.getAttribute('aria-checked') === 'true');
+    all[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length].click();
+  };
   $('terApply').onchange = () => change('terrain', p => { p.terrain.applySlopeLimit = $('terApply').checked; });
   $('terMinPatch').onchange = () => change('terrain', p => { p.terrain.minPatch = Math.max(0, Number($('terMinPatch').value) || 0); });
   for (const topic of ['terrain', 'field', 'site']) on(topic, render);

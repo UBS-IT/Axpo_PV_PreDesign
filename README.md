@@ -63,7 +63,9 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   keep their category, type, buffer, height, width and voltage exactly; the site of work of an `.axpo` (an area of
   AREAS COLLECTION) becomes the gross area; older drawings with the Sites Notes categories are mapped by a fixed
   table (e.g. *DPA* → exclusion · DPA corridor), keywords only for anything else. Slope exclusions made by the
-  Geoportale's *Pendenze da DTM* come with their grid and limit: see 2 · Terrain.
+  Geoportale's *Pendenze da DTM* come with their grid and limit: see 2 · Terrain. The Geoportale's automatic
+  drawings (the buffer strips that follow an object, the automatic net area) are left out, since this app computes
+  them from the objects with the same rules; its boundary setback (*rientro dal confine*) is taken when none is set.
 - **Drawing** — the pattern of the Geoportale's *Disegna*, in two numbered steps: **① What you draw** (the category
   as a row of coloured chips, then the type and buffer / height / width given to the next drawings) and **② With
   which tool** (Point, Line, Area, Rectangle cards: a card is disabled with the reason when the category does not take
@@ -102,10 +104,16 @@ toolkit values live only here.
   unless a limit is chosen by hand, and the panel says so. Cells over the limit (patches under 250 m² ignored, an app
   setting) are cut from the buildable area.
 - **From the Geoportale** — a project whose slopes were computed there (*Pendenze da DTM*: a «steep slope» exclusion
-  with how it was made, the elevation grid in `terreno/<id>.f32`) brings its grid as the terrain of this step when it
-  covers the site (no new download) and its limit as the limit in use (compared with the toolkit); the imported
-  exclusion is replaced by the live cut (with Undo), so the slope is cut once. A grid that does not cover the site, or
-  an older export without one, leaves the exclusion as it is.
+  with how it was made, the elevation grid in `terreno/<id>.f32`, saved only while the DTM is still on the
+  Geoportale map) brings its grid as the terrain of this step (no new download) and its limit as the limit in use
+  (compared with the toolkit); the imported exclusion is replaced by the live cut (with Undo), so the slope is cut
+  once. A grid made on one gross area inside a larger site covers part of it: the part is cut, the share is shown,
+  the rest is said not to be checked. An Esri grid already in the project is replaced, a GeoTIFF of the designer is
+  kept. An older export without a grid leaves the exclusion as it is.
+- **On the map and in the panel** — the same drawing as the Geoportale: hill-shaded elevations or slope classes
+  (a chip), transparent outside the site plus its buffer, the cells over the limit hatched in red, the outline of
+  the cut dashed; the figures inside the site (mean and steepest slope, hectares and share over the limit) and how
+  much of the site the grid covers.
 - The grid is kept in the browser (IndexedDB) and inside the project file (`terrain/grid.f32`).
 
 ### 3 · Layout
@@ -253,7 +261,8 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
   every national EPSG code, the import fixtures against the ArcGIS reference areas, Geoportale projects with the
   site-features model, net area, grid connection route, project and GeoJSON round trips (25)
 - `http://localhost:8140/tests/terrain.html` — slopes, masks and outlines, GeoTIFF sampling, slope cut, limit chosen
-  by hand against the toolkit, project file, Geoportale projects with slopes from their DTM (18)
+  by hand against the toolkit, figures inside the site and the terrain image, project file, Geoportale projects
+  with slopes from their DTM (grid adopted, partial coverage, grid replaced or kept, automatic drawings left out) (20)
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
 - `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, stepper states and gates, drawing

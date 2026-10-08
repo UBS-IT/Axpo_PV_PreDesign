@@ -43,9 +43,13 @@ export async function readAxpo(file) {
     features.push({ name: `Site ${s.code || s.comune || ''}`.trim(), geometry: s.geom, sourceCategory: 'AREAS COLLECTION', kind: 'site',
       properties: { category: 'gross', project_code: s.code || null, area_guid: s.guid || null } });
   }
+  // automatic drawings of the Geoportale (2026-10-06): the strips around objects with a buffer and the automatic net
+  // area are derived from the other objects with the rules of this app, which computes them again: not imported
+  let autoSkipped = 0;
   for (const rec of st.toolGeoms || []) {
     const a = rec.a || {}, g = rec.g;
     if (!g) continue;
+    if (a.sf_auto === 'buffer' || a.sf_auto === 'net') { autoSkipped++; continue; }
     const name = a.nome || a.categoria || ({ drawing: 'Drawing', buffer: 'Buffer', import: 'Imported' })[a._kind] || 'Object';
     // drawings with the site-features model carry their codes (sf_*): no guessing
     const properties = a.sf_cat ? { category: a.sf_cat, type: a.sf_type, buffer: a.sf_buffer, height: a.sf_height, width: a.sf_width,
@@ -77,7 +81,9 @@ export async function readAxpo(file) {
     const name = `Parcel ${p.comune || ''} ${p.foglio ?? ''}/${p.particella ?? ''}`.replace(/\s+/g, ' ').trim();
     features.push({ name, geometry: p.geometry, sourceCategory: 'parcel', kind: 'parcel', properties: {} });
   }
-  return { type: 'axpo', name: st.nome || file.name.replace(/\.axpo$/i, ''), features, site: st.site || null, terrain };
+  // netSetback: the setback from the cadastral boundary of the automatic net area (metres), this app's boundarySetback
+  return { type: 'axpo', name: st.nome || file.name.replace(/\.axpo$/i, ''), features, site: st.site || null, terrain, autoSkipped,
+    netSetback: num(st.netSetback) > 0 ? num(st.netSetback) : null };
 }
 const num = v => (v == null || v === '' ? null : Number(v));
 // { maxAny } or { maxNS, maxEW } in percent, numbers only; null when nothing usable

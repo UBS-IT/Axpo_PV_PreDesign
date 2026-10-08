@@ -1,6 +1,8 @@
 """Writes the synthetic Geoportale projects of tests/fixtures that carry slopes from a DTM (the Geoportale's
 «Pendenze da DTM» tool, 2026-10-04): it_slope.axpo (a steep-slope exclusion with sf_slope, the elevation grid in
-terreno/<id>.f32, a DTM picture to ignore) and it_slope_noterrain.axpo (the exclusion alone, as an older export).
+terreno/<id>.f32, a DTM picture to ignore), it_slope_noterrain.axpo (the exclusion alone, as an older export) and
+it_slope_partial.axpo (the grid made on a gross drawing inside a larger site of work, plus the automatic strip and
+net area of the Geoportale of 2026-10-06 and a boundary setback: what a real project looks like).
 Invented site, codes and GUIDs (never real ones). Plain Python with pyproj (pip install pyproj); no ArcGIS needed:
 python scripts/make_axpo_slope_fixture.py
 
@@ -52,8 +54,11 @@ exclusion = {'g': gross, 'v': True, 's': None,
 site = {'guid': '{AAAAAAAA-BBBB-4CCC-8DDD-000000000002}', 'code': 'C0001', 'comune': 'Test', 'regione': 'Toscana', 'ha': None, 'geom': gross}
 
 
-def write(name, with_terrain):
-    project = {'formato': 'geoportale-axpo-progetto', 'versione': 1, 'nome': 'Slope test', 'site': site, 'toolGeoms': [exclusion], 'parcels': []}
+def write(name, with_terrain, site_of_work=site, extra_geoms=(), extra_state=None):
+    project = {'formato': 'geoportale-axpo-progetto', 'versione': 1, 'nome': 'Slope test', 'site': site_of_work,
+               'toolGeoms': [exclusion, *extra_geoms], 'parcels': []}
+    if extra_state:
+        project.update(extra_state)
     if with_terrain:
         project['terrain'] = [record]
         project['images'] = [{'name': 'DTM Esri World Elevation', 'slp': GRID_ID, 'file': None, 'corners': []}]
@@ -65,11 +70,29 @@ def write(name, with_terrain):
 
 write('it_slope.axpo', True)
 write('it_slope_noterrain.axpo', False)
+# the partial case: the site of work (AREAS COLLECTION) is 500 x 300 m, the grid was made on a 320 x 220 m gross
+# drawing inside it (the slope exclusion is the drawing itself); an obstacle with a buffer, its automatic strip, the
+# automatic net area and a 5 m boundary setback come too
+BIG_W, BIG_H = 250.0, 150.0
+big = {'type': 'Polygon', 'coordinates': [[ll(-BIG_W, -BIG_H), ll(BIG_W, -BIG_H), ll(BIG_W, BIG_H), ll(-BIG_W, BIG_H), ll(-BIG_W, -BIG_H)]]}
+site_big = dict(site, geom=big, code='C0002', guid='{AAAAAAAA-BBBB-4CCC-8DDD-000000000003}')
+gross_drawing = {'g': gross, 'v': True, 's': None,
+                 'a': {'_kind': 'drawing', 'geomType': 'polygon', 'nome': 'Site C0001', 'categoria': 'Area lorda', 'sf_cat': 'gross', 'sf_src': 'survey', 'sf_uid': 'u-gross-1'}}
+oak = {'g': {'type': 'Point', 'coordinates': ll(40.0, 30.0)}, 'v': True, 's': None,
+       'a': {'_kind': 'drawing', 'geomType': 'point', 'nome': 'Oak', 'categoria': 'Ostacolo · Albero', 'sf_cat': 'obstacle', 'sf_type': 'tree', 'sf_height': 10, 'sf_buffer': 8, 'sf_uid': 'u-oak-1'}}
+strip = {'g': {'type': 'Polygon', 'coordinates': [[ll(32.0, 22.0), ll(48.0, 22.0), ll(48.0, 38.0), ll(32.0, 38.0), ll(32.0, 22.0)]]}, 'v': True, 's': None,
+         'a': {'_kind': 'drawing', 'geomType': 'polygon', 'nome': 'Fascia 8 m · Oak', 'categoria': 'Esclusione · Fascia di rispetto', 'sf_cat': 'exclusion', 'sf_type': 'setback',
+               'sf_src': 'geoprocess', 'sf_auto': 'buffer', 'sf_of': 'u-oak-1', 'sf_sig': 'x', 'note': 'automatica: segue «Oak» e il suo buffer'}}
+net = {'g': {'type': 'Polygon', 'coordinates': [[ll(-155.0, -105.0), ll(155.0, -105.0), ll(155.0, 105.0), ll(-155.0, 105.0), ll(-155.0, -105.0)]]}, 'v': True, 's': None,
+       'a': {'_kind': 'drawing', 'geomType': 'polygon', 'nome': 'Area netta · 6,50 ha', 'categoria': 'Area netta', 'sf_cat': 'net', 'sf_src': 'geoprocess', 'sf_auto': 'net', 'sf_sig': 'y',
+             'note': 'automatica: lorda 7,04 ha − rientro dal confine 5 m − 1 area che taglia'}}
+write('it_slope_partial.axpo', True, site_of_work=site_big, extra_geoms=(gross_drawing, oak, strip, net), extra_state={'netAuto': True, 'netSetback': 5})
 exp_path = os.path.join(OUT, 'expected.json')
 with open(exp_path, encoding='utf-8') as fh:
     expected = json.load(fh)
 expected['it_slope'] = {'grid': GRID_ID, 'nx': nx, 'ny': ny, 'cell': CELL, 'slopeEast': SX, 'slopeNorth': SY,
-                        'steepest': round(math.hypot(SX, SY) * 100, 3), 'limit': limit, 'min_patch': MIN_PATCH, 'gross_m2': 4 * HALF_W * HALF_H}
+                        'steepest': round(math.hypot(SX, SY) * 100, 3), 'limit': limit, 'min_patch': MIN_PATCH, 'gross_m2': 4 * HALF_W * HALF_H,
+                        'partial': {'site_m2': 4 * BIG_W * BIG_H, 'grid_m2': (nx * CELL) * (ny * CELL), 'setback': 5, 'auto': 2}}
 with open(exp_path, 'w', encoding='utf-8', newline='\n') as fh:
     json.dump(expected, fh, indent=1)
-print('written: it_slope.axpo, it_slope_noterrain.axpo;', nx, 'x', ny, 'cells, steepest', expected['it_slope']['steepest'], '%')
+print('written: it_slope.axpo, it_slope_noterrain.axpo, it_slope_partial.axpo;', nx, 'x', ny, 'cells, steepest', expected['it_slope']['steepest'], '%')

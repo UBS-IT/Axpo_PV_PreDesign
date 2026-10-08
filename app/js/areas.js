@@ -240,6 +240,12 @@ export async function importFiles(files, category = null) {
       const summary = CATEGORIES.filter(c => byCat[c.id]).map(c => `${t('cat.' + c.id)} ${byCat[c.id]}`).join(', ');
       toast(tn('areas.imported', added.length, { file: file.name, summary }), 'ok', 9000);
       if (refused) toast(tn('areas.refused', refused, { cat: t('cat.' + category) }), '', 9000);
+      if (r.autoSkipped) toast(tn('areas.autoSkipped', r.autoSkipped), '', 10000);
+      // the boundary setback of the Geoportale's automatic net area becomes this app's (same rule), when none was set
+      if (r.netSetback > 0 && !(store.project.settings.boundarySetback > 0)) {
+        change('settings', p => { p.settings.boundarySetback = r.netSetback; });
+        toast(t('areas.setbackImported', { m: fmt(r.netSetback, 1) }), '', 9000);
+      }
       for (const hook of importHooks) { try { await hook(r, added); } catch (e) { console.error('[import hook]', e); } }
     } catch (e) {
       console.error(e);

@@ -103,10 +103,15 @@ Hidden couplings worth knowing:
   The Terrain panel shows and can change the technology (`applyStandard`, the same as the Layout select).
   `terrainStale()` flags a grid that no longer matches the site or the cell size.
 - A **Geoportale project with slopes from its DTM** (`readAxpo`: `sf_slope` on the exclusion → `feature.slope`,
-  `terrain[]` records + `terreno/<id>.f32` → `result.terrain`) goes through `areas.importHooks`: `terrain.js
-  adoptGeoportaleTerrain` adopts the grid that covers the site (`useGrid`, cell and patch aligned, the limit as
-  `limitFrom: 'geoportale'`) and removes the imported slope exclusion with Undo (`replaceImportedSlopeExclusions`,
-  also after any terrain load), so the slope is cut once. The Geoportale computes slopes with a port of this module.
+  `terrain[]` records + `terreno/<id>.f32` → `result.terrain`, `sf_auto` drawings left out, `netSetback`) goes
+  through `areas.importHooks`: `terrain.js adoptGeoportaleTerrain` adopts the grid of the imported exclusion (else
+  the one of an imported gross area, else the first) when it covers any part of the site (`siteCoverage`), replacing
+  an Esri grid and keeping a GeoTIFF of the designer (`useGrid`, cell and patch aligned, the limit as
+  `limitFrom: 'geoportale'`, the site box at adoption in `meta.site`), and removes the imported slope exclusion with
+  Undo (`replaceImportedSlopeExclusions`, also after any terrain load), so the slope is cut once. The cut applies
+  where the grid is; a partial coverage is a note. The Geoportale computes slopes with a port of this module; the
+  terrain image (`terrainCanvas`, a `MediaLayer`) and the figures inside the site (`siteStats`) are its drawing
+  ported back. Audit: `docs/audit/2026-10-08-geoportale-alignment.md`.
 - The **terrain grid is sampled over gross + net areas** (`gridForSite`): no site, no grid. If the site grows beyond
   the grid, the cut is suspended with a note (`coversSite`).
 - Every `field`, `infra`, `terrain` change regenerates the whole layout (`field.js schedule()`, 120 ms debounce).
@@ -134,7 +139,8 @@ their powers); `--check` in the CI keeps both in step. `countryValue()` wraps pl
 
 ## 8. Map layers (bottom to top)
 
-`Slopes` (terrain classes + hatch over the limit) · `Areas` (features with their buffers) · `Buildable area` ·
+`Terrain image` (hill-shaded elevations or slope classes, hatch over the limit; a MediaLayer) · `Slopes` (outline of
+the cut) · `Areas` (features with their buffers) · `Buildable area` ·
 `Tables` · `Infrastructure` (fence, roads, stations, gates, lot numbers) · sketch layers · `3D layout` (meshes, 3D only).
 Drawing uses two `SketchViewModel`s (areas, roads) with snapping on; one map mode at a time, `Esc` cancels.
 
