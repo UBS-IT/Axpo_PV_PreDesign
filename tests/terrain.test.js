@@ -8,7 +8,7 @@ import { loadCatalog } from '../app/js/catalog.js';
 import { store, defaultProject, upgrade } from '../app/js/state.js';
 import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, ringArea, gridOver, bilinear } from '../app/js/terrain/slope.js';
 import { openGeoTiff } from '../app/js/terrain/dtm.js';
-import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale } from '../app/js/terrain/terrain.js';
+import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale, siteStats, siteCoverage, terrainCanvas } from '../app/js/terrain/terrain.js';
 import { terrainData, setTerrainData } from '../app/js/terrain/store.js';
 import { computeArea, siteFrame, importFiles } from '../app/js/areas.js';
 import { readAnyFile } from '../app/js/io/importers.js';
@@ -183,16 +183,22 @@ await test('a smaller site inside the grid (another local frame): the cut follow
   return `${(a.grossArea / 1e4).toFixed(2)} ha cut in the moved frame`;
 });
 
-await test('a site grown beyond the grid: slopes are not cut and the user is told', () => {
+await test('a site grown beyond the grid: the part inside is still cut, the rest is said not to be checked, the terrain is to redo', () => {
   const p = store.project;
   const [lon, lat] = projectPointToWgs84(32633, [317500, 5063500]);
   const f = makeLocalFrame({ lon0: lon, lat0: lat });
   const { Polygon, SpatialReference } = getSdk();
   const far = new Polygon({ rings: [[[250, 250], [250, 400], [400, 400], [400, 250], [250, 250]]], spatialReference: f.sr });
+  p.terrain.cellSize = 10;   // the grid of the test has 10 m cells: only the site decides whether it is stale
   p.features.push({ id: 'g2', name: 'more', category: 'gross', geometry: toGeoJSON(f.toSr(far, SpatialReference.WGS84)), attrs: {}, source: 'test', sourceCategory: '' });
   const a = computeArea(siteFrame());
-  assert(a.notes.some(n => /grown beyond the terrain grid/.test(n)) && !a.extras.length, 'note, no cut');
+  const cov = siteCoverage();
+  assert(cov > 0.85 && cov < 0.9, `the grid covers ${(cov * 100).toFixed(1)} % of the two areas (16 ha of 18.25)`);
+  assert(a.notes.some(n => /covers 8\d % of the site/.test(n)), 'the results say how much is covered: ' + a.notes);
+  assert(a.extras.length === 1 && Math.abs(a.extras[0].area - 160000) < 2000, `the first area is still cut: ${a.extras[0] && a.extras[0].area} m²`);
+  assert(terrainStale(), 'the site grew beyond the grid: to redo');
   p.features.pop();
+  assert(!terrainStale() && siteCoverage() > 0.999, 'back to the first area: covered, not stale');
 });
 
 await test('Esri World Elevation sampler (service simulated): chunks and no-data', async () => {
@@ -282,8 +288,19 @@ await test('slope limit chosen by hand, in every direction or north-south / east
   assert(old.terrain.limit === null && old.terrain.limitFrom === null, 'old project: toolkit rule');
   store.project.field = { ...store.project.field, structure: '3V9' };
   setLimit(null);
+  // the figures inside the site (as the Geoportale shows them) and the image of the terrain
+  const st = siteStats();
+  near(st.mean, 12, 0.05, 'mean slope inside the site'); near(st.max, 12, 0.05, 'steepest');
+  assert(st.cells > 1500 && st.cells < 1700 && st.overPct > 99.9 && Math.abs(st.overHa - 16) < 0.5 && st.coverage > 0.999, JSON.stringify(st));
+  const cv = terrainCanvas(terrainData.meta, 'z', overLimit().mask);
+  assert(cv.width === terrainData.meta.nx * 8 && cv.height === terrainData.meta.ny * 8, `image ${cv.width} × ${cv.height}`);
+  const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  let opaque = 0; for (let k = 3; k < px.length; k += 4) if (px[k]) opaque++;
+  // the grid is the site plus 30 m, the buffer of the image 30 m with rounded corners: all painted but the corners
+  assert(opaque > 0.9 * cv.width * cv.height && opaque < 0.99 * cv.width * cv.height && px[3] === 0 && px[4 * (cv.width * cv.height / 2 + cv.width / 2) + 3] === 255,
+    `transparent outside the site plus its buffer: ${(opaque / (cv.width * cv.height) * 100).toFixed(0)} % painted, corner ${px[3]}`);
   await removeTerrain();
-  return `${limitText({ maxAny: 10 })} · ${limitText({ maxNS: 10, maxEW: 12 })}`;
+  return `${limitText({ maxAny: 10 })} · ${limitText({ maxNS: 10, maxEW: 12 })} · ${st.cells} cells inside the site`;
 });
 
 // ── Geoportale projects with slopes from their DTM («Pendenze da DTM», 2026-10-04) ──
@@ -330,9 +347,57 @@ await test('importing it: the grid becomes the terrain, the limit the one chosen
   assert(effectiveLimit().same && !effectiveLimit().custom, 'toolkit rule in use');
   setLimit({ maxNS: 10, maxEW: 8 });
   assert(computeArea(siteFrame()).buildableArea < 1, '8 % east-west by hand cuts everything');
+  const st = siteStats();
+  near(st.mean, E.steepest, 0.05, 'mean slope inside the site'); assert(st.overPct > 99.9 && st.coverage > 0.999, JSON.stringify(st));
   await removeTerrain();
   store.project = defaultProject();
   return `${(gross / 1e4).toFixed(2)} ha, ${E.nx * E.ny} cells adopted, limit ${limitText({ maxAny: 10 })}`;
+});
+
+await test('a real-looking project: grid on a gross drawing inside a larger site of work (partial coverage), automatic strip and net area left out, boundary setback taken', async () => {
+  store.project = defaultProject();
+  const n = await importFiles([await axpo('it_slope_partial.axpo')]);
+  const P = store.project, Q = E.partial;
+  assert(n === 4, `${n} objects imported (site of work, gross drawing, oak, exclusion): strip and automatic net left out`);
+  const cats = P.features.map(f => f.category).sort().join(',');
+  assert(cats === 'gross,gross,obstacle', 'exclusion replaced by the live cut, no automatic drawing: ' + cats);
+  assert(P.settings.boundarySetback === Q.setback, `boundary setback ${P.settings.boundarySetback}`);
+  assert(terrainData.meta && terrainData.meta.id === E.grid && P.terrain.limitFrom === 'geoportale', 'grid adopted');
+  const cov = siteCoverage();
+  near(cov, Q.grid_m2 / Q.site_m2, 0.02, 'the grid covers the drawing plus its margin, not the whole site of work');
+  assert(!terrainStale(), 'partial coverage known at adoption: not stale');
+  const a = computeArea(siteFrame());
+  assert(a.notes.some(x => /covers 7\d % of the site/.test(x)), 'the results say it: ' + a.notes);
+  const cut = a.extras.find(x => x.kind === 'slope');
+  assert(cut && cut.area > 0.6 * Q.site_m2 && cut.area < 0.75 * Q.site_m2, `only the covered part is cut: ${cut && cut.area} of ${Q.site_m2} m²`);
+  const st = siteStats();
+  assert(st.coverage < 0.75 && st.overPct > 99, JSON.stringify(st));
+  await removeTerrain();
+  store.project = defaultProject();
+  return `${(cov * 100).toFixed(0)} % covered, ${(cut.area / 1e4).toFixed(2)} ha cut of ${(Q.site_m2 / 1e4).toFixed(2)}`;
+});
+
+await test('a project that already has a terrain: an Esri grid is replaced by the Geoportale one, a GeoTIFF of the designer is kept', async () => {
+  // Esri grid of this app on the same site: replaced
+  store.project = defaultProject();
+  await importFiles([await axpo('it_slope_noterrain.axpo')]);
+  const g = gridForSite(10);
+  await useGrid({ id: 'esri-old', lon0: g.frame.lon0, lat0: g.frame.lat0, ...g.def, source: 'esri', name: 'Esri World Elevation', loadedAt: '2026-10-08T00:00:00Z', zmin: 0, zmax: 1, missing: 0 }, new Float32Array(g.def.nx * g.def.ny), { persist: false });
+  store.project.features = store.project.features.filter(f => f.category !== 'exclusion');
+  await importFiles([await axpo('it_slope.axpo')]);
+  assert(terrainData.meta.id === E.grid && store.project.terrain.grid.id === E.grid, 'Esri grid replaced');
+  // a DTM of the designer: kept, the exclusion stays as it is
+  store.project = defaultProject();
+  await importFiles([await axpo('it_slope_noterrain.axpo')]);
+  store.project.features = store.project.features.filter(f => f.category !== 'exclusion');
+  const g2 = gridForSite(10);
+  await useGrid({ id: 'dtm-own', lon0: g2.frame.lon0, lat0: g2.frame.lat0, ...g2.def, source: 'dtm', name: 'mine.tif', loadedAt: '2026-10-08T00:00:00Z', zmin: 0, zmax: 1, missing: 0 }, new Float32Array(g2.def.nx * g2.def.ny), { persist: false });
+  store.project.features = [];
+  await importFiles([await axpo('it_slope.axpo')]);
+  assert(terrainData.meta.id === 'dtm-own' && store.project.terrain.limit === null, 'own model kept, limit untouched');
+  assert(store.project.features.some(f => f.category === 'exclusion' && f.slope), 'the imported exclusion stays (the live cut uses the own model)');
+  await removeTerrain();
+  store.project = defaultProject();
 });
 
 await test('a Geoportale grid that does not cover the site is not used; a project without a grid keeps its exclusion', async () => {

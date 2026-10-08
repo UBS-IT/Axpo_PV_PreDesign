@@ -204,8 +204,15 @@ await test('terrain: DTM loaded, slope map drawn, 3V cut (10 %), tracker kept (1
   const r = await sampleDtm(file, g.frame, g.def);
   await useGrid({ id: 'ui', lon0: g.frame.lon0, lat0: g.frame.lat0, ...g.def, source: 'dtm', name: file.name, loadedAt: new Date().toISOString(), zmin: 100, zmax: 220, missing: 0 }, r.z, { persist: false });
   await wait(800);
-  const slopes = view.map.layers.find(l => l.title === 'Slopes');
-  assert(slopes && slopes.graphics.length >= 2, `slope layer graphics: ${slopes && slopes.graphics.length}`);
+  const slopes = view.map.layers.find(l => l.title === 'Slopes'), img = view.map.layers.find(l => l.title === 'Terrain image');
+  assert(slopes && slopes.graphics.length === 1, `outline of the cut: ${slopes && slopes.graphics.length}`);
+  assert(img && img.source && img.source.elements.length === 1 && img.source.elements.getItemAt(0).image.width > 0, 'terrain image on the map');
+  assert(/Inside the site: mean slope 12\.0 %/.test(text('terStats')) && /100 % of the site/.test(text('terStats')), 'figures inside the site: ' + text('terStats'));
+  document.querySelector('#terView [data-view="z"]').click();
+  await wait(300);
+  assert(store.project.terrain.view === 'z' && /\d+ – \d+ m/.test(text('terLegend')), 'elevation view with its legend: ' + text('terLegend'));
+  document.querySelector('#terView [data-view="s"]').click();
+  await wait(300);
   assert(/Fixed 3V/.test(text('terRule')) && /Ground-mounted, fixed/.test(text('terRule')), 'rule shown with its technology: ' + text('terRule'));
   assert(text('terPill') === 'loaded' && document.getElementById('terTech').value === 'ground-fixed' && /again/.test(text('terEsri')), 'panel: loaded, technology mirrored, «analyse again»');
   const ts = stepState('terrain');
@@ -465,7 +472,7 @@ await test('area summary shows the slope cut and the terrain panel its figures',
   change('field', q => { q.field.technology = 'ground-fixed'; q.field.structure = '3V9'; q.field.pitch = 10.3; });
   await wait(800);
   assert(/slopes over the limit/.test(text('areaSummary')), 'summary: ' + text('areaSummary'));
-  assert(/Over the limit on the grid/.test(text('terCut')), 'terrain panel: ' + text('terCut'));
+  assert(/Over the limit: 1\d\.\d\d ha, 100 % of the site/.test(text('terStats')), 'terrain panel: ' + text('terStats'));
   assert(/it_dtm_plane.tif/.test(text('terInfo')), 'terrain info');
   replaceProject(defaultProject());
   await wait(400);
@@ -480,7 +487,7 @@ await test('area summary shows the slope cut and the terrain panel its figures',
   assert(rs && rs.dcMWp < 9 && store.project.infra.perimeterRoad === true, `small site ${rs && rs.dcMWp} MWp, road ${store.project.infra.perimeterRoad}`);
   replaceProject(defaultProject());
   await wait(300);
-  return text('terCut');
+  return text('terStats') || 'terrain panel empty after a new project';
 });
 
 const ok = results.filter(r => r.ok).length;

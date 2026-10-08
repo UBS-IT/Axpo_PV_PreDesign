@@ -104,6 +104,12 @@
    "maxAny": 10
   },
   "min_patch": 250,
-  "gross_m2": 70400.0
+  "gross_m2": 70400.0,
+  "partial": {
+   "site_m2": 150000.0,
+   "grid_m2": 106400.0,
+   "setback": 5,
+   "auto": 2
+  }
  }
 }

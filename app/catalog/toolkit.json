@@ -128,7 +128,7 @@
     "value": 100,
     "unit": "m",
     "source": "CS, AGRI, NORMES",
-    "note": "Piste transversale tous les 100 m (Est/Ouest)"
+    "note": "Transversal track every 100 m (east–west; toolkit: «piste transversale»)"
    },
    "width": {
     "value": 4,
@@ -323,7 +323,7 @@
    "tiltDeg": 20,
    "azimuthDeg": 180,
    "source": "AGRI",
-   "note": "Ombriere elevage bovin, south. 12 m minimum pitch, adjusted case by case to keep PV coverage <= 40%",
+   "note": "Cattle shade canopy (ombrière élevage bovin), south. 12 m minimum pitch, adjusted case by case to keep PV coverage <= 40%",
    "minPitch": 12,
    "verify": true
   },
@@ -335,7 +335,7 @@
    "tiltDeg": 20,
    "azimuthDeg": 180,
    "source": "AGRI",
-   "note": "Ombriere elevage ovin, south; module 2.382 x 1.134 (projected 2.238 x 1.134). Minimum pitch 12 or 13 m in the sheet - to confirm",
+   "note": "Sheep shade canopy (ombrière élevage ovin), south; module 2.382 x 1.134 (projected 2.238 x 1.134). Minimum pitch 12 or 13 m in the sheet - to confirm",
    "minPitch": 13,
    "verify": true
   },
@@ -347,7 +347,7 @@
    "tiltDeg": 20,
    "azimuthDeg": 180,
    "source": "AGRI",
-   "note": "Version charte FNO, 3 modules landscape, south",
+   "note": "FNO charter version (charte FNO), 3 modules landscape, south",
    "minPitch": 8.1,
    "verify": true
   },
@@ -359,7 +359,7 @@
    "tiltDeg": 11.3,
    "azimuthDeg": 180,
    "source": "AGRI",
-   "note": "Voliere PV / bird shed, 10 modules landscape (example module 1.762 x 1.134), tilt 20% = 11.3 deg. Heights may vary",
+   "note": "PV aviary (volière PV) / bird shed, 10 modules landscape (example module 1.762 x 1.134), tilt 20% = 11.3 deg. Heights may vary",
    "verify": true
   },
   {
@@ -368,7 +368,7 @@
    "label": "AgriPV tracker canopy 1V",
    "notation": "1V26",
    "source": "AGRI",
-   "note": "Canopee trackers, 1 module portrait, east/west one-axis tracking, tilt +60/-60 deg. Spacing between structures on the north/south facade 6, 9 or 12 m (single or double post variants)",
+   "note": "Tracker canopy (canopée trackers), 1 module portrait, east/west one-axis tracking, tilt +60/-60 deg. Spacing between structures on the north/south facade 6, 9 or 12 m (single or double post variants)",
    "verify": true,
    "rotationDeg": 60,
    "axis": "north-south"
@@ -434,7 +434,7 @@
     "maxShadingAngleDeg": {
      "value": 29,
      "source": "IT-PC",
-     "note": "Sections 'T 15 deg / AO 29 deg SUD' (old version 25 deg); pitches 2V 6.85 m, 3V 10.30 m"
+     "note": "Sections «T 15° / AO 29° SUD» of the IT drawing (older version 25°); pitches 2V 6.85 m, 3V 10.30 m"
     },
     "lowEdgeHeight": {
      "value": 1,
@@ -600,7 +600,7 @@
      "height": 2,
      "type": "two swing leaves, vertical bars, RAL 6005",
      "source": "IT-PC",
-     "note": "da definirsi secondo progetto"
+     "note": "to be defined per project (toolkit: «da definirsi secondo progetto»)"
     }
    ]
   },
@@ -616,7 +616,7 @@
     "maxShadingAngleDeg": {
      "value": 35,
      "source": "CS",
-     "note": "Angle d'ombrage maximal de 35 deg: minimum pitch = D*cos(tilt) + D*sin(tilt)/tan(35 deg). Checked on the 3V9 section: 6.94 + 2.66 = 9.60 m"
+     "note": "Maximum shading angle 35° (toolkit: «angle d'ombrage maximal»): minimum pitch = D·cos(tilt) + D·sin(tilt)/tan(35°). Checked on the 3V9 section: 6.94 + 2.66 = 9.60 m"
     },
     "lowEdgeHeight": {
      "value": 1.1,
@@ -642,7 +642,7 @@
      "spacing": 100,
      "unit": "m",
      "source": "CS, AGRI, NORMES",
-     "text": "Piste transversale tous les 100 m (Est/Ouest)"
+     "text": "Transversal track every 100 m (east–west; toolkit: «piste transversale»)"
     },
     {
      "id": "agri-max-coverage",
@@ -651,7 +651,7 @@
       "agri-tracker"
      ],
      "source": "AGRI",
-     "text": "40% de couverture PV maximum",
+     "text": "PV ground coverage at most 40 %",
      "value": 0.4
     },
     {
@@ -661,7 +661,7 @@
      ],
      "unit": "%",
      "source": "AGRI",
-     "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only",
+     "text": "Crop canopies (ombrières de culture): ground slope 5 % at most (6 % with extra cost), in one direction only",
      "value": 5,
      "max": 6
     },
@@ -902,7 +902,7 @@
    "spacing": 100,
    "unit": "m",
    "source": "CS, AGRI, NORMES",
-   "text": "Piste transversale tous les 100 m (Est/Ouest)"
+   "text": "Transversal track every 100 m (east–west; toolkit: «piste transversale»)"
   },
   {
    "id": "agri-max-coverage",
@@ -911,7 +911,7 @@
     "agri-tracker"
    ],
    "source": "AGRI",
-   "text": "40% de couverture PV maximum",
+   "text": "PV ground coverage at most 40 %",
    "value": 0.4
   },
   {
@@ -921,7 +921,7 @@
    ],
    "unit": "%",
    "source": "AGRI",
-   "text": "Ombrieres de culture: 5% (max 6% with extra cost), in one direction only",
+   "text": "Crop canopies (ombrières de culture): ground slope 5 % at most (6 % with extra cost), in one direction only",
    "value": 5,
    "max": 6
   },

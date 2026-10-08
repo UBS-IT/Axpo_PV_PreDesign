@@ -130,11 +130,15 @@
         <div class="status" id="terLimitStatus" role="status"></div>
         <p class="hint" data-i18n="terrain.limitHint"></p>
         <label class="chk"><input type="checkbox" id="terApply"> <span data-i18n="terrain.apply"></span></label>
-        <div id="terCut"></div>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
+        <div id="terStats"></div>
         <label class="chk"><input type="checkbox" id="terShow"> <span data-i18n="terrain.show"></span></label>
+        <div class="chips plain" id="terView" role="radiogroup" data-i18n-aria="terrain.view">
+          <button type="button" role="radio" data-view="s" aria-checked="true" data-i18n="terrain.viewS"></button>
+          <button type="button" role="radio" data-view="z" aria-checked="false" data-i18n="terrain.viewZ"></button>
+        </div>
         <div class="legend" id="terLegend"></div>
       </div>
     </section>
