@@ -32,8 +32,14 @@ can be traced back to where it came from, and so that new information has an obv
 |---|---|
 | `README` | these instructions |
 | `Meta` | schema, version, `updated`, owner, notes of the catalog |
-| `Values` | one row per value: Country (blank = the group) · Section · Key (dotted path, e.g. `roads.heavy.width`) · Value · Unit · Source · Status · Note · Detail |
+| `Values` | one row per value: Country (blank = the group) · Section · Key (dotted path, e.g. `roads.heavy.width`) · Meaning (what the key is, written by the export: not read back) · Value · Unit · Source · Status · Note · Detail |
 | `Structures`, `SlopeLimits`, `Modules`, `ModulePowers`, `Rules`, `Buildings`, `StationRules`, `Gates`, `TransformerTypes`, `FireTanks` | one row per record, Country first; `ModulePowers` is the power roadmap of the modules (one row per module and semester) |
+
+Help inside the workbook: every column header carries a comment (hover it) and every cell of a documented column
+shows the same text as an Excel input message when selected; the `Meaning` column of `Values` says in plain
+English what each key is and in which unit it is expected; `Country` and `Status` are drop-down lists. Everything
+in the workbook is in English; where a toolkit uses a French or Italian term, it is kept in brackets after the
+English one (e.g. «piste transversale») so the sheets can still be searched by the original name.
 
 Rules of the sheets: numbers and TRUE/FALSE as such, the word `null` for null, a JSON list such as `[6.85, 10.3]`
 for lists; a blank cell is a key left out; a value with a unit, source, status, note or detail becomes
