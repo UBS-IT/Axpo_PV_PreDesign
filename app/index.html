@@ -77,6 +77,9 @@
         <input id="boundarySetback" type="number" min="0" step="0.5">
         <p class="hint" data-i18n="areas.setbackHint"></p>
         <div id="areaSummary"></div>
+        <details class="gloss"><summary data-i18n="areas.gloss"></summary>
+          <ul><li data-i18n="areas.gl1"></li><li data-i18n="areas.gl2"></li><li data-i18n="areas.gl3"></li><li data-i18n="areas.gl4"></li></ul>
+        </details>
       </div>
     </section>
 
@@ -146,6 +149,7 @@
     <!-- 3 · layout -->
     <section class="step" data-step="fields" hidden>
       <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.fields"></h2><p data-i18n="step.fields.sub"></p></div></header>
+      <button type="button" class="sticky" id="fSticky" data-i18n-title="res.stickyTitle" hidden></button>
       <div class="btns"><button type="button" class="btn primary" id="fQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></div>
       <p class="hint" data-i18n="quick.fieldsHint"></p>
 
@@ -211,11 +215,14 @@
       <details class="sec" id="secResults" open>
         <summary><span class="ico" aria-hidden="true">📊</span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
         <div class="bd">
-          <div class="kpis" id="kpis"></div>
+          <div class="results" id="kpis"></div>
           <label class="l" for="specYield" data-i18n="res.specYield"></label>
           <input id="specYield" type="number" min="0" step="1">
           <div class="hint" data-i18n="res.specYieldHint"></div>
           <div class="warns" id="warns"></div>
+          <details class="gloss"><summary data-i18n="res.gloss"></summary>
+            <ul><li data-i18n="res.gl1"></li><li data-i18n="res.gl2"></li><li data-i18n="res.gl3"></li><li data-i18n="res.gl4"></li></ul>
+          </details>
         </div>
       </details>
 

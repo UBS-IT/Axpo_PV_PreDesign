@@ -227,6 +227,35 @@ input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 
 .kpi .v { font-size: 17px; font-weight: 700; }
 .kpi .k { font-size: 11px; color: var(--mut); }
 .kpi.big { grid-column: 1 / -1; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+/* figures as a ledger: one row per item, the number on the right in tabular digits; .sub = "of which" rows,
+   .tot = the total (the key figure of the step); groups of rows carry a small heading */
+.ledger { display: flex; flex-direction: column; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.ledger .r { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 2px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size: 12.5px; }
+.ledger .r:last-child { border-bottom: 0; }
+.ledger .r span { min-width: 0; color: var(--txt); }
+.ledger .r b { flex: none; font-weight: 600; white-space: nowrap; }
+.ledger .r.sub { padding-left: 14px; font-size: 11.5px; }
+.ledger .r.sub span, .ledger .r.sub b { color: var(--mut); font-weight: 500; }
+.ledger .r a { color: var(--link); text-decoration: none; font-size: 11px; white-space: nowrap; }
+.ledger .r a:hover { text-decoration: underline; }
+.ledger .r.tot { margin-top: 4px; padding: 8px 10px; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, transparent); font-size: 13px; }
+.ledger .r.tot b { font-size: 17px; font-weight: 700; }
+.rgrp { margin-top: 10px; }
+.rgrp h4 { margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+.rgrp .ledger { margin-top: 2px; }
+.results .kpi.big { display: block; margin-top: 8px; }
+.tbar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 8px; font-size: 11px; color: var(--mut); }
+.tbar i { display: block; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.tbar i::before { content: ''; display: block; height: 100%; width: var(--p, 0%); border-radius: 3px; background: var(--axpo-gradient); }
+.tbar b { font-variant-numeric: tabular-nums; color: var(--txt); }
+.sticky { position: sticky; top: -12px; z-index: 2; width: 100%; margin: -4px 0 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--txt); font: inherit; font-size: 12.5px; font-weight: 600; text-align: left; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); font-variant-numeric: tabular-nums; }
+.sticky:hover { background: var(--hover); }
+.gloss { margin-top: 8px; }
+.gloss > summary { list-style: none; cursor: pointer; font-size: 11px; color: var(--link); user-select: none; }
+.gloss > summary::-webkit-details-marker { display: none; }
+.gloss > summary::before { content: 'ⓘ '; }
+.gloss ul { margin: 6px 0 0; padding-left: 16px; font-size: 11.5px; color: var(--mut); line-height: 1.4; }
+.gloss li { margin-bottom: 4px; }
 .warns { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .warn { font-size: 12px; padding: 7px 9px; border-radius: 6px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
 .warn.err { border-left-color: var(--err); background: color-mix(in srgb, var(--err) 10%, transparent); }

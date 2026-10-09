@@ -641,22 +641,28 @@ function renderSummary() {
   areasState.buildableArea = r.error ? null : r.buildableArea;
   refreshRail();
   if (r.error) { el.innerHTML = `<div class="hint">${esc(t('areas.noSite'))}</div>`; return; }
-  const ha = m2 => `${fmt(m2 / 1e4, 2)} ha`;
-  const minus = m2 => (m2 >= 5 ? `− ${fmt(m2 / 1e4, 2)} ha` : '0 ha');
-  const k = [];
-  if (r.grossArea) k.push(kpi(ha(r.grossArea), t('areas.sumGross')));
-  if (r.netMode === 'given') k.push(kpi(ha(r.netGivenArea), t('areas.sumNetGiven')));
-  else if (r.setbackArea > 0) k.push(kpi(minus(r.setbackArea), t('areas.sumSetback', { m: fmt(store.project.settings.boundarySetback, 1) })));
-  k.push(kpi(minus(Math.max(0, r.baseArea - r.buildableArea)), t('areas.sumExcluded')));
+  // the ledger: gross − setback (or the net area as given) − exclusions (of which …) = buildable, one row per
+  // item, the numbers aligned on the right, the cuts of the other steps as indented rows with a link to their step
+  const ha = m2 => `${fmt(Math.max(0, m2) / 1e4, 2)} ha`;
+  const row = (label, m2, cls = '', sign = '', go = '') =>
+    `<div class="r ${cls}"><span>${sign}${esc(label)}${go ? ` <a href="#" data-goto="${go}">${esc(t(go === 'terrain' ? 'areas.goTerrain' : 'areas.goInfra'))} ›</a>` : ''}</span><b>${ha(m2)}</b></div>`;
+  const rows = [];
+  if (r.grossArea) rows.push(row(t('areas.sumGross'), r.grossArea));
+  if (r.netMode === 'given') rows.push(row(t('areas.sumNetGiven'), r.netGivenArea));
+  else if (r.setbackArea > 0) rows.push(row(t('areas.sumSetback', { m: fmt(store.project.settings.boundarySetback, 1) }), r.setbackArea, '', '− '));
+  rows.push(row(t('areas.sumExcluded'), Math.max(0, r.baseArea - r.buildableArea), '', '− '));
   const byKind = kind => (r.extras || []).filter(x => x.kind === kind).reduce((s, x) => s + x.area, 0);
+  const MIN = 50;   // m²: smaller shares are not worth a row
   const slope = byKind('slope'), fence = byKind('fence'), stations = byKind('station'), roadsDrawn = byKind('road');
-  k.push(kpi(ha(r.buildableArea), t('areas.sumBuildable'), 'big'));
+  if (slope >= MIN) rows.push(row(t('areas.ofSlope'), slope, 'sub', '', 'terrain'));
+  if (fence >= MIN) rows.push(row(t('areas.ofFence'), fence, 'sub', '', 'infra'));
+  if (roadsDrawn >= MIN) rows.push(row(t('areas.ofRoads'), roadsDrawn, 'sub', '', 'infra'));
+  if (stations >= MIN) rows.push(row(t('areas.ofStations'), stations, 'sub', '', 'infra'));
+  rows.push(row(t('areas.sumBuildable'), r.buildableArea, 'tot', '= '));
   const spread = siteSpreadKm();
   const routes = routeSummary();
-  el.innerHTML = `<div class="kpis">${k.join('')}</div>
+  el.innerHTML = `<div class="ledger">${rows.join('')}</div>
     <div class="hint">${esc(t(r.netMode === 'given' ? 'areas.modeGiven' : 'areas.modeComputed'))}</div>
-    ${slope >= 5 ? `<div class="hint">${esc(t('areas.sumSlope', { ha: fmt(slope / 1e4, 2) }))}</div>` : ''}
-    ${fence + stations + roadsDrawn >= 5 ? `<div class="hint">${esc(t('areas.sumInfra', { fence: fmt(fence / 1e4, 2), roads: fmt(roadsDrawn / 1e4, 2), stations: fmt(stations / 1e4, 2) }))}</div>` : ''}
     ${(r.notes || []).map(n => `<div class="hint">${esc(n)}</div>`).join('')}
     ${routes ? `<div class="hint">${esc(routes)}</div>` : ''}
     ${spread > SPREAD_WARN_KM ? `<div class="warn">${esc(t('warn.spread', { km: fmt(spread, 0) }))}</div>` : ''}
@@ -675,7 +681,6 @@ function siteSpreadKm() {
   const cy = (ymin + ymax) / 2 * Math.PI / 180;
   return Math.hypot((xmax - xmin) * 111.32 * Math.cos(cy), (ymax - ymin) * 110.57);
 }
-const kpi = (v, k, cls = '') => `<div class="kpi ${cls}"><div class="v">${v}</div><div class="k">${esc(k)}</div></div>`;
 
 // Length in km of a line on the ellipsoid (grid connection routes can run for kilometres outside the site)
 export function lineLengthKm(geometry) {
