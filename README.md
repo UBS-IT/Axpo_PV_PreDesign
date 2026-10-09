@@ -76,7 +76,11 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel
-  shows gross area, setback, exclusions and the buildable area in hectares.
+  shows the account as a ledger: gross area − setback (or the net area as given) − exclusions and buffers, with the
+  cuts of the other steps as "of which" rows linked to their step, = buildable area; a glossary says what each figure
+  is. 3 · Layout shows its results the same way: one headline (DC capacity, module, target bar) then rows grouped
+  as Layout, Geometry and Land, and a line with the key figures that stays at the top of the panel while the
+  parameters are edited.
 
 ### 2 · Terrain (optional)
 

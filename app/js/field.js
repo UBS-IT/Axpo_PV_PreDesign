@@ -109,6 +109,8 @@ export function initField(mapView) {
     if (b) set(f => { f.pitch = Number(b.dataset.pitch); });
   };
   $('specYield').onchange = () => change('yield', p => { p.specificYield = num($('specYield')); });
+  // the line of key figures at the top of the panel takes the eye to the full results
+  $('fSticky').onclick = () => { const sec = $('secResults'); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   for (const topic of ['site', 'settings', 'field', 'modules', 'project', 'crs', 'terrain', 'infra']) on(topic, () => { syncInputs(); schedule(); });
   on('yield', () => renderResults(last.result));
@@ -338,29 +340,56 @@ function updatePitchHint(minP, preset, shade) {
 }
 
 // ── results ──
+// The results: one headline (the DC capacity, with the module and the target when there is one), then three groups
+// of rows with the numbers aligned on the right — what the layout holds, how it is made, how much land it uses —
+// and the warnings. A line with the key figures stays at the top of the panel while the parameters are edited.
 function renderResults(r) {
-  const k = $('kpis'), w = $('warns');
+  const k = $('kpis'), w = $('warns'), s = $('fSticky');
+  const f = store.project.field, y = store.project.specificYield;
+  const ha = m2 => `${fmt(m2 / 1e4, 2)} ha`;
+  const group = (key, rows) => `<div class="rgrp"><h4>${t(key)}</h4><div class="ledger">${rows.filter(Boolean).join('')}</div></div>`;
   if (!r || r.tables === undefined) {
     const a = r && r.area;
     k.innerHTML = a && a.siteArea
-      ? kpi('res.siteArea', `${fmt(a.siteArea / 1e4, 2)} ha`) + kpi('res.buildable', `${fmt((a.buildableArea || 0) / 1e4, 2)} ha`)
-      : `<div class="hint" style="grid-column:1/-1">${t('res.none')}</div>`;
+      ? group('res.gLand', [row('res.siteArea', ha(a.siteArea)), row('res.buildable', ha(a.buildableArea || 0), 'areas')])
+      : `<div class="hint">${t('res.none')}</div>`;
     w.innerHTML = (r && r.warns || []).map(x => `<div class="warn">${escapeHtml(x)}</div>`).join('');
+    if (s) s.hidden = true;
     return;
   }
-  const y = store.project.specificYield;
+  const target = f.targetMWp > 0 ? f.targetMWp : null;
+  const pct = target ? Math.min(100, r.dcMWp / target * 100) : 0;
   k.innerHTML =
-    `<div class="kpi big"><div class="v">${fmt(r.dcMWp, 2)} MWp</div><div class="k">${t('res.dc')} · ${escapeHtml(moduleLabel(r.module, store.project.field.powerPeriod))}</div></div>` +
-    kpi('res.tables', r.halves ? `${fmt(r.tables - r.halves)} + ${fmt(r.halves)} ½` : fmt(r.tables)) + kpi('res.modules', fmt(r.modules)) +
-    kpi('res.rows', fmt(r.rows)) + kpi('res.gcr', fmt(r.gcr, 3)) +
-    (r.shading != null ? kpi('res.shading', `${fmt(r.shading, 1)}°`) : '') +
-    kpi('res.coverage', `${fmt(r.cover * 100, 1)} %`) +
-    kpi('res.siteArea', `${fmt(r.siteArea / 1e4, 2)} ha`) + kpi('res.buildable', `${fmt(r.buildableArea / 1e4, 2)} ha`) +
-    kpi('res.density', `${fmt(r.dcMWp / (r.siteArea / 1e4), 3)} MWp/ha`) +
-    (y > 0 ? kpi('res.energy', `${fmt(r.dcMWp * y, 0)} MWh/yr`) : '');
+    `<div class="kpi big"><div class="v">${fmt(r.dcMWp, 2)} MWp</div><div class="k">${t('res.dc')} · ${escapeHtml(moduleLabel(r.module, f.powerPeriod))}</div>` +
+      (target ? `<div class="tbar"><span>${escapeHtml(t('res.target', { mwp: fmt(target, 2) }))}</span><i style="--p:${pct.toFixed(1)}%"></i><b>${fmt(pct, 0)} %</b></div>` : '') +
+    `</div>` +
+    group('res.gLayout', [
+      row('res.tables', fmt(r.tables - r.halves)),
+      r.halves ? row('res.halves', fmt(r.halves)) : '',
+      row('res.modules', fmt(r.modules)),
+      row('res.rows', fmt(r.rows)),
+    ]) +
+    group('res.gGeometry', [
+      row('res.pitch', f.pitch > 0 ? `${fmt(f.pitch, 2)} m` : '—'),
+      row('res.gcr', fmt(r.gcr, 3)),
+      row('res.coverage', `${fmt(r.cover * 100, 1)} %`),
+      r.shading != null ? row('res.shading', `${fmt(r.shading, 1)}°`) : '',
+    ]) +
+    group('res.gLand', [
+      row('res.siteArea', ha(r.siteArea)),
+      row('res.buildable', ha(r.buildableArea), 'areas'),
+      row('res.density', fmt(r.dcMWp / (r.siteArea / 1e4), 3)),
+      y > 0 ? row(t('res.energyY', { y: fmt(y, 0) }), `${fmt(r.dcMWp * y, 0)} MWh`, '', true) : '',
+    ]);
   w.innerHTML = r.warns.map(x => `<div class="warn">${escapeHtml(x)}</div>`).join('');
+  if (s) {
+    s.textContent = t('res.sticky', { mwp: fmt(r.dcMWp, 2), tables: fmt(r.tables), ha: fmt(r.buildableArea / 1e4, 2) });
+    s.hidden = false;
+  }
 }
-const kpi = (key, v) => `<div class="kpi"><div class="v">${v}</div><div class="k">${t(key)}</div></div>`;
+// one row of a group: label (an i18n key, or a text when `literal`), value, optional link to another step
+const row = (key, v, go = '', literal = false) =>
+  `<div class="r"><span>${escapeHtml(literal ? key : t(key))}${go ? ` <a href="#" data-goto="${go}">${escapeHtml(t('res.goSite'))} ›</a>` : ''}</span><b>${v}</b></div>`;
 
 // ── optimise the grid position ──
 // Tries 12 × 12 offsets of rows and columns and keeps the one with the most tables. Returns { n, gain } or null.
