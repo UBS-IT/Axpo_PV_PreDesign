@@ -599,6 +599,8 @@ export function render() {
   $('boundarySetback').value = store.project.settings.boundarySetback;
   const rb = $('railAreas');
   if (rb) rb.textContent = store.project.features.length || '';
+  const qr = $('areasQuickRow');   // the quick predesign is offered once there is a site
+  if (qr) qr.hidden = !sitePolygons().length;
   renderSummarySoon();
 }
 
