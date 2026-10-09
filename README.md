@@ -51,6 +51,10 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Reference (parcels and anything shown but not used).
 - **Per-object attributes** — buffer (exclusions, lines, obstacles), type, height, width (strips drawn as lines).
   Buffers are drawn on the map as they are cut.
+- **Collection** — the objects by category live in a drawer on the right of the map, closed by default, reachable
+  from every step: a tab with one dot per category and the number of objects opens it; *See in the collection ›* in
+  the *Last drawing* box opens it on the object just drawn. The side panel of 1 · Site keeps the actions (import,
+  drawing) and the account of the buildable area. On narrow screens the drawer is a sheet over the bottom of the page.
 - **Moving objects** — drag them from one category to another (or use the *Move to* menu); a category refuses
   geometry it cannot take (a polygon is not a power line).
 - **Import** — GeoJSON, KML, KMZ, Shapefile (.zip, several layers), CSV points (x/y or lon/lat, with name, type,
@@ -327,7 +331,7 @@ app/                  the web app (index.html, css/, js/)
   js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
   vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
-  js/ui/              stepper rail, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
+  js/ui/              stepper rail, the Collection drawer, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
   js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
 docs/                 architecture.md (the map of the app for non-developers), plan, decisions, audit/, handoff/ (notes between sessions); toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)

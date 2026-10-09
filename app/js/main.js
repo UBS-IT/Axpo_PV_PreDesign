@@ -17,6 +17,7 @@ import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EX
 import { toast } from './ui/toast.js';
 import { initBasemap } from './ui/basemap.js';
 import { initView3d } from './view3d/scene.js';
+import { initCollection } from './ui/collection.js';
 
 const $ = id => document.getElementById(id);
 
@@ -51,6 +52,7 @@ async function start() {
   try { await view.when(); }
   catch (e) { console.warn('[map] view not ready', e); toast(t('toast.noBasemap'), '', 15000); }
 
+  initCollection();   // the drawer of the objects, before the Site step fills it
   initAreas(view);
   initTerrain(view);
   initModulesUi();

@@ -70,7 +70,7 @@
           <div class="last" id="drawLast" hidden></div>
         </div>
       </details>
-      <div id="areaCats"></div>
+      <p class="hint coll-hint"><span data-i18n="areas.collHint"></span> <a href="#" data-coll-open data-i18n="areas.collOpen"></a></p>
       <div class="card">
         <div class="cardhd"><b data-i18n="areas.netTitle"></b></div>
         <label class="l" for="boundarySetback" data-i18n="areas.setback"></label>
@@ -356,6 +356,18 @@
       <div class="mapcard-b"><div id="d3Panel"></div></div>
     </aside>
   </div>
+
+  <!-- the Collection: the objects of the site by category, in a drawer on the right (closed by default) -->
+  <aside id="coll" aria-labelledby="collTitle">
+    <button type="button" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle">
+      <span class="lb" data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span>
+    </button>
+    <div id="collPanel">
+      <div class="coll-h"><div><b id="collTitle" data-i18n="coll.title"></b><small data-i18n="coll.sub"></small></div>
+        <button type="button" class="x" id="collClose" data-i18n-title="coll.close" data-i18n-aria="coll.close">×</button></div>
+      <div class="coll-b"><div id="areaCats"></div></div>
+    </div>
+  </aside>
 </div>
 
 <div id="toast" aria-live="polite"></div>
