@@ -190,7 +190,9 @@ toolkit values live only here.
 ### 2D / 3D
 
 The 2D / 3D switch on the map turns it into a 3D scene (same background and opacity) with its controls in a card
-over the map; the side panel keeps its step and the editing stays in 2D.
+over the map; the side panel keeps its step and the editing stays in 2D. Entering 3D closes the Collection drawer
+(its preference is kept). Under 760 px of window width (phones, the narrow layout) the 3D view is not offered: the
+3D chip is faded and says why; a scene already open is left when the window narrows.
 
 - **Ground** — a designer-uploaded GeoTIFF grid from 2 · Terrain overlays Esri World Elevation locally; if that
   grid was sampled from Esri World Elevation, the scene uses World Elevation directly. National CRS choices apply

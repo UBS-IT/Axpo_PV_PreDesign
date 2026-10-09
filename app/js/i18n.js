@@ -489,6 +489,7 @@ const EN = {
   'd3.noSite': 'Load or draw the site in 1 · Site first: the 3D view shows its terrain and layout.',
   'd3.noLayout': 'No layout yet: set the field in 3 · Layout to see the structures.',
   'd3.fail': 'The 3D view could not start: {err}',
+  'd3.narrow': 'The 3D view needs a wider window (at least 760 px): widen the window, or open the project on a computer.',
   'd3.groundDtm': 'Ground: the terrain model of 2 · Terrain ({name}), Esri World Elevation around it.',
   'd3.groundEsri': 'Ground: Esri World Elevation (load a DTM in 2 · Terrain for a finer one).',
   'd3.noteGround': 'Ground elevation unknown at {n} points (no terrain there): drawn at the mean elevation of the site.',
