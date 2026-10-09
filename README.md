@@ -166,6 +166,11 @@ toolkit values live only here.
 
 ### 5 · Outputs
 
+The panel offers the outputs in the order of use: **For a first look** (the PDF report, the KMZ) first, then
+**For Engineering** (the files in the national coordinate system chosen there, GeoJSON included). Each card has one
+line of explanation and a "what these files hold" glossary; the same pattern (one line, then "ⓘ") opens the panels of
+1 · Site, 2 · Terrain and 4 · Infrastructure.
+
 - **PDF report** — one A4 landscape page: the layout drawn to scale from the local metric frame (site, exclusions,
   lines, roads, buildable area, tables, fences, stations, gates, lot numbers; scale bar and north arrow), the key
   figures, the assumptions with their toolkit sources (shading angle of the country, module power and roadmap date,

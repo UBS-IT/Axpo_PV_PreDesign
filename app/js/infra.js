@@ -409,7 +409,8 @@ function render() {
   const fenceLen = L.fences.reduce((s, f) => s + f.length, 0);
   infraState.fenceLength = fenceLen; infraState.fences = L.fences.length;
   $('infFenceInfo').innerHTML = L.fences.length
-    ? `<div class="kpis">${kpi(`${fmt(fenceLen, 0)} m`, t('infra.fenceLength'))}${kpi(`${fmt(c.clearance ?? 0, 1)} m`, t('infra.fenceClear'))}</div>`
+    ? `<div class="ledger"><div class="r"><span>${esc(t('infra.fenceLength'))}</span><b>${fmt(fenceLen, 0)} m</b></div>`
+      + (L.fences.length > 1 ? `<div class="r"><span>${esc(t('infra.fenceCount'))}</span><b>${fmt(L.fences.length)}</b></div>` : '') + `</div>`
     : `<div class="hint">${esc(t(I.fence ? 'infra.noSite' : 'infra.fenceOff'))}</div>`;
   // lots and their fences
   for (const n of [...selectedLots]) if (!L.lots.some(l => l.n === n)) selectedLots.delete(n);
@@ -478,7 +479,6 @@ function render() {
   for (const k of ['CC', 'CU', 'CT']) $('inf' + k).disabled = !building(k);
   draw(frame, L);
 }
-const kpi = (v, k) => `<div class="kpi"><div class="v">${v}</div><div class="k">${esc(k)}</div></div>`;
 
 // one map mode at a time: placing a station, moving one, drawing or reshaping a road
 let moving = null, sketchVM = null, sketchLayer = null, editingRoad = null;

@@ -107,7 +107,7 @@ body.coll-open #collTab { color: var(--link); background: color-mix(in srgb, var
 #collTab .tot { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--fill); color: var(--on-fill); font-size: 10px; line-height: 17px; font-weight: 700; }
 #collTab .tot:empty { display: none; }
 #collTab .dots { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-#collTab .dot { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 9px; line-height: 1; color: var(--mut); }
+#collTab .dot { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; line-height: 1; color: var(--mut); font-variant-numeric: tabular-nums; }
 #collTab .dot i { display: block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
 #collPanel { display: none; width: 340px; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); }
 body.coll-open #collPanel { display: flex; }
@@ -404,9 +404,9 @@ body:not(.in-3d) #d3Card { display: none; }
 .tcard[aria-pressed="true"] { border-color: var(--fill); box-shadow: inset 0 0 0 1px var(--fill); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
 .tcard:disabled { opacity: .45; cursor: not-allowed; }
 .status { font-size: 11.5px; color: var(--mut); margin-top: 6px; line-height: 1.35; }
-.status.ok::before, .status.err::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin: 0 6px 1px 0; vertical-align: middle; }
-.status.ok::before { background: var(--ok); } .status.err::before { background: var(--err); }
-.status.ok, .status.err { color: var(--txt); }
+.status.ok::before, .status.err::before, .status.warn::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin: 0 6px 1px 0; vertical-align: middle; }
+.status.ok::before { background: var(--ok); } .status.err::before { background: var(--err); } .status.warn::before { background: var(--warn); }
+.status.ok, .status.err, .status.warn { color: var(--txt); }
 .last { margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; }
 .last .ttl { font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
 .last .row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
