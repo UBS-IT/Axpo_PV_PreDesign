@@ -33,7 +33,9 @@ not a step: the panel keeps its step while the map turns into the scene.
 | **5 · Outputs** | Export coordinate system; one-page PDF report; KMZ, GeoJSON, Shapefile, GeoPackage, DXF and Excel bill of quantities. The electrical design is not part of the predesign (kept open on purpose) |
 | **2D / 3D** (map switch) | SceneView on the shared map, terrain, structures, sun and shadows, saved views, PNG/PDF and glTF export; editing remains in 2D |
 
-**⚡ Quick predesign** (top bar, 1 · Site, 3 · Layout): once the site is loaded, one dialog with three choices
+**⚡ Quick predesign** (the ⚡ button of the top bar; also offered as a one-line suggestion in 1 · Site once the site
+is loaded, and under the parameters of 3 · Layout, so that every step keeps one primary action): once the site is
+loaded, one dialog with three choices
 already filled in — technology (ground-mounted fixed 3V9, AgriPV tracker 1V28, AgriPV fixed), pitch (the toolkit
 minimum of the country for fixed structures; for trackers the one agreed with the farm, asked), terrain (optional:
 Esri World Elevation with the slope limit) — then one click: group standards, standard module at the power of the

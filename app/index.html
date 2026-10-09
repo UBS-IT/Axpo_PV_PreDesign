@@ -50,9 +50,11 @@
     <!-- 1 · site -->
     <section class="step" data-step="areas" hidden>
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
-      <div class="btns"><button type="button" class="btn primary" id="areasImport" data-i18n="areas.import"></button>
-        <button type="button" class="btn" id="areasQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></div>
+      <div class="btns"><button type="button" class="btn primary" id="areasImport" data-i18n="areas.import"></button></div>
       <p class="hint" data-i18n="areas.importHint"></p>
+      <!-- the quick predesign is offered only once there is a site: one primary action per step -->
+      <p class="suggest" id="areasQuickRow" hidden><span data-i18n="quick.siteReady"></span>
+        <button type="button" class="linkbtn" id="areasQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
       <details class="sec" id="secDraw" open>
         <summary><span class="ico" aria-hidden="true">✎</span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
         <div class="bd">
@@ -150,8 +152,6 @@
     <section class="step" data-step="fields" hidden>
       <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.fields"></h2><p data-i18n="step.fields.sub"></p></div></header>
       <button type="button" class="sticky" id="fSticky" data-i18n-title="res.stickyTitle" hidden></button>
-      <div class="btns"><button type="button" class="btn primary" id="fQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></div>
-      <p class="hint" data-i18n="quick.fieldsHint"></p>
 
       <details class="sec" id="secField" open>
         <summary><span class="ico" aria-hidden="true">☀</span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
@@ -211,6 +211,9 @@
           </details>
         </div>
       </details>
+      <!-- the quick predesign as an alternative to the parameters above, not above them -->
+      <p class="suggest"><span data-i18n="quick.fieldsHint"></span>
+        <button type="button" class="linkbtn" id="fQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
 
       <details class="sec" id="secResults" open>
         <summary><span class="ico" aria-hidden="true">📊</span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>

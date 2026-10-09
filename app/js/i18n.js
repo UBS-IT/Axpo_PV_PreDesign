@@ -38,7 +38,8 @@ const EN = {
   'quick.noPitch': 'Set the pitch: the toolkit has no minimum for this site.',
   'quick.done': 'Quick predesign: {mwp} MWp on {ha} ha — {structure}, pitch {pitch} m, {module}. Adjust anything in 3 · Layout.',
   'quick.nothing': 'Quick predesign: no table fits. Check the site, the exclusions and the pitch.',
-  'quick.fieldsHint': 'One click with the group standards, or set every parameter below.',
+  'quick.fieldsHint': 'Or let the app set everything with the group standards and the best grid position:',
+  'quick.siteReady': 'Site loaded. The group standards and the best grid position in one click:',
 
   'step.areas': 'Site',
   'step.areas.num': '1',
