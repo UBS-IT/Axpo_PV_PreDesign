@@ -52,6 +52,9 @@
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
       <div class="btns"><button type="button" class="btn primary" id="areasImport" data-i18n="areas.import"></button></div>
       <p class="hint" data-i18n="areas.importHint"></p>
+      <details class="gloss"><summary data-i18n="areas.gloss2"></summary>
+        <ul><li data-i18n="areas.importMore1"></li><li data-i18n="areas.importMore2"></li><li data-i18n="areas.importMore3"></li></ul>
+      </details>
       <!-- the quick predesign is offered only once there is a site: one primary action per step -->
       <p class="suggest" id="areasQuickRow" hidden><span data-i18n="quick.siteReady"></span>
         <button type="button" class="linkbtn" id="areasQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
@@ -89,6 +92,9 @@
     <section class="step" data-step="terrain" hidden>
       <header class="stephd"><span class="num">2</span><div><h2 data-i18n="step.terrain"></h2><p data-i18n="step.terrain.sub"></p></div></header>
       <p class="hint" data-i18n="terrain.intro"></p>
+      <details class="gloss"><summary data-i18n="terrain.gloss"></summary>
+        <ul><li data-i18n="terrain.introMore1"></li><li data-i18n="terrain.introMore2"></li></ul>
+      </details>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.model"></b><span class="pill" id="terPill"></span></div>
         <div id="terInfo"></div>
@@ -263,6 +269,9 @@
     <section class="step" data-step="infra" hidden>
       <header class="stephd"><span class="num">4</span><div><h2 data-i18n="step.infra"></h2><p data-i18n="step.infra.sub"></p></div></header>
       <p class="hint" data-i18n="infra.intro"></p>
+      <details class="gloss"><summary data-i18n="infra.gloss"></summary>
+        <ul><li data-i18n="infra.introMore1"></li><li data-i18n="infra.introMore2"></li></ul>
+      </details>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.fence"></b></div>
         <label class="chk"><input type="checkbox" id="infFence"> <span data-i18n="infra.fenceOn"></span></label>
@@ -313,34 +322,34 @@
     <!-- 5 · output -->
     <section class="step" data-step="output" hidden>
       <header class="stephd"><span class="num">5</span><div><h2 data-i18n="step.output"></h2><p data-i18n="step.output.sub"></p></div></header>
+      <!-- the outputs in the order of use: a first look (PDF, KMZ), then the files for Engineering and GIS -->
       <div class="card">
-        <div class="cardhd"><b data-i18n="out.crsTitle"></b></div>
-        <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
-        <div id="outCrsAlerts" class="warns"></div>
-        <p class="hint" data-i18n="out.crsInfo"></p>
-      </div>
-      <div class="card">
-        <div class="cardhd"><b data-i18n="out.exportTitle"></b></div>
+        <div class="cardhd"><b data-i18n="out.lookTitle"></b></div>
         <div class="btns col">
-          <button type="button" class="btn" id="outGeojson" data-i18n="out.geojson"></button>
+          <button type="button" class="btn primary" id="outReport" data-i18n="out.reportBtn"></button>
           <button type="button" class="btn" id="outKml" data-i18n="out.kml"></button>
         </div>
-        <p class="hint" data-i18n="out.exportHint"></p>
+        <p class="hint" data-i18n="out.lookHint"></p>
+        <details class="gloss"><summary data-i18n="out.gloss"></summary>
+          <ul><li data-i18n="out.reportHint"></li><li data-i18n="out.kmlMore"></li></ul>
+        </details>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="out.engTitle"></b></div>
+        <label class="l" for="outCrs" data-i18n="out.crsTitle"></label>
+        <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
+        <div id="outCrsAlerts" class="warns"></div>
         <div class="btns col">
           <button type="button" class="btn" id="outShp" data-i18n="out.shp"></button>
           <button type="button" class="btn" id="outGpkg" data-i18n="out.gpkg"></button>
           <button type="button" class="btn" id="outDxf" data-i18n="out.dxf"></button>
           <button type="button" class="btn" id="outBoq" data-i18n="out.boq"></button>
+          <button type="button" class="btn" id="outGeojson" data-i18n="out.geojson"></button>
         </div>
-        <p class="hint" data-i18n="out.engHint"></p>
-      </div>
-      <div class="card">
-        <div class="cardhd"><b data-i18n="out.report"></b></div>
-        <div class="btns col"><button type="button" class="btn primary" id="outReport" data-i18n="out.reportBtn"></button></div>
-        <p class="hint" data-i18n="out.reportHint"></p>
+        <p class="hint" data-i18n="out.engShort"></p>
+        <details class="gloss"><summary data-i18n="out.gloss"></summary>
+          <ul><li data-i18n="out.crsInfo"></li><li data-i18n="out.engHint"></li><li data-i18n="out.exportHint"></li></ul>
+        </details>
       </div>
       <p class="hint" data-i18n="elec.hint"></p>
     </section>

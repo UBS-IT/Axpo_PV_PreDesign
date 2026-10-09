@@ -197,7 +197,7 @@ await test('quick predesign, fixed: 3V9, Italian minimum pitch, optimised positi
   assert(!document.querySelector('dialog.quick'), 'dialog closed');
   assert(store.project.infra.perimeterRoad === false && r.dcMWp > 9, 'over 9 MWp: no perimeter road');
   await wait(300);
-  assert(/1,600 m/.test(text('infFenceInfo')) && /4.0 m/.test(text('infFenceInfo')), 'fence panel: ' + text('infFenceInfo'));
+  assert(/1,600 m/.test(text('infFenceInfo')) && /4\.0 m/.test(text('infClearHint')), 'fence panel: ' + text('infFenceInfo') + ' · ' + text('infClearHint'));
   assert(/Suggested without/.test(text('infRoadInfo')), 'road panel: ' + text('infRoadInfo'));
   const st = ['fields', 'infra', 'output'].map(k => stepState(k));
   assert(st[0].state === 'done' && /MWp$/.test(st[0].figure) && st[1].state === 'done' && /m$/.test(st[1].figure) && st[2].state === 'ready', 'rail after the layout: ' + JSON.stringify(st));

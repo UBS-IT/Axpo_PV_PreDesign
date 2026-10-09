@@ -205,6 +205,8 @@ export function sameLimit(a, b) {
   if (a.maxAny != null || b.maxAny != null) return a.maxAny != null && b.maxAny != null && Math.abs(a.maxAny - b.maxAny) < 1e-9;
   return Math.abs(a.maxNS - b.maxNS) < 1e-9 && Math.abs(a.maxEW - b.maxEW) < 1e-9;
 }
+// the limit in a few characters, for the rail: "10 %" or "10 / 15 %"
+const shortLimit = l => !l ? '—' : l.maxAny != null ? `${fmt(l.maxAny, l.maxAny % 1 ? 1 : 0)} %` : `${fmt(l.maxNS, l.maxNS % 1 ? 1 : 0)} / ${fmt(l.maxEW, l.maxEW % 1 ? 1 : 0)} %`;
 export function limitText(l) {
   if (!l) return '';
   return l.maxAny != null ? t('terrain.limitAny', { v: fmt(l.maxAny, l.maxAny % 1 ? 1 : 0) }) : t('terrain.limitNsew', { ns: fmt(l.maxNS, l.maxNS % 1 ? 1 : 0), ew: fmt(l.maxEW, l.maxEW % 1 ? 1 : 0) });
@@ -511,7 +513,7 @@ function render() {
   if (!L.custom) { text = rule ? t('terrain.toolkitRule', { structure: S, rule: rule.text }) : t('terrain.noRuleChoose', { structure: S }); cls += rule ? ' ok' : ' err'; }
   else if (!rule) { text = `${L.text}. ${t('terrain.noRuleCustom', { structure: S })}`; }
   else if (L.same) { text = `${L.text}. ${t('terrain.sameToolkit', { structure: S })}`; cls += ' ok'; }
-  else { text = `${L.text}. ${t('terrain.diffToolkit', { structure: S, rule: rule.text })}`; cls += ' err'; }
+  else { text = `${L.text}. ${t('terrain.diffToolkit', { structure: S, rule: rule.text })}`; cls += ' warn'; }   // a choice, not an error
   if (L.from === 'geoportale') text += ' ' + t('terrain.fromGeoportale');
   st.textContent = text; st.className = cls;
   // the figures inside the site (as the Geoportale shows them), and how much of the site the grid covers
@@ -581,7 +583,7 @@ export function initTerrain(mapView) {
     if (!m) return { state: 'optional' };
     if (terrainStale()) return { state: 'done', figure: t('terrain.figStale') };
     const o = terrainData.z && terrainData.meta?.id === m.id && store.project.terrain.applySlopeLimit ? overLimit() : null;
-    return { state: 'done', figure: o && o.cells ? t(o.own ? 'terrain.figCutOwn' : 'terrain.figCut', { ha: fmt(o.cells * m.cell ** 2 / 1e4, 1) }) : (m.source === 'esri' ? 'Esri' : 'DTM') };
+    return { state: 'done', figure: o && o.cells ? t(o.own ? 'terrain.figCutOwn' : 'terrain.figCut', { ha: fmt(o.cells * m.cell ** 2 / 1e4, 1) }) : t('terrain.figNoCut', { limit: shortLimit(effectiveLimit().limit) }) };
   });
   restore();
 }
