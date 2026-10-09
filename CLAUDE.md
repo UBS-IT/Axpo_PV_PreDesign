@@ -137,8 +137,8 @@ coerente con `README.md` e `docs/plan.md` man mano che si chiudono. Conservare l
 
 ## Repository
 
-Remoto `origin` = **https://github.com/davo3188/Axpo_PV_PreDesign** (privato, creato dall'utente il 2026-09-24),
-ramo `main`. Repo separata dal Geoportale per scelta dell'utente: `davo3188/custom-AGOL-web-map` è pubblica e
+Remoto `origin` = **https://github.com/UBS-IT/Axpo_PV_PreDesign** (privato, creato dall'utente il 2026-09-24 come
+`davo3188/Axpo_PV_PreDesign`, URL che ora reindirizza), ramo `main`. Repo separata dal Geoportale per scelta dell'utente: `davo3188/custom-AGOL-web-map` è pubblica e
 contiene la chiave Zornade, qui ci sono i valori interni del toolkit. Più avanti andrà spostata su un'organizzazione
 aziendale (GitHub o Azure DevOps), senza perdere la storia. `gh` non è installato; il push usa le credenziali di
 Git per Windows. Push solo su richiesta dell'utente; dopo un push che riguarda gli altri progetti, aggiornare
