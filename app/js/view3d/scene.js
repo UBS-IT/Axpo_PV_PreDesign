@@ -15,6 +15,7 @@ import { bilinear } from '../terrain/slope.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
 import { toast } from '../ui/toast.js';
+import { toggleCollection, isOpen as isCollectionOpen } from '../ui/collection.js';
 import { exportReport } from '../report.js';
 import { fileName } from '../export/model.js';
 import { heights3d, terrainMesh, axisAzimuth } from './geometry.js';
@@ -413,6 +414,13 @@ export function initView3d(view) {
   renderPanel();
   // 2D / 3D switch on the map (the chips of both views) and the fold button of the 3D card
   document.querySelectorAll('.mapchips [data-mode]').forEach(b => { b.onclick = () => set3d(b.dataset.mode === '3d'); });
+  // no 3D under 760 px (phones, the narrow layout): the chip says so, and a scene already open is left
+  const mq = typeof matchMedia === 'function' ? matchMedia(NARROW) : null;
+  const narrowChanged = () => {
+    document.querySelectorAll('.mapchips [data-mode="3d"]').forEach(b => b.setAttribute('aria-disabled', String(!!mq?.matches)));
+    if (mq?.matches && active) { leave(); chips(false); toast(t('d3.narrow'), '', 8000); }
+  };
+  if (mq) { narrowChanged(); mq.addEventListener('change', narrowChanged); }
   const min = $('d3CardMin');
   if (min) min.onclick = () => { const c = $('d3Card'); c.classList.toggle('min'); min.textContent = c.classList.contains('min') ? '▸' : '▾'; };
   for (const ev of ['layout', 'infra', 'terrain', 'site', 'field', 'crs', 'project']) on(ev, () => { if (active) later(); else renderPanel(); });
@@ -421,8 +429,13 @@ export function initView3d(view) {
   on('views3d', renderPanel);
 }
 
-// The map in 3D (true) or 2D (false); the side panel keeps its step
+// The map in 3D (true) or 2D (false); the side panel keeps its step. Under 760 px the 3D view is not offered:
+// the scene needs room for its card and the Daylight widget, and a phone is not where a plant is designed.
+const NARROW = '(max-width: 760px)';
+const chips = on => document.querySelectorAll('.mapchips [data-mode]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === '3d') === !!on)));
 export function set3d(on) {
-  document.querySelectorAll('.mapchips [data-mode]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === '3d') === !!on)));
-  if (on && !active) enter(); else if (!on && active) leave();
+  if (on && !active && typeof matchMedia === 'function' && matchMedia(NARROW).matches) { chips(false); toast(t('d3.narrow'), '', 8000); return; }
+  chips(on);
+  if (on && !active) { if (isCollectionOpen()) toggleCollection(false, false); enter(); }   // the scene takes the width: the drawer closes, its preference kept
+  else if (!on && active) leave();
 }

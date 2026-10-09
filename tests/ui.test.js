@@ -404,6 +404,8 @@ await test('for Engineering: Shapefile, GeoPackage, DXF and bill of quantities i
 
 await test('4b · 3D: panel, trackers on the terrain of step 0 at the IT axis height, glTF, report with a 3D view', async () => {
   initView3d(view);
+  const narrow = matchMedia('(max-width: 760px)').matches;
+  assert(document.querySelector('.mapchips [data-mode="3d"]').getAttribute('aria-disabled') === String(narrow), `the 3D chip knows whether the window is too narrow (${innerWidth} px)`);
   const panel = document.getElementById('d3Panel');
   const cat = panel.querySelector('#d3Cat');
   assert(cat && /1\.50 m/.test(cat.options[0].textContent) && /3\.10 m/.test(cat.options[2].textContent), 'IT categories with their axis heights');
