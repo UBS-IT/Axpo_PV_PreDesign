@@ -326,7 +326,7 @@ app/                  the web app (index.html, css/, js/)
   js/ui/              stepper rail, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
   js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
-docs/                 plan, decisions, audit/, handoff/ (notes between sessions); toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)
+docs/                 architecture.md (the map of the app for non-developers), plan, decisions, audit/, handoff/ (notes between sessions); toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)
 scripts/              serve.py (local server without cache), make_fixtures.py, make_prj.py (.prj texts), make_toolkit.py (workbook <-> toolkit.json)
 tools/                headless test runner and vendor builder, CAD (DWG) reader — development tools, not part of the app
 ```
