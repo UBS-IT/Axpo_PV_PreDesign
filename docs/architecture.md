@@ -64,7 +64,7 @@ to each other only through the project and a small publish/subscribe (`change(to
 
 | Step | What the designer does | Main file | Helpers | Reads | Writes into the project |
 |---|---|---|---|---|---|
-| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js` | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
+| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback; the objects by category are in the Collection, a drawer on the right of the map | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js`, `ui/collection.js` (the drawer: tab with counters, open / close, "see in the collection") | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
 | **2 · Terrain** (optional) | Samples the elevations on a grid, chooses the slope limit, sees the areas too steep | `app/js/terrain/terrain.js` | `terrain/slope.js` (slopes and masks, pure maths), `terrain/dtm.js` (GeoTIFF reading), `terrain/store.js` (the grid in memory, in IndexedDB and in the file) | the site, the structure of step 3 (for the toolkit rule), Esri World Elevation or a GeoTIFF | `terrain` (description of the grid, limit, view); the grid itself goes to IndexedDB |
 | **3 · Layout** | Chooses technology, structure, module, tilt, azimuth, pitch; reads the results | `app/js/field.js` | `layout/structures.js` (the nVm notation and the size of a table), `layout/rows.js` (the row-fill engine), `modules.js` (the module library and the roadmaps), `catalog.js` | the buildable area of step 1, the cuts of steps 2 and 4, the module | `field`, `plannedModules`, `moduleDefs`, `specificYield` |
 | **4 · Infrastructure** | Fences, perimeter road, gates, internal roads, stations | `app/js/infra.js` | `catalog.js` (the country values) | the usable land of step 1, the rows of step 3, the country of the site | `infra` (fence groups, perimeter road, clearance, stations, roads) |
@@ -83,7 +83,7 @@ Shared by every step:
 | `app/js/i18n.js` | Every visible text (about 580 uses of `t('…')` across the app). English only for now |
 | `app/js/catalog.js` | Reads `toolkit.json` once and answers "what does the toolkit say for this country and this key" |
 | `app/js/io/projectfile.js` | Save / Open of the `.pvpd` project file (a zip with `project.json` and, when there is a terrain, `terrain/grid.f32`) |
-| `app/js/ui/` | The rail, the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
+| `app/js/ui/` | The rail, the Collection drawer (the objects by category, reachable from every step; the cards inside it are drawn by `areas.js`), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
 
 ## 3. How the data travel, from the drawing to the export
 

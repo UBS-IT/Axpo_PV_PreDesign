@@ -12,7 +12,8 @@ import { readAnyFile } from './io/importers.js';
 import { suggestCrs, candidatesForProjected, crsLabel } from './crs.js';
 import { chooseCrs } from './ui/crsdialog.js';
 import { toast } from './ui/toast.js';
-import { stepProvider, refreshRail } from './ui/rail.js';
+import { stepProvider, refreshRail, showStep } from './ui/rail.js';
+import { updateCollection, showInCollection } from './ui/collection.js';
 
 let view, featLayer, sketchLayer, sketchVM;
 let drawing = null;          // { category, tool }
@@ -414,7 +415,8 @@ function renderLast() {
   if (!f) return;
   const c = CATEGORY[f.category] || CATEGORY.reference;
   el.innerHTML = `<div class="ttl">${esc(t('draw.last'))}</div><div class="row"><span class="tag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>
-    <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>`;
+    <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>
+    <a href="#" class="see" data-see="${f.id}">${esc(t('draw.see'))}</a>`;
 }
 const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">✎</button>
     <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">⬠</button>
@@ -451,10 +453,18 @@ function finishEdit(e) {
 
 // ── list events ──
 function onCatsClick(e) {
+  const see = e.target.closest('[data-see]');
+  if (see) {   // «See in the collection ›» in the Last drawing box: the drawer opens on that row
+    e.preventDefault();
+    const f = store.project.features.find(x => x.id === see.dataset.see);
+    if (f) showInCollection(f.id, f.category);
+    return;
+  }
   const sel = e.target.closest('.drawbtn[data-dsel]');
-  if (sel) {   // «Draw here» on a category card: ① takes the category, the drawing block opens
+  if (sel) {   // «Draw here» on a category card (in the drawer): ① takes the category, the drawing block of 1 · Site opens
     e.preventDefault();
     selectDrawCat(sel.dataset.dsel);
+    showStep('areas');
     const d = $('secDraw'); if (d) d.open = true;
     $('drawTools')?.querySelector('[data-dtool]:not(:disabled)')?.focus();
     return;
@@ -583,6 +593,7 @@ export function render() {
 
   $('areaCats').innerHTML = CATEGORIES.map(catCard).join('');
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
+  updateCollection(CATEGORIES.map(c => ({ id: c.id, colour: c.colour, label: t('cat.' + c.id), n: store.project.features.filter(f => f.category === c.id).length })));
   renderLast();
   renderHistory();
   $('boundarySetback').value = store.project.settings.boundarySetback;

@@ -8,6 +8,7 @@ import { store, defaultProject, replaceProject, change } from '../app/js/state.j
 import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/areas.js';
 import { stepState, refreshRail } from '../app/js/ui/rail.js';
+import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/collection.js';
 import { structurePresets } from '../app/js/catalog.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
@@ -51,7 +52,7 @@ const html = await (await fetch('../app/index.html')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const box = document.createElement('div');
 box.style.display = 'none';
-box.append(doc.getElementById('top'), doc.getElementById('side'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
+box.append(doc.getElementById('top'), doc.getElementById('side'), doc.getElementById('coll'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
   doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
@@ -101,6 +102,22 @@ await test('stepper: states from the panels, gate of a locked step with its link
   change('site', q => { q.features = feats; });
   await wait(250);
   return `${st.areas.figure} buildable · outputs: ${st.output.reason}`;
+});
+
+await test('collection drawer: the objects by category out of the Site panel, tab with counters, closed by default, opened on one object', async () => {
+  initCollection();
+  const coll = document.getElementById('coll');
+  assert(coll && coll.contains(document.getElementById('areaCats')), 'the category cards live in the drawer');
+  assert(!document.querySelector('.step[data-step="areas"] #areaCats'), 'and not in the Site panel any more');
+  assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'closed by default');
+  const dots = document.querySelectorAll('#collDots .dot');
+  assert(dots.length === 1 && /1/.test(dots[0].textContent) && text('collTot') === '1', `tab: one dot for the gross area, total 1 (${dots.length}, ${text('collTot')})`);
+  showInCollection('g', 'gross');
+  const row = document.querySelector('#areaCats .it[data-id="g"]');
+  assert(isOpen() && document.querySelector('#areaCats .cat[data-cat="gross"]').open && row.classList.contains('flash'), 'opened on the object, its card unfolded, its row highlighted');
+  toggleCollection(false);
+  assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'closed again');
+  return `${dots.length} dot, total ${text('collTot')}`;
 });
 
 await test('drawing in two steps: category chips, tools allowed by the category, defaults, undo / redo of a removal', async () => {
