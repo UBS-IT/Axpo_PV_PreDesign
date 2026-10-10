@@ -258,21 +258,21 @@ function renderPanel() {
   if (h.tracker) {
     const ah = iso ? countryValue(iso, 'tracker.axisHeights')?.value : null;
     const opts = ['standard', 'grazing', 'advanced'].map(c => `<option value="${c}" ${v.trackerCategory === c ? 'selected' : ''}>${esc(t('d3.cat.' + c))}${ah?.[c] ? ` · ${fmt(ah[c], 2)} m` : ''}</option>`).join('');
-    hts = `<label class="l" for="d3Cat">${esc(t('d3.category'))}</label><select id="d3Cat">${opts}</select>
-      <label class="l" for="d3Axis">${esc(t('d3.axis'))}</label><input id="d3Axis" type="number" min="0" step="0.05" value="${v.axisHeight > 0 ? v.axisHeight : ''}" placeholder="${h.axis?.source !== 'custom' && h.axis ? fmt(h.axis.value, 2) : ''}">
+    hts = `<label class="lbl" for="d3Cat">${esc(t('d3.category'))}</label><select id="d3Cat">${opts}</select>
+      <label class="lbl" for="d3Axis">${esc(t('d3.axis'))}</label><input id="d3Axis" type="number" min="0" step="0.05" value="${v.axisHeight > 0 ? v.axisHeight : ''}" placeholder="${h.axis?.source !== 'custom' && h.axis ? fmt(h.axis.value, 2) : ''}">
       <p class="hint">${esc(h.axis ? t(h.axis.source === 'custom' ? 'd3.axisCustom' : 'd3.axisToolkit', { m: fmt(h.axis.value, 2), country, src: h.axis.source }) : t('d3.axisMissing', { country }))}</p>
       <div class="opts row"><label><input type="radio" name="d3Mode" value="sun" ${v.trackerMode === 'sun' ? 'checked' : ''}> ${esc(t('d3.modeSun'))}</label>
       <label><input type="radio" name="d3Mode" value="manual" ${v.trackerMode === 'manual' ? 'checked' : ''}> ${esc(t('d3.modeManual'))}</label></div>
       <input id="d3Angle" type="range" min="${-(h.maxRotation ?? 55)}" max="${h.maxRotation ?? 55}" step="1" value="${v.trackerAngle || 0}" ${v.trackerMode === 'manual' ? '' : 'disabled'}>
       <p class="hint" id="d3AngleOut"></p>`;
   } else {
-    hts = `<label class="l" for="d3LowEdge">${esc(t('d3.lowEdge'))}</label><input id="d3LowEdge" type="number" min="0" step="0.05" value="${v.lowEdge > 0 ? v.lowEdge : ''}" placeholder="${h.lowEdge && h.lowEdge.source !== 'custom' ? fmt(h.lowEdge.value, 2) : ''}">
+    hts = `<label class="lbl" for="d3LowEdge">${esc(t('d3.lowEdge'))}</label><input id="d3LowEdge" type="number" min="0" step="0.05" value="${v.lowEdge > 0 ? v.lowEdge : ''}" placeholder="${h.lowEdge && h.lowEdge.source !== 'custom' ? fmt(h.lowEdge.value, 2) : ''}">
       <p class="hint">${esc(h.lowEdge ? t(h.lowEdge.source === 'custom' ? 'd3.lowCustom' : 'd3.lowToolkit', { m: fmt(h.lowEdge.value, 2), country, src: h.lowEdge.source }) : t(P.field.technology === 'agri-fixed' ? 'd3.lowAgri' : 'd3.lowMissing', { country }))}</p>`;
   }
   const ground = useDtmGround() ? t('d3.groundDtm', { name: terrainData.meta.name || 'DTM' }) : t('d3.groundEsri');
   const dtmOpt = terrainData.meta?.source === 'dtm'
     ? `<label class="chk"><input type="checkbox" id="d3Dtm" ${useDtmGround() ? 'checked' : ''}> <span>${esc(t('d3.useDtm'))}</span></label>` : '';
-  const notes = (m?.notes || []).map(k => `<div class="warn">${esc(t(k, { country, n: m.gaps }))}</div>`).join('');
+  const notes = (m?.notes || []).map(k => `<div class="notice warn">${esc(t(k, { country, n: m.gaps }))}</div>`).join('');
   parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.title'))}</b></div>
     <p class="hint">${esc(ground)}${r?.tables ? '' : ' ' + esc(t('d3.noLayout'))}</p>${dtmOpt}${notes}${hts}
     <p class="hint">${esc(t('d3.obstacleNote'))}</p>

@@ -62,7 +62,7 @@ function renderCrs() {
 
   const alerts = crsState.alerts.map(a => ({ text: t(a.key, a.vars), cls: a.level === 'warn' ? 'warn' : 'hint' }));
   if (!c.auto && sug && c.wkid !== sug) alerts.push({ text: t('crs.manual', { label: crsLabel(sug), wkid: sug }), cls: 'warn' });
-  $('outCrsAlerts').innerHTML = alerts.map(a => `<div class="${a.cls}">${esc(a.text)}</div>`).join('');
+  $('outCrsAlerts').innerHTML = alerts.map(a => `<div class="${a.cls === 'warn' ? 'notice warn' : a.cls}">${esc(a.text)}</div>`).join('');
 
   // the select sits in the status bar: a warning colours it, the title tells where the system comes from
   sel.title = c.wkid ? `${crsLabel(c.wkid)} — ${t(c.auto ? 'top.crsAuto' : 'top.crsManual')}\n${t('top.crsTitle')}` : t('top.crsTitle');

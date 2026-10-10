@@ -83,7 +83,7 @@ export function openQuick() {
   const cur = TECHS.includes(store.project.field.technology) ? store.project.field.technology : 'ground-fixed';
   const hasTerrain = !!store.project.terrain.grid;
   const dlg = document.createElement('dialog');
-  dlg.className = 'dlg quick';
+  dlg.className = 'dialog quick';
   const opt = tech => {
     const std = standardFor(tech), f = quickField(tech);
     return `<label class="opt"><input type="radio" name="tech" value="${tech}" ${tech === cur ? 'checked' : ''}>
@@ -94,7 +94,7 @@ export function openQuick() {
     <h3>${esc(t('quick.title'))}</h3>
     <p class="hint">${esc(t('quick.intro'))}</p>
     <div class="opts">${TECHS.map(opt).join('')}</div>
-    <label class="l" for="qPitch">${esc(t('quick.pitch'))}</label>
+    <label class="lbl" for="qPitch">${esc(t('quick.pitch'))}</label>
     <input id="qPitch" name="pitch" type="number" min="0.5" step="0.01">
     <p class="hint" data-hint></p>
     <p class="hint">${esc(t('quick.module', { module: mod ? moduleLabel(mod, null) : t('field.noModule') }))}</p>

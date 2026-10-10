@@ -20,7 +20,7 @@ export function confirmDialog({ title, text = '', ok = t('dlg.ok'), cancel = t('
   return new Promise(resolve => {
     const opener = document.activeElement;
     const dlg = document.createElement('dialog');
-    dlg.className = 'dlg confirm';
+    dlg.className = 'dialog confirm';
     dlg.innerHTML = `<form method="dialog">
       <h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ''}
       <div class="btns">

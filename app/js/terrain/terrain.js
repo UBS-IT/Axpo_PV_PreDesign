@@ -487,9 +487,9 @@ function render() {
   $('terPill').className = 'pill' + (have && !stale ? ' ok' : '');
   $('terInfo').innerHTML = m ? `<div class="hint">${esc(t('terrain.info', { name: m.name, date: m.loadedAt.slice(0, 10), cells: fmt(m.nx * m.ny),
     cell: fmt(m.cell, 2), zmin: fmt(m.zmin, 1), zmax: fmt(m.zmax, 1) }))}${m.epsg ? esc(' · ' + crsLabel(m.epsg) + ' (EPSG:' + m.epsg + ')') : ''}</div>`
-    + (m.missing ? `<div class="warn">${esc(tn('terrain.missingCells', m.missing))}</div>` : '')
-    + (stale ? `<div class="warn">${esc(t('terrain.stale'))}</div>` : '')
-    + (!have ? `<div class="warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
+    + (m.missing ? `<div class="notice warn">${esc(tn('terrain.missingCells', m.missing))}</div>` : '')
+    + (stale ? `<div class="notice warn">${esc(t('terrain.stale'))}</div>` : '')
+    + (!have ? `<div class="notice warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
   // the image on the map: view and legend
   const kind = P.terrain.view === 'z' ? 'z' : 's';
   document.querySelectorAll('#terView [data-view]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.view === kind)); b.tabIndex = b.dataset.view === kind ? 0 : -1; });
@@ -500,7 +500,7 @@ function render() {
   // the slope limit: what the toolkit says for the structure, the limit in use, and whether they agree
   const L = effectiveLimit(), rule = L.rule, S = P.field.structure;
   $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(S)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
-    : `<div class="warn">${esc(t('terrain.noRuleChoose', { structure: S }))}</div>`;
+    : `<div class="notice warn">${esc(t('terrain.noRuleChoose', { structure: S }))}</div>`;
   const mode = !L.custom ? 'toolkit' : L.limit.maxAny != null ? 'any' : 'nsew';
   document.querySelectorAll('#terLimitMode [data-lmode]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.lmode === mode)); b.tabIndex = b.dataset.lmode === mode ? 0 : -1; });
   $('terLimitAny').hidden = mode !== 'any';
@@ -522,7 +522,7 @@ function render() {
   const stats = have ? siteStats() : null;
   $('terStats').innerHTML = stats && stats.cells
     ? `<div class="hint">${esc(t('terrain.stats', { mean: fmt(stats.mean, 1), max: fmt(stats.max, 0) }))}${P.terrain.applySlopeLimit && L.limit ? ' ' + esc(t('terrain.statsOver', { ha: fmt(stats.overHa, 2), pct: fmt(stats.overPct, stats.overPct < 10 ? 1 : 0) })) : ''}</div>`
-      + (stats.coverage < 0.999 ? `<div class="warn">${esc(t('terrain.coverage', { pct: fmt(stats.coverage * 100, 0) }))}</div>` : '')
+      + (stats.coverage < 0.999 ? `<div class="notice warn">${esc(t('terrain.coverage', { pct: fmt(stats.coverage * 100, 0) }))}</div>` : '')
     : '';
   drawMap();
 }

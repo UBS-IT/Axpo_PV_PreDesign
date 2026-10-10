@@ -266,8 +266,13 @@ over the map; the side panel keeps its step and the editing stays in 2D. Enterin
   design session's artifact, `APP UI-UX DESIGN/design-system`); `python scripts/make_tokens.py` writes
   `app/css/tokens.css` (every colour, spacing, radius, shadow and font, light and dark; `app.css` defines no colour
   of its own) and `python scripts/make_icons.py` the sprite `app/icons.svg` (84 line icons; buttons declare
-  `data-icon`, no emoji or glyph characters in labels). The CI checks both match their sources. The ribbon
-  workspace of the design system is the refactor planned in `docs/plan-ribbon-refactor.md`.
+  `data-icon`, no emoji or glyph characters in labels). The CI checks both match their sources. `app/css/kit.css`
+  is a byte-for-byte copy of the design system's kit (`project/components/bundle.css`): the classes of the top bar,
+  the tabs, the ribbon, the panels, the fields, the buttons, the KPIs and ledgers, the notices, the toasts, the
+  dialogs and the map controls; `app.css` keeps only what the kit lacks (map views, steps, categories, lists, the
+  drawing block) and `shell.css` the layout. A kit update is a new copy; the design system is outside the
+  repository, so the copy is compared by hand (line endings aside: the clone is CRLF). The ribbon workspace of the
+  design system is the refactor planned in `docs/plan-ribbon-refactor.md`.
 - **True metres** — areas and the layout are computed in a Transverse Mercator frame centred on the site with
   scale factor 1 (`app/js/geo/localframe.js`): a 100 × 50 m rectangle is 5 000.000 m² on the ellipsoid, and a
   400 × 250 m Lambert-93 rectangle (100 000 m² on the grid) measures 100 172.46 m², exactly the geodesic area
@@ -352,6 +357,7 @@ with `scripts/make_axpo_slope_fixture.py` (plain Python with pyproj).
 
 ```
 app/                  the web app (index.html, css/, js/)
+  css/                tokens.css (generated), kit.css (a copy of the design system's kit), app.css (what the kit lacks), shell.css (the layout)
   catalog/            toolkit.json, countries.json (outlines), regions.json (German zone-33 Länder)
   js/terrain/         step 2: grid sampling (Esri, GeoTIFF), slopes and masks (pure), storage
   js/areas.js         step 1: categories, import, drawing in two steps, undo / redo, net area

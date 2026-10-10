@@ -11,7 +11,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 export function chooseCrs({ file, candidates = [], current = null, validate = () => true }) {
   return new Promise(resolve => {
     const dlg = document.createElement('dialog');
-    dlg.className = 'dlg';
+    dlg.className = 'dialog';
     const pre = candidates.find(c => c.wkid === current)?.wkid ?? candidates[0]?.wkid ?? null;
     const radios = candidates.map(c => `<label class="opt"><input type="radio" name="crsc" value="${c.wkid}" ${c.wkid === pre ? 'checked' : ''}>
       <span><b>${esc(c.label)}</b><small>EPSG:${c.wkid} · ${esc(c.country)}</small></span></label>`).join('');
@@ -21,14 +21,14 @@ export function chooseCrs({ file, candidates = [], current = null, validate = ()
       <p>${esc(t('crs.dlgText'))}</p>
       ${candidates.length ? `<p class="mut">${esc(t('crs.dlgCandidates'))}</p><div class="opts">${radios}</div>
         ${candidates.length > 1 ? `<p class="hint">${esc(t('crs.dlgSame'))}</p>` : ''}`
-        : `<div class="warn">${esc(t('crs.dlgNone'))}</div>`}
+        : `<div class="notice warn">${esc(t('crs.dlgNone'))}</div>`}
       <label class="opt other"><input type="radio" name="crsc" value="other" ${candidates.length ? '' : 'checked'}>
         <span><b>${esc(t('crs.dlgOther'))}</b></span></label>
       <div class="otherbox">
         <select name="list"><option value="">—</option>${groups}</select>
         <input name="epsg" type="number" min="1000" max="999999" step="1" placeholder="${esc(t('crs.dlgEpsg'))}" aria-label="${esc(t('crs.dlgEpsg'))}">
       </div>
-      <div class="warn err" data-bad hidden></div>
+      <div class="notice err" data-bad hidden></div>
       <div class="btns">
         <button type="button" class="btn" value="cancel" data-cancel>${esc(t('crs.dlgCancel'))}</button>
         <button type="submit" class="btn primary" value="ok">${esc(t('crs.dlgImport'))}</button>

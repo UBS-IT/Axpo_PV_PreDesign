@@ -1,105 +1,54 @@
-/* PV Predesign — the shell of the ribbon workspace (docs/plan-ribbon-refactor.md, phase 1A): five rows, two panels
-   floating over the map, the tabs with the states of the steps, the ribbon of the active tab, the status bar.
-   Styled only by the tokens of css/tokens.css; the classes are those of the design system's kit, which replaces
-   the detail rules of app.css in phase 1C. Loaded after app.css. */
+/* PV Predesign — the layout of the ribbon workspace (docs/plan-ribbon-refactor.md, phases 1A–1C): the five rows, the
+   panels docked at the sides of the map (a strip when collapsed), the states of the tabs, the map chrome, the status
+   bar. The kit of the design system (css/kit.css) draws the top bar, the tabs, the ribbon, the panels, the map
+   controls and the status bar; this file places them and adds what the docked layout changes. Styled only by the
+   tokens of css/tokens.css. Loaded last. */
 
 /* ---- the five rows ---- */
 html, body { height: 100%; }
 body { overflow: hidden; display: block; }
 .app { display: grid; grid-template-rows: 44px 36px 92px minmax(0, 1fr) 24px; height: 100vh; min-height: 560px; }
 
-/* ---- top bar ---- */
-.topbar { position: relative; display: flex; align-items: center; gap: var(--space-3); height: 44px; padding: 0 var(--space-35); background: var(--panel); border-bottom: 1px solid var(--line); }
-.topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--axpo-gradient); z-index: 1; }
-.brand { display: flex; align-items: center; gap: var(--space-2); font-size: 15px; font-weight: 700; white-space: nowrap; }
-.brand small { font-weight: 400; color: var(--mut); margin-left: 2px; }
-.brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-md); background: var(--axpo-gradient); color: var(--on-brand); }
-.brand-mark .icon { width: 16px; height: 16px; }
-.divider { width: 1px; height: 22px; background: var(--line); flex: none; }
-.spacer { flex: 1; }
-#projName { flex: 0 1 320px; min-width: 120px; border: 1px solid transparent; background: transparent; border-radius: var(--radius-md); padding: 4px 8px; font-weight: 600; }
-#projName:hover, #projName:focus { border-color: var(--line); background: var(--field); }
-.tb { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); background: transparent; color: var(--txt); cursor: pointer; white-space: nowrap; font-size: 12.5px; }
-.tb:hover { background: var(--hover); }
-.tb.icon-only { width: 28px; padding: 0; justify-content: center; }
+/* ---- top bar: the kit draws it; the project name is an input that takes the room ---- */
+#projName { flex: 0 1 320px; min-width: 120px; }
 .tb > .icon { margin: 0; }
-.grp { display: flex; }
-.grp .tb { border-radius: 0; margin-left: -1px; }
-.grp .tb:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); margin-left: 0; }
-.grp .tb:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-.save-state { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--mut); white-space: nowrap; }
-.save-state .dot { width: 7px; height: 7px; border-radius: 4px; background: var(--ok); }
 .save-state.dirty .dot { background: var(--warn); }
 
-/* ---- tabs ---- */
-.tabs { display: flex; align-items: stretch; gap: 2px; height: 36px; padding: 0 var(--space-35); background: var(--bg); border-bottom: 1px solid var(--line); }
-.tab { position: relative; display: flex; align-items: center; gap: 7px; padding: 0 12px; border: 0; background: none; color: var(--mut); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-.tab:hover { color: var(--txt); background: var(--hover); }
-.tab[aria-selected="true"] { color: var(--link); }
-.tab[aria-selected="true"]::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--axpo-gradient); }
+/* ---- tabs: the kit draws them; the number of the tab keeps the app's CSS tick (no glyphs, phase 0) ---- */
 .tab .num { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); border: 1px solid currentColor; font-size: 10px; font-weight: 700; }
 .tab[data-state="done"] .num { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
 .tab[data-state="done"] .num::after { content: ''; display: inline-block; width: 4px; height: 7px; margin: 0 0 2px 3px; border-right: 2px solid var(--on-ok); border-bottom: 2px solid var(--on-ok); transform: rotate(45deg); }
-.tab[data-state="locked"] { opacity: .6; }
 .tab[data-state="locked"] .num { border-style: dashed; }
-.tab .fig { font-size: 11px; font-weight: 400; color: var(--mut); font-variant-numeric: tabular-nums; }
 .tab .fig:empty { display: none; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* ---- ribbon ---- */
-.ribbon { display: flex; align-items: stretch; gap: 0; height: 92px; padding: 6px var(--space-2); background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; }
-.rgroup { display: flex; flex-direction: column; justify-content: space-between; padding: 0 var(--space-25); border-right: 1px solid var(--line); }
+/* ---- ribbon: the kit draws it; the groups of the other tabs are hidden ---- */
 .rgroup[hidden] { display: none; }
-.rgroup-tools { display: flex; align-items: flex-start; gap: var(--space-1); }
-.rgroup-label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); text-align: center; padding: 2px 0 0; white-space: nowrap; }
-.tool { display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: var(--space-1); min-width: 64px; max-width: 96px; min-height: 58px; padding: 6px 6px 4px; border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--txt); cursor: pointer; font: inherit; font-size: 11px; line-height: 13px; text-align: center; }
-.tool > .icon { width: 24px; height: 24px; margin: 0; }
-.tool:hover { background: var(--hover); border-color: var(--line); }
-.tool[aria-pressed="true"], .tool.active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--link); }
-.tool.primary { background: var(--axpo-gradient); color: var(--on-brand); border-color: transparent; }
-.tool.primary:hover { filter: brightness(1.08); }
-.tool:disabled { opacity: .45; cursor: default; }
-.ribbon-context { margin-left: auto; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 0 var(--space-25); white-space: nowrap; }
-.ribbon-context span { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
-.ribbon-context strong { font-size: 20px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tool > .icon { margin: 0; }
 
 /* ---- workspace: the panels are docked at the sides, the map takes the rest; a collapsed panel is a strip ---- */
 .workspace { display: flex; min-height: 0; overflow: hidden; }
 #mapStack { position: relative; flex: 1; min-width: 0; min-height: 0; }
-.panel { flex: none; display: flex; flex-direction: column; min-height: 0; width: 236px; background: var(--panel); border-right: 1px solid var(--line); }
+/* the kit's panel floats (border, radius, shadow); docked, it is a column with one side line */
+.panel { flex: none; width: 236px; border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; }
 .panel.right { width: 300px; border-right: 0; border-left: 1px solid var(--line); }
 .panel[hidden] { display: none; }
-.panel-f { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-top: 1px solid var(--line); font-size: 12px; }
+.panel-f { align-items: center; gap: 6px; padding: 6px 8px 6px 12px; font-size: 12px; }
 .panel-f .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .panel-f .ttl small { font-size: 11px; color: var(--mut); }
 .panel-f > .icon { color: var(--mut); }
 .panel-f[hidden] { display: none; }
 .panel-f .ibtn[aria-pressed="false"] { color: var(--mut); opacity: .5; }
-.strip { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--mut); cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 600; }
+.strip { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--mut); font-size: 11.5px; font-weight: 600; }
 .strip.right { border-right: 0; border-left: 1px solid var(--line); }
 .strip:hover { background: var(--hover); color: var(--txt); }
 .strip[hidden] { display: none; }
 .strip > span:not(.tot):not(.dots) { writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: .03em; }
 .strip .tot { min-width: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--fill); color: var(--on-fill); font-size: 10px; line-height: 17px; font-weight: 700; }
 .strip .tot:empty, .strip .dots { display: none; }
-.panel-h { display: flex; align-items: center; gap: var(--space-2); padding: 8px 10px 8px 12px; border-bottom: 1px solid var(--line); }
-.panel-h .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
-.panel-h .ttl b { font-size: 13px; }
-.panel-h .ttl small { font-size: 11px; color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.panel-h > .icon { color: var(--mut); }
-.ibtn { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: var(--radius-md); background: none; color: var(--mut); cursor: pointer; }
-.ibtn:hover { background: var(--hover); color: var(--txt); }
-.ibtn .icon { margin: 0; }
-.panel-b { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); }
 .panel.left .panel-b { padding: 8px 8px; }
 .panel.left #areaCats { margin: 0; }
-/* the map chrome: the controls column under the zoom and the north arrow (a component of the view's UI), the
-   measure card next to it, the basemap stack bottom right above a compact attribution, the scale bar bottom centre */
-.mapctl { display: flex; flex-direction: column; gap: 2px; padding: 2px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
-.mapctl-b { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: var(--radius-md); background: none; color: var(--txt); cursor: pointer; }
-.mapctl-b:hover { background: var(--hover); }
-.mapctl-b[aria-pressed="true"] { background: var(--fill); color: var(--on-fill); }
-.mapctl-b .icon { width: 16px; height: 16px; margin: 0; }
+/* the map chrome: the controls column (the kit's .map-ctl) under the zoom and the north arrow, the measure card next
+   to it, the basemap stack bottom right above a compact attribution, the scale bar bottom centre (app.css) */
 .mapcard.measure { left: 56px; top: 12px; bottom: auto; width: 280px; }
 .mapcard.measure .mapcard-h { flex-wrap: wrap; }
 .mapcard.measure .chips { margin: 0 0 0 auto; }
@@ -107,7 +56,6 @@ body { overflow: hidden; display: block; }
 .bmstack .esri-basemap-toggle { margin: 0; }
 .esri-ui .esri-attribution { font-size: 9px; line-height: 14px; opacity: .55; max-width: 60%; }
 .esri-ui .esri-attribution:hover { opacity: 1; }
-#scalebar { bottom: 22px; }
 
 /* the sections of the steps inside the Properties panel: the panel header carries the title */
 .step > .stephd { display: none; }
@@ -116,23 +64,20 @@ body { overflow: hidden; display: block; }
 .step[data-step="infra"] > .stephd h2 { font-size: 13px; }
 .sticky { top: -12px; }
 
-/* ---- status bar ---- */
-.statusbar { display: flex; align-items: center; gap: var(--space-4); height: 24px; padding: 0 var(--space-35); background: var(--panel); border-top: 1px solid var(--line); font-size: 11px; color: var(--mut); white-space: nowrap; overflow: hidden; }
-.statusbar b { color: var(--txt); font-weight: 600; }
-.statusbar .mono { font-family: var(--font-mono); font-size: 11px; color: var(--txt); font-variant-numeric: tabular-nums; }
-.sb-coord, .sb-crs { display: inline-flex; align-items: center; gap: 6px; }
+/* ---- status bar: the kit draws it (.it items, .v values, a bare select); the app adds its labels and switches ---- */
+.statusbar .it { padding: 0; border: 0; }   /* app.css .it is a list row */
 .statusbar .k { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
-.sb-coord .mono { min-width: 92px; }
-.sb-crs select { height: 18px; max-width: 260px; padding: 0 4px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--field); color: var(--txt); font: inherit; font-size: 11px; }
-.sb-crs select.alert { border-color: var(--warn); }
-.sb-toggle { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: none; color: var(--mut); cursor: pointer; font: inherit; font-size: 11px; }
+.statusbar .it.xy .v { min-width: 92px; }
+.statusbar select { width: auto; max-width: 260px; }
+.sb-crs select.alert { color: var(--warn); font-weight: 600; }
+.sb-toggle { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--mut); font-size: 11px; }
 .sb-toggle .icon { width: 12px; height: 12px; margin: 0; }
 .sb-toggle[aria-pressed="true"] { color: var(--link); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .support { margin-top: 6px; }
 .support .chk { font-size: 11.5px; color: var(--mut); }
 
 /* ---- widths ---- */
-@media (max-width: 1500px) { .brand small { display: none; } .ribbon-context { display: none; } .tool { min-width: 54px; max-width: 80px; padding: 4px 3px; } .rgroup { padding: 0 6px; } }
+@media (max-width: 1500px) { .brand small { display: none; } .ribbon-context { display: none; } .tool.large { min-width: 54px; max-width: 80px; padding: 4px 3px; } .rgroup { padding: 0 6px; } }
 @media (max-width: 1400px) { .panel.right { width: 280px; } }
 /* a desktop tool: under 760 px the app gives way to a message */
 .narrow { display: none; }
