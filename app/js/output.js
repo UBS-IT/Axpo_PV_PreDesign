@@ -64,11 +64,9 @@ function renderCrs() {
   if (!c.auto && sug && c.wkid !== sug) alerts.push({ text: t('crs.manual', { label: crsLabel(sug), wkid: sug }), cls: 'warn' });
   $('outCrsAlerts').innerHTML = alerts.map(a => `<div class="${a.cls}">${esc(a.text)}</div>`).join('');
 
-  const b = $('crsBadge');   // the badge of the old top bar; the status bar takes it over in phase 1B
-  if (!b) return;
-  b.textContent = c.wkid ? `EPSG:${c.wkid}` : t('top.crsNone');
-  b.title = c.wkid ? `${crsLabel(c.wkid)} — ${t(c.auto ? 'top.crsAuto' : 'top.crsManual')}\n${t('top.crsTitle')}` : t('top.crsTitle');
-  b.classList.toggle('alert', alerts.some(a => a.cls === 'warn'));
+  // the select sits in the status bar: a warning colours it, the title tells where the system comes from
+  sel.title = c.wkid ? `${crsLabel(c.wkid)} — ${t(c.auto ? 'top.crsAuto' : 'top.crsManual')}\n${t('top.crsTitle')}` : t('top.crsTitle');
+  sel.classList.toggle('alert', alerts.some(a => a.cls === 'warn'));
 }
 
 // GeoJSON in WGS 84: every area with its category and attributes (it can be imported back), the buildable

@@ -82,33 +82,23 @@
 </section>
 
 <main id="workspace" class="workspace" data-i18n-aria="workspace.label">
+  <!-- Layers: the objects of the site by category, floating over the map on the left (ui/layers.js) -->
+  <aside id="leftPanel" class="panel left" aria-labelledby="collTitle">
+    <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
+      <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
+    <div class="panel-b" id="collPanel"><div id="areaCats"></div></div>
+    <div class="panel-f" id="dimsRow" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-dimension"/></svg><span class="ttl"><b data-i18n="tools.dims"></b><small id="dimsCount"></small></span><button type="button" class="ibtn" id="dimsShow" aria-pressed="true" data-i18n-title="tools.dimShow" data-i18n-aria="tools.dimShow"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button><button type="button" class="ibtn" id="dimsClear" data-i18n-title="tools.dimClear" data-i18n-aria="tools.dimClear"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg></button></div>
+  </aside>
+  <button type="button" class="strip left" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><span data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span></button>
+
   <div id="mapStack">
     <div id="view"><div id="banner" hidden></div></div>
     <div id="view3d"></div>
     <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
     <!-- the scale bar, bottom centre (the SDK has no such corner: its own container) -->
     <div id="scalebar"></div>
-    <!-- Tools: drawing support and measures, bottom left (2D only) -->
-    <div id="tools">
-      <div id="toolsMenu" class="toolsmenu" role="group" data-i18n-aria="tools.title" hidden>
-        <div class="tm-h" data-i18n="tools.support"></div>
-        <button type="button" data-pref="snap" aria-pressed="true"><span data-i18n="tools.snap"></span><span class="st"></span></button>
-        <button type="button" data-pref="typed" aria-pressed="true"><span data-i18n="tools.typed"></span><span class="st"></span></button>
-        <button type="button" data-pref="labels" aria-pressed="true"><span data-i18n="tools.labels"></span><span class="st"></span></button>
-        <div class="tm-h" data-i18n="tools.measure"></div>
-        <button type="button" data-measure="distance" aria-pressed="false"><span data-i18n="tools.distance"></span></button>
-        <button type="button" data-measure="area" aria-pressed="false"><span data-i18n="tools.area"></span></button>
-        <div class="tm-h" data-i18n="tools.dims"></div>
-        <button type="button" data-dim="draw" aria-pressed="false"><span data-i18n="tools.dimDraw"></span></button>
-        <button type="button" data-dim="show" aria-pressed="true"><span data-i18n="tools.dimShow"></span><span class="st"></span></button>
-        <button type="button" data-dim="clear"><span data-i18n="tools.dimClear"></span></button>
-      </div>
-      <button type="button" id="toolsFab" class="fab" aria-expanded="false" aria-controls="toolsMenu" data-i18n-title="tools.title" data-i18n-aria="tools.title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L13 18a2.1 2.1 0 0 1-3-3z"/><path d="M4 20l5-5"/><path d="M19.5 4.5l-3 3"/></svg>
-      </button>
-    </div>
     <aside id="measureCard" class="mapcard measure" hidden>
-      <div class="mapcard-h"><b id="measureTitle"></b><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
+      <div class="mapcard-h"><b data-i18n="tools.measure"></b><div class="chips plain" role="radiogroup" data-i18n-aria="tools.measure"><button type="button" class="chip" role="radio" data-measure="distance" aria-checked="false" data-i18n="tools.distance"></button><button type="button" class="chip" role="radio" data-measure="area" aria-checked="false" data-i18n="tools.area"></button></div><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
       <div class="mapcard-b"><div id="measureBox"></div><p class="hint" data-i18n="tools.measureHint"></p></div>
     </aside>
     <div class="mapchips" role="group" data-i18n-aria="map.mode">
@@ -122,14 +112,7 @@
   </div>
 
 
-  <!-- Layers: the objects of the site by category, floating over the map on the left (ui/layers.js) -->
-  <aside id="leftPanel" class="panel left" aria-labelledby="collTitle">
-    <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
-      <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
-    <div class="panel-b" id="collPanel"><div id="areaCats"></div></div>
-  </aside>
-  <button type="button" class="reopen left" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><span data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span></button>
-
+  <button type="button" class="strip right" id="rpOpen" data-i18n-title="panel.open" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg><span data-i18n="panel.properties"></span></button>
   <!-- Properties: the sections of the steps of the active tab, floating over the map on the right -->
   <aside id="rightPanel" class="panel right" aria-labelledby="rpTitle">
     <header class="panel-h"><div class="ttl"><b id="rpTitle"></b><small id="rpSub"></small></div>
@@ -160,6 +143,7 @@
               <div class="acts"><button type="button" class="gact" id="drawUndo" data-i18n-title="draw.undo" data-i18n-aria="draw.undo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-undo"/></svg></button><button type="button" class="gact" id="drawRedo" data-i18n-title="draw.redo" data-i18n-aria="draw.redo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-redo"/></svg></button></div></div>
             <div class="cards" id="drawTools"></div>
             <div class="status" id="drawStatus" role="status"></div>
+            <div class="row2 support"><label class="chk"><input type="checkbox" id="drawTyped"> <span data-i18n="tools.typed"></span></label><label class="chk"><input type="checkbox" id="drawLabels"> <span data-i18n="tools.labels"></span></label></div>
           </div>
           <div class="last" id="drawLast" hidden></div>
         </div>
@@ -408,8 +392,7 @@
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="out.engTitle"></b></div>
-        <label class="l" for="outCrs" data-i18n="out.crsTitle"></label>
-        <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
+        <p class="hint" data-i18n="out.crsWhere"></p>
         <div id="outCrsAlerts" class="warns"></div>
         <p class="hint" data-i18n="out.engShort"></p>
         <details class="gloss"><summary data-i18n="out.gloss" data-icon="info"></summary>
@@ -422,10 +405,18 @@
 
     </div>
   </aside>
-  <button type="button" class="reopen right" id="rpOpen" data-i18n-title="panel.open" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg><span data-i18n="panel.properties"></span></button>
 </main>
 
-<footer id="statusbar" class="statusbar"><span id="sbMode" data-i18n="sb.select"></span><span class="spacer"></span><span id="sbSave" data-i18n="sb.autosave"></span></footer>
+<footer id="statusbar" class="statusbar">
+  <span class="sb-coord"><span class="k">E</span><span class="mono" id="sbE">—</span></span>
+  <span class="sb-coord"><span class="k">N</span><span class="mono" id="sbN">—</span></span>
+  <label class="sb-crs"><span class="k" data-i18n="sb.crs"></span><select id="outCrs" data-i18n-aria="out.crsTitle" data-i18n-title="top.crsTitle"></select></label>
+  <span class="sb-coord"><span class="k" data-i18n="sb.scale"></span><span class="mono" id="sbScale">—</span></span>
+  <span class="spacer"></span>
+  <span id="sbMode" data-i18n="sb.select"></span>
+  <button type="button" class="sb-toggle" id="sbSnap" aria-pressed="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-snap"/></svg><span></span></button>
+  <span id="sbSave" data-i18n="sb.autosave"></span>
+</footer>
 </div>
 
 <div id="toast" aria-live="polite"></div>

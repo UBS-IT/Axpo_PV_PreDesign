@@ -14,24 +14,30 @@ See [Release readiness](#release-readiness) below and `docs/plan.md` for planned
 
 ## The workflow
 
-The map opens on satellite imagery without labels (a toggle switches to the topographic map); a slider on the map
-sets the opacity of the background, remembered in the browser, so the layout stays readable over busy imagery.
-A north arrow sits under the zoom (the map turns with a right drag; a click puts north back up), the scale bar at
-the bottom centre, and bottom left the **Tools** menu: the drawing support as switches remembered in the browser
-(snapping to objects, typed lengths and angles with Tab, segment lengths while drawing), **Measure** (distance,
-area), a temporary measure with the Esri widgets that is never saved, and **Dimensions**: measured lines kept in the
-project, drawn like a polyline (the tool stays armed; Esc stops it), with the length of every segment in true metres
-and the total of a chain, ticks at the vertices; shown or hidden from the menu, removed one by one (click, then
-Delete, or the Remove button of the message) or all at once; they cut nothing and belong to no category. They go to
-the PDF report and to the DXF (layer `PVP_DIM`), not to the KMZ.
+The map opens on satellite imagery without labels; bottom right, one stack holds the toggle to the topographic map
+above a slider for the opacity of the background, remembered in the browser, so the layout stays readable over busy
+imagery (the Esri attribution under them is kept compact: the terms of use ask for it). Top left, under the zoom and
+the north arrow (the map turns with a right drag; a click puts north back up), a column of three controls: **Fit the
+site**, **Measure** (a card with Distance / Area chips: a temporary measure with the Esri widgets, never saved) and
+**Dimensions**: measured lines kept in the project, drawn like a polyline (the tool stays armed; Esc stops it), with
+the length of every segment in true metres and the total of a chain, ticks at the vertices; the foot of the Layers
+panel counts them, shows or hides them and removes them all, one is removed with a click, then Delete (or the Remove
+button of the message); they cut nothing and belong to no category. They go to the PDF report and to the DXF (layer
+`PVP_DIM`), not to the KMZ. The scale bar sits at the bottom centre. The drawing support is remembered in the
+browser: snapping to the objects is the switch of the status bar, typed lengths and angles (Tab) and the segment
+lengths while drawing are two boxes under the drawing block of 1 · Site.
 
 The shell is the **ribbon workspace** of the design system (`docs/plan-ribbon-refactor.md`): a top bar (project
 name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **four tabs** in the order of
 the dependencies — Site area, Terrain Analysis, Layout & Infrastructure, Report & exports — the **ribbon** of the
 active tab (its tools: Import; Analyse the slopes, Own model; Quick predesign, Optimise, the stations; the exports),
-the map filling the whole row, and a status bar. Two panels float over the map and collapse to a button in their
-corner: **Layers** on the left (the objects by category) and **Properties** on the right (the parameters, figures
-and notices of the steps of the active tab; the third tab stacks Layout and Infrastructure). Every tab shows its
+and the map between two docked panels that collapse to a narrow strip at their edge (the strip keeps the name and,
+for Layers, the count of the objects): **Layers** on the left (the objects by category) and **Properties** on the
+right (the parameters, figures and notices of the steps of the active tab; the third tab stacks Layout and
+Infrastructure). The **status bar** at the foot shows the coordinates of the pointer E / N in the coordinate system
+chosen for the exports, the CRS select itself (coloured when it disagrees with the one proposed from the site
+location), the scale, the mode of the map (Select, Draw · category, Reshape, Measure, Dimension), the snapping
+switch and the time of the last autosave. Every tab shows its
 state — *locked* (a prerequisite is missing: the tab still opens, with a gate that says why and a link to the step to
 do first), *ready*, *optional*, *done* (a tick and its key figure: buildable hectares, the slope limit, MWp).
 Nothing forces the order: a designer can work in any sequence. The app reopens on the step last visited, or on the
@@ -360,7 +366,7 @@ app/                  the web app (index.html, css/, js/)
   js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
   vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
-  js/ui/              tabs and ribbon (the shell), the Layers panel, icons, confirm dialog, coordinate system dialog, background map, Tools menu, toasts (with Undo)
+  js/ui/              tabs and ribbon (the shell), the Layers panel, the status bar, the map controls and drawing support (maptools.js), icons, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
   js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
 docs/                 architecture.md (the map of the app for non-developers), plan, decisions, audit/, handoff/ (notes between sessions); toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)

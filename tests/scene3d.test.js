@@ -42,7 +42,7 @@ const html = await (await fetch('../app/index.html')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const box = document.createElement('div');
 box.style.display = 'none';
-box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'), doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), ...doc.querySelectorAll('body > input[type=file]'));
+box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'), doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), doc.getElementById('statusbar'), ...doc.querySelectorAll('body > input[type=file]'));
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
 document.body.append(box, doc.getElementById('toast'));
 // Use the app's actual map markup/CSS rather than a stand-in 2D view.

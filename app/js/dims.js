@@ -1,7 +1,8 @@
 // Dimensions: measured lines kept in the project (project.dims, one polyline each in WGS 84), drawn on the map with
 // the length of every segment in true metres (the local frame of the site, never Web Mercator), ticks at the
-// vertices and the total of a chain; shown or hidden from the Tools menu, removed one by one (click, then Delete)
-// or all at once. They are not objects of 1 · Site: they cut nothing and belong to no category. They go to the PDF
+// vertices and the total of a chain; drawn from the Dimensions button of the map controls column (ui/maptools.js),
+// shown or hidden and removed all at once from the Dimensions row at the foot of the Layers panel, removed one by
+// one (click, then Delete). They are not objects of 1 · Site: they cut nothing and belong to no category. They go to the PDF
 // report and to the DXF (layer PVP_DIM), see report.js and export/model.js.
 import { getSdk } from './sdk.js';
 import { store, change, on, uid } from './state.js';
@@ -69,7 +70,21 @@ export function initDims(mapView) {
   on('dims', render);
   on('site', render);          // the frame of the site moves with the site
   on('project', () => { selected = null; if (drawing) stopDimension(); render(); });
+  // the Dimensions row at the foot of the Layers panel: count, show / hide, remove all
+  const show = document.getElementById('dimsShow'), clear = document.getElementById('dimsClear');
+  if (show) show.onclick = () => setDimsVisible(!visible);
+  if (clear) clear.onclick = () => clearDimensions();
   render();
+}
+
+function renderRow() {
+  const row = document.getElementById('dimsRow');
+  if (!row) return;
+  const n = (store.project.dims || []).length;
+  row.hidden = !n;
+  const c = document.getElementById('dimsCount'), s = document.getElementById('dimsShow');
+  if (c) c.textContent = t(n === 1 ? 'dims.count.one' : 'dims.count', { n });
+  if (s) s.setAttribute('aria-pressed', String(visible));
 }
 
 // ── drawing ──
@@ -82,6 +97,7 @@ export function startDimension() {
   if (!visible) setDimsVisible(true);
   sketchVM.create('polyline', { mode: 'click' });
   banner(t('dims.banner'));
+  document.dispatchEvent(new CustomEvent('pvp:mode', { detail: { mode: 'dimension', label: t('sb.dimension') } }));
   notify();
 }
 export function stopDimension() {
@@ -89,7 +105,11 @@ export function stopDimension() {
   end();
 }
 export function toggleDimension() { if (drawing) stopDimension(); else startDimension(); }
-function end() { drawing = false; banner(null); notify(); }
+function end() {
+  const was = drawing;
+  drawing = false; banner(null); notify();
+  if (was) document.dispatchEvent(new CustomEvent('pvp:mode', { detail: { mode: 'select', label: t('sb.select') } }));
+}
 function finish(graphic) {
   scratch.remove(graphic);
   const g = toGeoJSON(graphic.geometry);
@@ -121,7 +141,7 @@ export async function clearDimensions() {
   selected = null;
   toast(t('dims.cleared', { n: kept.length }), '', 8000, { action: { label: t('dims.undo'), fn: () => change('dims', p => { p.dims = kept.slice(); }) } });
 }
-function notify() { document.dispatchEvent(new CustomEvent('pvp:dims-state')); }
+function notify() { renderRow(); document.dispatchEvent(new CustomEvent('pvp:dims-state')); }
 
 // ── geometry in true metres ──
 // The frame of the site, or one centred on the dimension when there is no site yet
@@ -171,4 +191,5 @@ function render() {
   }
   layer.addMany(graphics);
   layer.visible = visible;
+  renderRow();
 }

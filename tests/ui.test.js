@@ -54,9 +54,9 @@ const html = await (await fetch('../app/index.html')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const box = document.createElement('div');
 box.style.display = 'none';
-// the shell: top bar, tabs, ribbon (the tools of the steps keep their ids there), the two floating panels
+// the shell: top bar, tabs, ribbon (the tools of the steps keep their ids there), the two docked panels, the status bar
 box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'),
-  doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
+  doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), doc.getElementById('statusbar'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
   doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
@@ -128,7 +128,7 @@ await test('Layers panel: the objects by category out of the Site panel, counter
   return `${dots.length} dot, total ${text('collTot')}`;
 });
 
-await test('drawing support switches of the Tools menu reach the sketch and are remembered', async () => {
+await test('drawing support (snapping switch of the status bar, boxes of the drawing block) reaches the sketch and is remembered', async () => {
   const vm = window.__sketch;
   assert(vm && vm.snappingOptions.enabled && vm.tooltipOptions.inputEnabled && vm.labelOptions.enabled, 'all on by default');
   setDrawPref('snap', false); setDrawPref('typed', false);
@@ -493,7 +493,9 @@ await test('background map: satellite without labels, opacity slider kept when s
   const { GraphicsLayer } = getSdk();
   const v = { map: new Map({ basemap: { baseLayers: [new GraphicsLayer()] } }), ui: { add: (w, pos) => added.push([w, pos]) } };
   const box = initBasemap(v);
-  assert(added.length === 2 && added.every(a => a[1] === 'bottom-right'), 'toggle and slider on the map');
+  // one stack bottom right: the basemap toggle above, the opacity slider below
+  assert(added.length === 1 && added[0][1] === 'bottom-right' && added[0][0].classList.contains('bmstack'), 'one stack bottom right');
+  assert(added[0][0].lastElementChild === box && added[0][0].children.length === 2, 'the toggle above the slider');
   assert(/basemap: 'satellite'/.test(await (await fetch('../app/js/main.js')).text()), 'the app starts on satellite imagery without labels');
   const input = box.querySelector('input');
   eq(input.value, '100', 'opaque by default');

@@ -37,7 +37,7 @@ the ArcGIS Maps SDK (from `js.arcgis.com`), the background map and Esri World El
  │                                       ▼                                    │
  │                        2D / 3D switch: view3d/scene.js (SceneView, glTF)   │
  │                                                                            │
- │   ui/tabs.js · ui/ribbon.js · ui/layers.js (the shell, css/shell.css)     │
+ │   ui/tabs.js · ui/ribbon.js · ui/layers.js · ui/statusbar.js (the shell)  │
  │   ui/toast.js   ui/dialog.js   ui/basemap.js   ui/maptools.js   ui/icons.js │
  │   io/projectfile.js: Save / Open  ◄──► .pvpd (zip: project.json + grid)    │
  │   app/vendor/: JSZip, togeojson, shpjs, geotiff, jsPDF, sql.js (local)     │
@@ -59,11 +59,15 @@ Three ideas explain most of the design:
 
 ## 2. The steps of the rail and the files behind them
 
-Since the ribbon refactor (phase 1A, 2026-10-10) the shell is a top bar, four tabs (`app/js/ui/tabs.js`: Site
-area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab (`ui/ribbon.js`,
-whose tools keep the ids of the buttons they replace), the map filling the row with two floating panels, Layers on
-the left (`ui/layers.js`, the objects by category) and Properties on the right (the sections of the steps of the
-active tab), and a status bar; `css/shell.css` lays it out. The steps below are unchanged: a tab holds one or two of
+Since the ribbon refactor (phases 1A and 1B, 2026-10-10) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
+Site area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab
+(`ui/ribbon.js`, whose tools keep the ids of the buttons they replace), the map between two docked panels that
+collapse to a strip, Layers on the left (`ui/layers.js`, the objects by category, the Dimensions row at its foot)
+and Properties on the right (the sections of the steps of the active tab), and a status bar (`ui/statusbar.js`:
+the pointer coordinates in the export system, the CRS select, the scale, the mode the modules announce with a
+`pvp:mode` event, the snapping switch, the autosave time); the map controls column (`ui/maptools.js`: Fit the
+site, Measure, Dimensions) sits under the zoom and the north arrow, the basemap toggle and the opacity slider
+bottom right; `css/shell.css` lays it out. The steps below are unchanged: a tab holds one or two of
 them (the third tab holds fields and infra). Each panel tells the tabs how its step stands: locked (a
 prerequisite is missing), ready, optional or done with its key figure. The panels are independent files; they talk
 to each other only through the project and a small publish/subscribe (`change(topic)` / `on(topic)` in `state.js`).
@@ -90,7 +94,7 @@ Shared by every step:
 | `app/js/catalog.js` | Reads `toolkit.json` once and answers "what does the toolkit say for this country and this key" |
 | `app/js/io/projectfile.js` | Save / Open of the `.pvpd` project file (a zip with `project.json` and, when there is a terrain, `terrain/grid.f32`) |
 | `app/js/dims.js` | Dimensions on the map: measured lines kept in `project.dims`, lengths in true metres from the local frame, ticks and labels, show / hide / remove; the export model and the PDF report ask it for the parts of every dimension |
-| `app/js/ui/` | The rail, the Collection drawer (the objects by category, reachable from every step; the cards inside it are drawn by `areas.js`), the Tools menu of the map (`maptools.js`: drawing-support preferences that `areas.js` applies to the sketch, and the temporary measures), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
+| `app/js/ui/` | The tabs and the ribbon (`tabs.js`, `ribbon.js`), the Layers panel (`layers.js`: the objects by category, reachable from every tab; the cards inside it are drawn by `areas.js`), the map controls column and the drawing-support preferences (`maptools.js`: Fit the site, the measure card with the Esri widgets, the Dimensions button; the preferences that `areas.js` and `dims.js` apply to their sketch), the status bar (`statusbar.js`), the icons of the design system (`icons.js`), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
 
 ## 3. How the data travel, from the drawing to the export
 
@@ -192,7 +196,7 @@ app.
 | `tests/import.html` | classification, v1 → v2 migration, countries and proposed systems, every national EPSG code, the fixtures against the ArcGIS reference areas, Geoportale projects with the site-features model, net area, grid connection route, project and GeoJSON round trips (25) | `io/importers.js`, `categories.js`, `crs.js`, `areas.js`, `state.js`, `io/projectfile.js` |
 | `tests/terrain.html` | slopes, masks and outlines, GeoTIFF sampling, the slope cut, a limit chosen by hand against the toolkit, figures inside the site and the terrain image, the project file, Geoportale projects with their DTM (grid adopted, partial coverage, replaced or kept, automatic drawings left out) (20) | `terrain/*` |
 | `tests/infra.html` | fence, perimeter road, clearances, lots and shared fences, stations (snapping, moving, at the access), roads drawn (12) | `infra.js` |
-| `tests/ui.html` | the real panels on a stand-in map view: stepper states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain (16) | `ui/rail.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
+| `tests/ui.html` | the real panels on a stand-in map view: stepper states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain, the Layers panel, the drawing support, dimensions (19) | `ui/tabs.js`, `ui/layers.js`, `ui/maptools.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
 | `tests/view3d.html` | sun and trackers against pvlib, row shading, heights by country, meshes, ground elevations, terrain tiles, glTF (8) | `view3d/sun.js`, `view3d/geometry.js`, `view3d/model.js`, `view3d/glb.js` |
 | `tests/scene3d.html` | the real SceneView on the synthetic DTM: opens on the site without errors, ground from the terrain, AgriPV heights, sun buttons, views, report, back to 2D (5; minutes long in headless, software WebGL) | `view3d/scene.js` |
 

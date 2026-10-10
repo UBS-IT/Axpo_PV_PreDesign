@@ -14,7 +14,12 @@ export function setBasemapOpacity(view, v) {
 // view: a MapView (or a stand-in with map and ui). Returns the slider element.
 export function initBasemap(view) {
   const { BasemapToggle, reactiveUtils } = getSdk();
-  view.ui.add(new BasemapToggle({ view, nextBasemap: 'topo-vector' }), 'bottom-right');
+  // one stack bottom right: the basemap toggle above, the opacity below (the attribution of the SDK sits under them)
+  const stack = document.createElement('div');
+  stack.className = 'bmstack';
+  const toggleBox = document.createElement('div');
+  stack.appendChild(toggleBox);
+  new BasemapToggle({ view, nextBasemap: 'topo-vector', container: toggleBox });
   const box = document.createElement('label');
   box.className = 'esri-widget bm-opacity';
   box.title = t('map.opacityTitle');
@@ -33,6 +38,7 @@ export function initBasemap(view) {
   };
   // the toggle replaces the basemap: the new one takes the same opacity
   reactiveUtils.watch(() => view.map.basemap, () => setBasemapOpacity(view, opacity));
-  view.ui.add(box, 'bottom-right');
+  stack.appendChild(box);
+  view.ui.add(stack, 'bottom-right');
   return box;
 }
