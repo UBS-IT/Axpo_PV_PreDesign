@@ -14,6 +14,7 @@ import { chooseCrs } from './ui/crsdialog.js';
 import { toast } from './ui/toast.js';
 import { stepProvider, refreshRail, showStep } from './ui/rail.js';
 import { updateCollection, showInCollection } from './ui/collection.js';
+import { onDrawPrefs } from './ui/maptools.js';
 
 let view, featLayer, sketchLayer, sketchVM;
 let drawing = null;          // { category, tool }
@@ -47,11 +48,19 @@ export function initAreas(mapView) {
   sketchLayer = new GraphicsLayer({ title: 'Sketch', listMode: 'hide' });
   view.map.addMany([featLayer, sketchLayer]);
   sketchVM = new SketchViewModel({ view, layer: sketchLayer, updateOnGraphicClick: false });
+  // the drawing support (snapping, typed lengths and angles, segment labels): preferences of the Tools menu
   try {
     sketchVM.snappingOptions = { enabled: true, selfEnabled: true, featureEnabled: true, featureSources: [{ layer: featLayer, enabled: true }] };
     sketchVM.tooltipOptions = { enabled: true, inputEnabled: true };
     sketchVM.labelOptions = { enabled: true };
+    onDrawPrefs(p => {
+      sketchVM.snappingOptions.enabled = !!p.snap;
+      sketchVM.tooltipOptions.enabled = !!p.typed; sketchVM.tooltipOptions.inputEnabled = !!p.typed;
+      sketchVM.labelOptions.enabled = !!p.labels;
+    });
   } catch (e) { console.warn('[areas] sketch options', e); }
+  // a measure takes the pointer: the drawing or the reshaping in progress ends
+  document.addEventListener('pvp:measure', () => { if (drawing) stopDraw(); if (editing) sketchVM.complete(); });
   sketchVM.on('create', e => {
     if (e.state === 'complete') finishDraw(e.graphic);
     else if (e.state === 'cancel' && sketchVM.state !== 'active') endDraw();   // not the cancel made to re-arm

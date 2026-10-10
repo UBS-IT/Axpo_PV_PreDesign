@@ -16,6 +16,10 @@ See [Release readiness](#release-readiness) below and `docs/plan.md` for planned
 
 The map opens on satellite imagery without labels (a toggle switches to the topographic map); a slider on the map
 sets the opacity of the background, remembered in the browser, so the layout stays readable over busy imagery.
+A north arrow sits under the zoom (the map turns with a right drag; a click puts north back up), the scale bar at
+the bottom centre, and bottom left the **Tools** menu: the drawing support as switches remembered in the browser
+(snapping to objects, typed lengths and angles with Tab, segment lengths while drawing) and **Measure** (distance,
+area), a temporary measure with the Esri widgets that is never saved.
 
 The left rail is a **stepper** in the order of the dependencies: every step shows its state — *locked* (a
 prerequisite is missing: the step still opens, with a gate that says why and a link to the step to do first),

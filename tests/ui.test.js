@@ -9,6 +9,7 @@ import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/areas.js';
 import { stepState, refreshRail } from '../app/js/ui/rail.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/collection.js';
+import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
 import { structurePresets } from '../app/js/catalog.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
@@ -118,6 +119,17 @@ await test('collection drawer: the objects by category out of the Site panel, ta
   toggleCollection(false);
   assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'closed again');
   return `${dots.length} dot, total ${text('collTot')}`;
+});
+
+await test('drawing support switches of the Tools menu reach the sketch and are remembered', async () => {
+  const vm = window.__sketch;
+  assert(vm && vm.snappingOptions.enabled && vm.tooltipOptions.inputEnabled && vm.labelOptions.enabled, 'all on by default');
+  setDrawPref('snap', false); setDrawPref('typed', false);
+  assert(!vm.snappingOptions.enabled && !vm.tooltipOptions.inputEnabled && !vm.tooltipOptions.enabled && vm.labelOptions.enabled, 'snapping and typed measures off, labels still on');
+  assert(JSON.parse(localStorage.getItem('pvp.draw.test')).snap === false, 'remembered under the test key');
+  setDrawPref('snap', true); setDrawPref('typed', true);
+  assert(vm.snappingOptions.enabled && vm.tooltipOptions.inputEnabled && drawPrefs.snap && drawPrefs.typed, 'back on');
+  return 'snap, typed, labels';
 });
 
 await test('drawing in two steps: category chips, tools allowed by the category, defaults, undo / redo of a removal', async () => {

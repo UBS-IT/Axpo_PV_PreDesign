@@ -18,6 +18,7 @@ import { toast } from './ui/toast.js';
 import { initBasemap } from './ui/basemap.js';
 import { initView3d } from './view3d/scene.js';
 import { initCollection } from './ui/collection.js';
+import { initMapTools } from './ui/maptools.js';
 
 const $ = id => document.getElementById(id);
 
@@ -34,7 +35,7 @@ async function start() {
     toast(t('toast.sdkFail', { err: e.message || e }), 'err', 30000);
     return;
   }
-  const { Map, MapView, ScaleBar } = sdk;
+  const { Map, MapView, ScaleBar, Compass } = sdk;
   // the spatial reference is given, so the view starts even when the background map cannot be reached (company
   // proxies, offline): the site, the layout and the exports do not need it
   const view = new MapView({
@@ -44,8 +45,12 @@ async function start() {
     center: [10.5, 46.5], zoom: 5,
     constraints: { snapToZoom: false },
   });
-  view.ui.add(new ScaleBar({ view, unit: 'metric' }), 'bottom-left');
+  // north arrow under the zoom (the map turns with a right drag; a click puts north back up); the scale bar at the
+  // bottom centre in its own container (the SDK has no such corner); the Tools menu bottom left
+  view.ui.add(new Compass({ view }), 'top-left');
+  new ScaleBar({ view, unit: 'metric', container: $('scalebar') });
   initBasemap(view);
+  initMapTools(view);
   window.__view = view;   // debug hook
   view.map.basemap.load().then(b => Promise.all(b.baseLayers.map(l => l.load())))
     .catch(e => { console.warn('[map] background map not available', e); toast(t('toast.noBasemap'), '', 15000); });
