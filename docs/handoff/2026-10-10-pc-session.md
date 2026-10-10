@@ -7,7 +7,8 @@ user works and what comes next.
 
 ## 1. Where the repository stands
 
-- **Phase 2 is on the branch `ux/ribbon-tools`** (PR #34, open: the user merges it on github.com). `main` =
+- **Phase 2 is on the branch `ux/ribbon-tools`** (PR #34, open: the user merges it on github.com); **phase 2B on
+  `ux/select-edit`**, branched from it (its PR follows #34; merge #34 first). `main` =
   `a323583`, merge of PR #33 (this note after phase 1), after [PR #32](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/32)
   (phase 1C of the ribbon refactor, `2a08f04`), [PR #31](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/31) (phase 1B, `cc6e612`) and
   [PR #30](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/30) (phase 1A, `424d513`). **Phase 1 is closed.** The
@@ -43,6 +44,7 @@ with the app working after each.
 | 1B · Status bar, panels, map controls | merged (#31) | docked panels that collapse to a 44 px strip; `ui/statusbar.js` (E / N in the export CRS, the CRS select moved from 5 · Report, scale, mode from the `pvp:mode` event, snapping, autosave); `ui/maptools.js` rewritten (controls column: Fit the site, Measure with Distance / Area chips, Dimensions; the drawing-support preferences); the Dimensions row at the foot of Layers; the basemap toggle and opacity as one stack bottom right |
 | 1C · Kit | merged (#32) | `app/css/kit.css`, a byte-for-byte copy of the design system's `bundle.css` (CRLF aside), loaded between `tokens.css` and `app.css`; the markup takes the kit's names (`.lbl`, `.chip`, `.notice warn` / `err`, `dialog.dialog`, `.map-ctl`, `.banner`, `.project-name`, status bar `.it` / `.v`); three app names step aside (`.fold` sections, `.cat.over`, `.ctag`); `app.css` 328 → 252 lines (only what the kit lacks, every override commented with its clash), `shell.css` 142 → 87 (the layout) |
 | 2 · Ribbon tools | PR #34 open (part A of 2026-10-11 added) | Site area: *Site definition* with Category and Type in line (`#drawType`), five geometries with Freehand (`thinned()`), Undo / Redo, Buffer and Height / Width (`renderValues()`), the two drawing-support boxes; *Constraints* group with the setback; the Site panel only shows its figures. Before part A: the **Category menu** (`ui/catmenu.js`, a listbox with colour dots, position fixed so the ribbon does not clip it) and four medium tools (`.tool.medium`, a CSS tick when armed) plus Undo / Redo; **Unclassified** (`UNCLASSIFIED` in `categories.js`, app-only: in `CATEGORY` but not in `CATEGORIES`; `classified()` filters it out of the GeoJSON / KMZ, `export/model.js` and `export/boq.js`; `pendingCount()` in `areas.js`). Terrain: Remove, Slope classes / Elevations switches. Layout & Infrastructure: Draw a road with Heavy / Light radio tools (`roadKind` in `infra.js`), At the access, Add module / Import roadmap. Report: working files, then the PDF alone on the right (`.rgroup.end`). `pvp:properties` from the ribbon reopens the Properties panel (`main.js`) |
+| 2B · Selection and editing | branch `ux/select-edit` | `areas.js`: `selection` (a Set of ids), `selectFeatures` / `clearSelection` / `selectByGeometry`, `renderSelection()` (outlines on the `Selection` layer, `.it.sel` rows, the `#selCard`), `renderEditTools()` (on / off with the reason as tooltip), `op` = `box` / `split` (sketches routed by `finishOp`), `startMove` (SketchViewModel `transform`, points `move`), a generalized `finishEdit` (one history step); `edit.js`: `splitFeature`, `mergeFeatures`, `copyFeatures`, `measureFeature`, `frameFor`; the Layers rows only select and zoom |
 | 3 · Layers | to do | visibility switches per computed layer (D6), legend of the slope classes |
 | 4 · Status bar, part two | to do | elevation and slope under the pointer from the loaded grid (`terrain/store.js`) |
 | 5 · New functions | to do | only the ones decided in plan §4 (search of project objects first) |
@@ -64,6 +66,13 @@ The decisions of 1B that changed on the user's say-so, for the record: the basem
 panel overlapping the map controls); the Esri attribution is compact, not removed (the terms of use ask for it).
 
 ## 3. Verified today
+
+- Phase 2B in the real page at 1366 × 800: a click inside the site selects it (outline, row, card «7.04 ha · AREAS
+  COLLECTION», «1 selected», tools on); a rectangle drawn, selected and split with a drawn line into «Object 1 (1)» and
+  «(2)»; Move / rotate hands both to the sketch, the new positions are written back in one history step; Merge gives the
+  0.49 ha rectangle back; the Delete key removes it with Undo; the project ended as it began. The Site area ribbon is
+  1225 px wide with Selection. `ui.html` 21 / 21 (a new test for selection and edits), `modules.html` 19 / 19 (44
+  modules), `import.html` 25 / 25, `infra.html` 12 / 12, `terrain.html` 20 / 20, `sdk.html` 5 / 5.
 
 - Phase 2 in the real page at 1366 × 800 with the pane visible: the category menu (opens over the map, dots, tick,
   keyboard), Gross area turning Line and Point off, the Area tool armed with its tick and the mode in the status bar,
@@ -106,6 +115,13 @@ panel overlapping the map controls); the Esri attribution is compact, not remove
 
 ## 5. Traps found today (do not rediscover them)
 
+- **The SketchViewModel needs a pointer move before the first click** of a simulated drawing (a `hover` first),
+  and a simulated drag does not drive its Move / rotate: the write-back was checked by moving the sketch graphics
+  from a script. A person with a mouse is not affected.
+- **Stored rings keep the orientation of their source** (GeoJSON counter-clockwise, the SDK clockwise): simplify
+  before and after a cut, a union or an area, as `computeArea()` does, or the areas come out negative.
+- **The yellow under the site is the terrain image**, not an object: a click there selects nothing.
+
 - **The kit resets every `button`** (no background, border or padding) and **shares names with the app** that mean
   something else: `.sec` (flat section vs the app's collapsible card, now `.fold`), `.drop` (dashed drop zone vs
   the drag-over state, now `.cat.over`), `.tag` (top-bar badge vs the category tag, now `.ctag`), `.legend` (a
@@ -135,8 +151,8 @@ panel overlapping the map controls); the Esri attribution is compact, not remove
 
 ## 6. Open work, in the order suggested
 
-1. Review and merge PR #34 (phase 2 with part A). Then **phase 2B, selection and editing** (decisions B1–B6 of 2026-10-11,
-   accepted: Select / Box tools, the same Category / Type / Buffer controls acting on the selection, an Edit group with
+1. Review and merge PR #34 (phase 2 with part A), then the PR of `ux/select-edit` (phase 2B). Phase 2B was (decisions B1–B6 of 2026-10-11,
+   built as accepted: Select / Box tools, the same Category / Type / Buffer controls acting on the selection, an Edit group with
    Reshape, Move / Rotate, Split, Merge, Copy, Delete, a «Selected object» card for name and voltage, the Layers panel
    reduced to groups, rows, selection and zoom); then phase 3 (visibility switches only).
    To report to the design session: the set lacks point, line, rectangle (and circle) icons; the kit's tab tick is a

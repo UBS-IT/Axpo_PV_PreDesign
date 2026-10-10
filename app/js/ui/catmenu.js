@@ -8,15 +8,17 @@ import { icon } from './icons.js';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // btn, list: the elements of index.html. items(): [{ id, label, hint, colour: [r, g, b] | null }]; value(): the id
-// shown; onPick(id): called with the chosen id. Returns { render } to call when the items or the value change.
-export function initCatMenu({ btn, list, items, value, onPick }) {
+// shown, or null when several are (a selection of objects of different categories: the button then shows mixed());
+// onPick(id): called with the chosen id. Returns { render } to call when the items or the value change.
+export function initCatMenu({ btn, list, items, value, onPick, mixed = () => '—' }) {
   if (!btn || !list) return { render() {} };
   let active = -1;   // index of the highlighted option while the list is open
   const opts = () => [...list.querySelectorAll('[role=option]')];
-  const dot = it => `<span class="dot${it.colour ? '' : ' none'}"${it.colour ? ` style="--c:rgb(${it.colour.join(',')})"` : ''}></span>`;
+  const dot = it => `<span class="dot${it.colour ? '' : it.mixed ? ' mixed' : ' none'}"${it.colour ? ` style="--c:rgb(${it.colour.join(',')})"` : ''}></span>`;
 
   function render() {
-    const all = items(), cur = all.find(x => x.id === value()) || all[0];
+    const all = items(), v = value();
+    const cur = v === null ? { id: null, label: mixed(), hint: '', colour: null, mixed: true } : all.find(x => x.id === v) || all[0];
     btn.innerHTML = `${dot(cur)}<span class="nm">${esc(cur.label)}</span>${icon('chevron-down', 'sm')}`;
     btn.title = cur.hint || cur.label;
     list.innerHTML = all.map((it, i) => `<li role="option" id="${list.id}-${it.id}" data-id="${esc(it.id)}" aria-selected="${it.id === cur.id}" title="${esc(it.hint || '')}">${dot(it)}<span class="nm">${esc(it.label)}</span></li>`).join('');

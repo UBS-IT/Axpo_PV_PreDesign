@@ -60,6 +60,13 @@ body { overflow: hidden; display: block; }
 .catsel[aria-expanded="true"] .icon { transform: rotate(180deg); }
 .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
 .dot.none { background: none; border: 1.5px dashed var(--mut); }
+.dot.mixed { background: linear-gradient(90deg, var(--mut) 50%, transparent 50%); border: 1.5px solid var(--mut); }
+/* Site definition while objects are selected (phase 2B): a tint says that its menus act on the selection */
+.rgroup.sel { background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: var(--radius-md); }
+.rgroup.sel .rgroup-label { color: var(--link); font-weight: 600; }
+.tool.small[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--link); }
+.selcard .cardhd { gap: 8px; }
+.selcard .ledger { margin-top: 8px; }
 .catlist { position: fixed; z-index: 60; margin: 0; padding: 4px; list-style: none; max-height: min(420px, 70vh); overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-xl); font-size: 12.5px; }
 .catlist:focus-visible { outline: none; }
 .catlist[hidden] { display: none; }

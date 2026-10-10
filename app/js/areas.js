@@ -1,8 +1,10 @@
 // Step 1 · Site: objects by category (gross, net, exclusions, linear infrastructure, obstacles, access,
 // mitigation, agricultural zones, reference), import, drawing in two steps (what, then with which tool — the
-// Geoportale's Disegna pattern, in the ribbon since phase 2: a category menu and four tools; «Unclassified» is the
-// default and keeps the objects aside until each one gets its category), undo / redo, drag and drop between
-// categories, and the buildable area in the local metric frame.
+// Geoportale's Disegna pattern, in the ribbon since phase 2: the Category and Type menus and five geometries;
+// «Unclassified» is the default and keeps the objects aside until each one gets its category), undo / redo, the
+// selection and the edits of phase 2B (a click or a box on the map, a click on a Layers row; Reshape, Move / rotate,
+// Split, Merge, Copy, Delete; the Category, Type and Buffer of the ribbon act on the selection; edit.js does the
+// geometry), and the buildable area in the local metric frame.
 import { getSdk } from './sdk.js';
 import { store, change, on, emit, uid, saveSoon, geomKind } from './state.js';
 import { t, tn, fmt } from './i18n.js';
@@ -13,15 +15,20 @@ import { readAnyFile } from './io/importers.js';
 import { suggestCrs, candidatesForProjected, crsLabel } from './crs.js';
 import { chooseCrs } from './ui/crsdialog.js';
 import { toast } from './ui/toast.js';
-import { stepProvider, refreshRail, showStep } from './ui/tabs.js';
-import { updateCollection, showInCollection } from './ui/layers.js';
+import { stepProvider, refreshRail, showStep, currentTab } from './ui/tabs.js';
+import { updateCollection } from './ui/layers.js';
 import { onDrawPrefs } from './ui/maptools.js';
 import { icon } from './ui/icons.js';
 import { initCatMenu } from './ui/catmenu.js';
+import { splitFeature, mergeFeatures, copyFeatures, measureFeature, frameFor } from './edit.js';
 
 let view, featLayer, sketchLayer, sketchVM;
-let drawing = null;          // { category, tool }
-let editing = null;          // { id }
+let selLayer = null;         // the outlines of the selected objects, over the objects
+let drawing = null;          // { category, tool, free }
+let editing = null;          // { ids, kind: 'reshape' | 'move' }: objects handed to the sketch
+const selection = new Set(); // the selected objects (ids): the ribbon's Category, Type, Buffer and Edit group act on them
+let op = null;               // a sketch made for the selection: 'box' (box selection) or 'split' (the cutting line)
+let mode = 'select';         // the mode of the map (pvp:mode): objects are picked on the map only in 'select'
 let drawCat = UNCLASSIFIED; // ① the category the next drawings go into (none by default: sorted later)
 let catMenu = null;          // the category menu of the ribbon (ui/catmenu.js)
 const drawDefaults = {};     // category -> attributes given to the next drawings (type, buffer, height, width)
@@ -43,14 +50,14 @@ export const importHooks = [];
 const openCats = new Set([UNCLASSIFIED, 'gross', 'net', 'exclusion']);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const DRAG_TYPE = 'application/x-pvp-feature';
 
 export function initAreas(mapView) {
   view = mapView;
   const { GraphicsLayer, SketchViewModel } = getSdk();
   featLayer = new GraphicsLayer({ title: 'Areas' });
   sketchLayer = new GraphicsLayer({ title: 'Sketch', listMode: 'hide' });
-  view.map.addMany([featLayer, sketchLayer]);
+  selLayer = new GraphicsLayer({ title: 'Selection', listMode: 'hide' });
+  view.map.addMany([featLayer, selLayer, sketchLayer]);
   sketchVM = new SketchViewModel({ view, layer: sketchLayer, updateOnGraphicClick: false });
   // the drawing support (snapping, typed lengths and angles, segment labels): the preferences of ui/maptools.js
   // (the snapping switch of the status bar, the two boxes under the drawing block)
@@ -65,15 +72,24 @@ export function initAreas(mapView) {
     });
   } catch (e) { console.warn('[areas] sketch options', e); }
   // a measure or a dimension takes the pointer: the drawing or the reshaping in progress ends
-  for (const ev of ['pvp:measure', 'pvp:dim']) document.addEventListener(ev, () => { if (drawing) stopDraw(); if (editing) sketchVM.complete(); });
+  for (const ev of ['pvp:measure', 'pvp:dim']) document.addEventListener(ev, () => { if (op) cancelOp(); if (drawing) stopDraw(); if (editing) sketchVM.complete(); });
   sketchVM.on('create', e => {
+    if (op) { if (e.state === 'complete') finishOp(e.graphic); else if (e.state === 'cancel') endOp(); return; }   // a box, a cutting line
     if (e.state === 'complete') finishDraw(e.graphic);
     else if (e.state === 'cancel' && sketchVM.state !== 'active') endDraw();   // not the cancel made to re-arm
   });
   sketchVM.on('update', e => { if (e.state === 'complete') finishEdit(e); });
   window.__sketch = sketchVM;   // debug hook
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && op) { cancelOp(); return; }
     if (e.key === 'Escape' && drawing) { stopDraw(); return; }
+    // Esc clears the selection and Delete removes it (with Undo): not while typing, not while the sketch holds objects
+    const tg = e.target && e.target.tagName;
+    const typing = tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT' || (e.target && e.target.isContentEditable);
+    if (!typing && !editing && selection.size && (e.key === 'Escape' || e.key === 'Delete')) {
+      if (e.key === 'Escape') clearSelection(); else { e.preventDefault(); deleteSelection(); }
+      return;
+    }
     // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) on the objects of the site while this step is open, not while typing
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     const tag = e.target && e.target.tagName;
@@ -85,9 +101,12 @@ export function initAreas(mapView) {
     else if (k === 'y' || (k === 'z' && e.shiftKey)) { if (redo()) e.preventDefault(); }
   });
   // the ribbon group Site definition: ① the Category and Type menus, ② the five geometries (and Freehand), undo /
-  // redo, the values given to the next drawings (Buffer, and Height or Width when the category has one)
+  // redo, the values given to the next drawings (Buffer, and Height or Width when the category has one). With a
+  // selection the same menus and fields show and change the selected objects
   if ($('drawTools')) {
-    catMenu = initCatMenu({ btn: $('drawCatBtn'), list: $('drawCatList'), items: drawItems, value: () => drawCat, onPick: selectDrawCat });
+    catMenu = initCatMenu({ btn: $('drawCatBtn'), list: $('drawCatList'), items: drawItems, mixed: () => t('sel.mixed'),
+      value: () => (selection.size ? selCategory() : drawCat),
+      onPick: id => (selection.size ? reclassifySelection(id) : selectDrawCat(id)) });
     $('drawTools').onclick = e => { const b = e.target.closest('[data-dtool]'); if (b && !b.disabled) toggleTool(b.dataset.dtool); };
     const num = el => (el.value === '' ? undefined : Math.max(0, Number(el.value)));
     $('drawType').onchange = () => setValue('type', $('drawType').value);
@@ -99,10 +118,43 @@ export function initAreas(mapView) {
     };
     $('drawUndo').onclick = () => undo();
     $('drawRedo').onclick = () => redo();
+    // the group Selection: Select, Box, and the edits of the selected objects
+    const on = (id, fn) => { const b = $(id); if (b) b.onclick = fn; };
+    on('selTool', () => { if (op) cancelOp(); if (drawing) stopDraw(); if (editing) sketchVM.complete(); renderEditTools(); });
+    on('selBox', () => (op === 'box' ? cancelOp() : startBox()));
+    on('edReshape', () => { const f = singleSelected(); if (f) startEdit(f.id); });
+    on('edMove', () => startMove([...selection]));
+    on('edSplit', () => (op === 'split' ? cancelOp() : startSplit()));
+    on('edMerge', () => mergeSelection());
+    on('edCopy', () => copySelection());
+    on('edDelete', () => deleteSelection());
+    // the «Selected object» card of the Properties panel: the name, and the voltage of a power line
+    const sn = $('selName'), sv = $('selVolt');
+    if (sn) sn.onchange = () => { const f = singleSelected(), v = sn.value.trim(); if (f && v && v !== f.name) mutate(p => { const g = p.features.find(x => x.id === f.id); if (g) g.name = v; }); };
+    if (sv) sv.onchange = () => {
+      const f = singleSelected();
+      if (!f) return;
+      const v = sv.value === '' ? undefined : Math.max(0, Number(sv.value));
+      mutate(p => { const g = p.features.find(x => x.id === f.id); if (!g) return; g.attrs = g.attrs || {}; if (v === undefined || !isFinite(v)) delete g.attrs.voltage; else g.attrs.voltage = v; });
+    };
     renderDraw();
   }
+  // a click on the map picks an object (Shift or Ctrl adds or removes it), a click elsewhere clears the selection: with
+  // the Site area tab open and nothing else armed (drawing, measuring, a dimension, a box, a cutting line)
+  document.addEventListener('pvp:mode', e => { mode = (e.detail && e.detail.mode) || 'select'; renderEditTools(); });
+  if (typeof view.on === 'function') view.on('click', async e => {
+    if (drawing || editing || op || mode !== 'select' || currentTab() !== 'areas' || typeof view.hitTest !== 'function') return;
+    const add = !!(e.native && (e.native.shiftKey || e.native.ctrlKey || e.native.metaKey));
+    let id = null;
+    try {
+      const h = await view.hitTest(e, { include: [featLayer] });
+      const r = h.results.find(x => x.graphic && x.graphic.attributes && x.graphic.attributes.id);
+      id = r ? r.graphic.attributes.id : null;
+    } catch (err) { console.warn('[areas] hit test', err); }
+    if (id) selectFeatures([id], { add, toggle: add }); else if (!add) clearSelection();
+  });
 
-  // file picker (the Import buttons) and drop on the category cards
+  // the file picker of the Import tool
   const input = $('fileImport');
   $('areasImport').onclick = () => pickFiles(null);
   input.onchange = async () => {
@@ -110,63 +162,36 @@ export function initAreas(mapView) {
     input.value = '';
     if (files.length) await importFiles(files, cat);
   };
+  // the Layers panel (B5): groups and rows only; a click on a row selects its object (Shift or Ctrl adds), Enter or
+  // Space too; the magnifier zooms to the object or to the group. No editing there: the ribbon does it
   const cats = $('areaCats');
   cats.addEventListener('click', onCatsClick);
-  cats.addEventListener('change', onCatsChange);
-  cats.addEventListener('dblclick', onRename);
+  cats.addEventListener('keydown', e => {
+    const row = e.target.closest && e.target.closest('.it[data-id]');
+    if (!row || e.target !== row || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    pickRow(row, e);
+  });
   cats.addEventListener('toggle', e => {
     const d = e.target;
     if (d.classList && d.classList.contains('cat')) { if (d.open) openCats.add(d.dataset.cat); else openCats.delete(d.dataset.cat); }
   }, true);
-  cats.addEventListener('dragstart', e => {
-    const row = e.target.closest && e.target.closest('.it[data-id]');
-    if (!row) return;
-    e.dataTransfer.setData(DRAG_TYPE, row.dataset.id);
-    e.dataTransfer.effectAllowed = 'move';
-    try { e.dataTransfer.setDragImage(row, 12, 12); } catch {}
-    row.classList.add('dragging');
-    cats.classList.add('dragging');
-  });
-  cats.addEventListener('dragend', e => {
-    const r = e.target.closest && e.target.closest('.it');
-    if (r) r.classList.remove('dragging');
-    cats.classList.remove('dragging');
-    clearDrop();
-  });
-  cats.addEventListener('dragover', e => {
-    const card = e.target.closest('.cat');
-    if (!card) return;
-    const types = [...e.dataTransfer.types];
-    if (types.includes(DRAG_TYPE) || types.includes('Files')) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = types.includes(DRAG_TYPE) ? 'move' : 'copy';
-      clearDrop(card);
-      card.classList.add('over');
-    }
-  });
-  cats.addEventListener('dragleave', e => { const card = e.target.closest('.cat'); if (card && !card.contains(e.relatedTarget)) card.classList.remove('over'); });
-  cats.addEventListener('drop', async e => {
-    const card = e.target.closest('.cat');
-    if (!card) return;
-    e.preventDefault();
-    e.stopPropagation();
-    clearDrop();
-    const cat = card.dataset.cat;
-    const id = e.dataTransfer.getData(DRAG_TYPE);
-    if (id) moveFeature(id, cat);
-    else if (e.dataTransfer.files && e.dataTransfer.files.length) await importFiles([...e.dataTransfer.files], cat);
-  });
 
   const sb = $('boundarySetback');
   sb.onchange = () => change('settings', p => { p.settings.boundarySetback = Math.max(0, Number(sb.value) || 0); });
 
-  on('site', () => { render(); updateCrs(true); });
+  on('site', () => {
+    for (const id of [...selection]) if (!store.project.features.some(f => f.id === id)) selection.delete(id);   // removed objects
+    render(); updateCrs(true);
+  });
   on('terrain', renderSummarySoon);
   on('infra', renderSummarySoon);
   on('field', renderSummarySoon);   // the slope limit depends on the structure
   on('settings', () => { $('boundarySetback').value = store.project.settings.boundarySetback; renderSummarySoon(); });
   on('project', () => {
     history.undo.length = 0; history.redo.length = 0;
+    selection.clear();
+    if (op) cancelOp();
     if (drawing) stopDraw();
     render(); updateCrs(false); zoomToFeatures();
   });
@@ -177,8 +202,6 @@ export function initAreas(mapView) {
   render();
   updateCrs(false);
 }
-
-function clearDrop(except) { document.querySelectorAll('#areaCats .cat.over').forEach(c => { if (c !== except) c.classList.remove('over'); }); }
 
 export function pickFiles(category = null) {
   const input = $('fileImport');
@@ -320,6 +343,8 @@ function toggleTool(tool) {
 }
 export function startDraw(category, tool) {
   if (!TOOLS.includes(tool) || !CATEGORY[category] || !CATEGORY[category].geom.includes(TOOL_KIND[tool])) return;
+  if (op) cancelOp();
+  if (selection.size) clearSelection();   // a drawing tool leaves the selection
   if (editing) sketchVM.complete();
   if (drawing) sketchVM.cancel();
   document.dispatchEvent(new CustomEvent('pvp:draw'));   // a dimension in progress stops (dims.js)
@@ -393,9 +418,11 @@ function flashRow(id) {
     row.scrollIntoView({ block: 'nearest' });
   });
 }
-// a value of the ribbon (Type, Buffer, Height, Width): given to the next drawings of the category
+// a value of the ribbon (Type, Buffer, Height, Width): given to the selected objects when there is a selection,
+// otherwise to the next drawings of the category
 function setValue(attr, v) {
   if (!attr) return;
+  if (selection.size) { applyToSelection(attr, v); return; }
   const d = drawDefaults[drawCat] || (drawDefaults[drawCat] = defaultAttrs(drawCat));
   if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete d[attr]; else d[attr] = v;
 }
@@ -417,11 +444,6 @@ const TOOL_SVG = {
   point: SVG24('<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/>'),
   circle: SVG24('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
 };
-// the icons of the Draw here / Import buttons of the Layers cards
-const TOOL_ICON = {
-  import: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2M4.5 5.5L8 2l3.5 3.5M2.5 11v3h11v-3"/></svg>',
-  draw: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-4 7-7 3 3-7 7z"/><path d="M10 3l3 3"/></svg>',
-};
 // the entries of the category menu: Unclassified first (the default), then the categories of the model
 const drawItems = () => [{ id: UNCLASSIFIED, label: t('cat.' + UNCLASSIFIED), hint: t('cat.' + UNCLASSIFIED + '.hint'), colour: null },
   ...CATEGORIES.map(c => ({ id: c.id, label: t('cat.' + c.id), hint: t('cat.' + c.id + '.hint'), colour: c.colour }))];
@@ -438,9 +460,27 @@ function renderDraw() {
     b.title = ok ? `${t('draw.tool.' + tool)}: ${t('draw.tool.' + tool + '.sub')}` : why;
     b.setAttribute('aria-pressed', String(!!drawing && drawing.tool === tool));
   }
-  renderValues(c, drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id)));
-  document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
+  if (selection.size) renderSelValues(selectedFeatures());
+  else renderValues(c, drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id)));
+  // the label of the group says what the menus are about: the next drawings, or the selected objects
+  const lab = $('rgSiteLabel');
+  if (lab) lab.textContent = selection.size ? tn('sel.count', selection.size) : t('ribbon.g.site');
+  $('drawTools').closest('.rgroup')?.classList.toggle('sel', !!selection.size);
+  renderEditTools();
   renderHistory();
+}
+// the values of the selected objects: those they share, blank where they differ; objects of different categories
+// share no type list, and a buffer only when every one of them takes one
+function renderSelValues(fs) {
+  const cats = [...new Set(fs.map(f => f.category))];
+  const common = k => { const vs = [...new Set(fs.map(f => (f.attrs || {})[k] ?? ''))]; return vs.length === 1 ? vs[0] : ''; };
+  if (cats.length === 1) { renderValues(CATEGORY[cats[0]] || CATEGORY.reference, { type: common('type'), buffer: common('buffer'), height: common('height'), width: common('width') }); return; }
+  const ty = $('drawType');
+  if (ty) { ty.innerHTML = `<option value="">${esc(t('sel.mixed'))}</option>`; ty.disabled = true; }
+  const bf = $('drawBuffer');
+  if (bf) { const on = fs.every(f => (CATEGORY[f.category]?.attrs || []).includes('buffer')); bf.disabled = !on; bf.value = on ? common('buffer') : ''; }
+  const cap = $('drawSizeCap'), box = $('drawSizeBox');
+  if (cap && box) cap.hidden = box.hidden = true;
 }
 // Type, Buffer and Height / Width of the ribbon for category c with the values v: Type is off for Unclassified and for
 // the categories without types (gross, net), Buffer for those that do not cut with one; Height shows for obstacles,
@@ -449,8 +489,8 @@ function renderValues(c, v) {
   const ty = $('drawType');
   if (ty) {
     const types = c.attrs.includes('type') ? c.types : [];
-    ty.innerHTML = types.length ? types.map(x => `<option value="${x}" ${v.type === x ? 'selected' : ''}>${esc(t('type.' + x))}</option>`).join('')
-      : `<option value="">${esc(t('type.none'))}</option>`;
+    const blank = !types.length || !types.includes(v.type) ? `<option value="" selected>${esc(t('type.none'))}</option>` : '';   // none, or mixed
+    ty.innerHTML = blank + types.map(x => `<option value="${x}" ${v.type === x ? 'selected' : ''}>${esc(t('type.' + x))}</option>`).join('');
     ty.disabled = !types.length;
   }
   const bf = $('drawBuffer');
@@ -462,12 +502,212 @@ function renderValues(c, v) {
     if (size) { cap.textContent = t('draw.' + size); inp.dataset.dattr = size; inp.value = v[size] ?? ''; }
   }
 }
-const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">${icon('pen')}</button>
-    <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">${icon('reshape')}</button>
-    <button type="button" class="x" data-del="${f.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">${icon('close')}</button>`;
+// ── selection (B1, B2) ──
+export const selectedFeatures = () => store.project.features.filter(f => selection.has(f.id));
+export const selectionIds = () => [...selection];
+const singleSelected = () => (selection.size === 1 ? selectedFeatures()[0] || null : null);
+const selCategory = () => { const cats = new Set(selectedFeatures().map(f => f.category)); return cats.size === 1 ? [...cats][0] : null; };
+// ids: the objects; add: keep the current selection; toggle: an object already selected leaves it
+export function selectFeatures(ids, { add = false, toggle = false } = {}) {
+  if (!add) selection.clear();
+  for (const id of ids) { if (toggle && selection.has(id)) selection.delete(id); else selection.add(id); }
+  for (const id of [...selection]) if (!store.project.features.some(f => f.id === id)) selection.delete(id);
+  renderSelection();
+  renderDraw();
+}
+export function clearSelection() {
+  if (!selection.size) return;
+  selection.clear();
+  renderSelection();
+  renderDraw();
+}
+// every object a geometry touches (the box of the Box tool; any system)
+export function selectByGeometry(g, { add = false } = {}) {
+  const S = getSdk();
+  const ids = [];
+  for (const f of store.project.features) {
+    const fg = toSdk(f.geometry);
+    if (!fg) continue;
+    try { if (S.intersectsOperator.execute(S.projectOperator.execute(fg, g.spatialReference), g)) ids.push(f.id); } catch (e) { console.warn('[areas] box', e); }
+  }
+  selectFeatures(ids, { add });
+  return ids;
+}
+// the outlines of the selection on the map, its rows in the Layers panel, its card in the Properties panel
+function renderSelection() {
+  if (selLayer) {
+    selLayer.removeAll();
+    const { Graphic } = getSdk();
+    const HL = [57, 69, 207];
+    if (!editing) for (const f of selectedFeatures()) {
+      const g = toSdk(f.geometry);
+      if (!g) continue;
+      const kind = geomKind(f.geometry);
+      const symbol = kind === 'polygon' ? { type: 'simple-fill', color: [...HL, 0.10], outline: { color: HL, width: 3 } }
+        : kind === 'line' ? { type: 'simple-line', color: [...HL, 0.85], width: 5 }
+        : { type: 'simple-marker', style: 'circle', size: 18, color: [0, 0, 0, 0], outline: { color: HL, width: 2.5 } };
+      selLayer.add(new Graphic({ geometry: g, symbol }));
+    }
+  }
+  document.querySelectorAll('#areaCats .it[data-id]').forEach(r => { const on = selection.has(r.dataset.id); r.classList.toggle('sel', on); r.setAttribute('aria-selected', String(on)); });
+  renderSelCard();
+}
+// B4: one selected object, its name, its voltage (power lines), its size in true metres and where it comes from
+function renderSelCard() {
+  const card = $('selCard');
+  if (!card) return;
+  const f = singleSelected();
+  card.hidden = !f;
+  if (!f) return;
+  const c = CATEGORY[f.category] || CATEGORY.reference;
+  $('selCat').innerHTML = `<span class="ctag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>`;
+  if (document.activeElement !== $('selName')) $('selName').value = f.name;
+  const volt = c.attrs.includes('voltage') && POWER_TYPES.includes(f.attrs?.type);
+  $('selVoltBox').hidden = !volt;
+  if (volt && document.activeElement !== $('selVolt')) $('selVolt').value = f.attrs?.voltage ?? '';
+  const m = measureFeature(f, frameFor([f], siteFrame()));
+  const rows = [];
+  if (m.area != null) rows.push([t('sel.area'), `${fmt(m.area / 1e4, 2)} ha · ${fmt(m.area, 0)} m²`]);
+  if (m.length != null) rows.push([t('sel.length'), `${fmt(m.length, 1)} m`]);
+  rows.push([t('sel.source'), f.sourceCategory || (f.source === 'drawn' ? t('sel.drawn') : String(f.source || '').toUpperCase())]);
+  $('selInfo').innerHTML = rows.map(([k, v]) => `<div class="r"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
+}
+// the tools of the group Selection: on or off with the reason as their tooltip, pressed while armed
+function renderEditTools() {
+  const fs = selectedFeatures(), one = fs.length === 1 ? fs[0] : null;
+  const set = (id, why, pressed = null) => {
+    const b = $(id);
+    if (!b) return;
+    b.disabled = !!why;
+    b.title = why || t(b.dataset.tip || '');
+    if (pressed !== null) b.setAttribute('aria-pressed', String(pressed));
+  };
+  set('selTool', '', !drawing && !op && !editing && mode === 'select');
+  set('selBox', '', op === 'box');
+  const busy = editing ? t('edit.busy') : '';
+  set('edReshape', busy || (one ? '' : t('edit.needOne')));
+  set('edMove', busy || (fs.length ? '' : t('edit.needSel')));
+  set('edSplit', busy || (one && ['polygon', 'line'].includes(geomKind(one.geometry)) ? '' : t('edit.needLine')), op === 'split');
+  set('edMerge', busy || mergeWhy(fs));
+  set('edCopy', busy || (fs.length ? '' : t('edit.needSel')));
+  set('edDelete', busy || (fs.length ? '' : t('edit.needSel')));
+}
+const mergeWhy = fs => (fs.length < 2 ? t('edit.needTwo') : fs.some(f => geomKind(f.geometry) !== 'polygon') ? t('edit.needAreas')
+  : new Set(fs.map(f => f.category)).size > 1 ? t('edit.needSameCat') : '');
 
-// ── reshaping an existing object ──
+// ── edits of the selection (B2, B3): every one through the undo history ──
+function applyToSelection(attr, v) {
+  const ids = [...selection];
+  mutate(p => {
+    for (const f of p.features) {
+      if (!ids.includes(f.id)) continue;
+      const c = CATEGORY[f.category];
+      if (!c || !c.attrs.includes(attr)) continue;
+      if (attr === 'type' && !(c.types || []).includes(v)) continue;
+      f.attrs = f.attrs || {};
+      if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete f.attrs[attr]; else f.attrs[attr] = v;
+      if (attr === 'type' && !POWER_TYPES.includes(f.attrs.type)) delete f.attrs.voltage;   // a voltage only for power lines
+    }
+  });
+}
+// the category of the selected objects (this is how Unclassified objects get theirs); objects whose geometry the
+// category does not take keep theirs, and a message says how many
+export function reclassifySelection(category) {
+  const fs = selectedFeatures();
+  if (!fs.length || !CATEGORY[category]) return 0;
+  const ok = fs.filter(f => f.category !== category && accepts(category, f.geometry)).map(f => f.id);
+  const refused = fs.filter(f => !accepts(category, f.geometry)).length;
+  if (ok.length) {
+    openCats.add(category);
+    mutate(p => { for (const g of p.features) if (ok.includes(g.id)) { g.category = category; g.attrs = { ...defaultAttrs(category), ...keepAttrs(g.attrs, category) }; } });
+  }
+  if (refused) toast(tn('sel.refused', refused, { cat: t('cat.' + category) }), 'err', 7000);
+  renderDraw();
+  return ok.length;
+}
+export function splitSelection(cutter) {
+  const f = singleSelected();
+  if (!f) return 0;
+  const pieces = splitFeature(f, cutter, frameFor([f], siteFrame()));
+  if (!pieces.length) { toast(t('edit.splitNone', { name: f.name }), 'err', 6000); return 0; }
+  mutate(p => { const i = p.features.findIndex(x => x.id === f.id); if (i >= 0) p.features.splice(i, 1, ...pieces); });
+  selectFeatures(pieces.map(x => x.id));
+  toast(t('edit.splitDone', { name: f.name, n: pieces.length }), 'ok', 5000);
+  return pieces.length;
+}
+export function mergeSelection() {
+  const fs = selectedFeatures(), why = mergeWhy(fs);
+  if (why) { toast(why, 'err', 6000); return null; }
+  const m = mergeFeatures(fs, frameFor(fs, siteFrame()));
+  if (!m) { toast(t('edit.mergeFail'), 'err'); return null; }
+  const ids = fs.map(f => f.id);
+  mutate(p => { const i = p.features.findIndex(x => ids.includes(x.id)); p.features = p.features.filter(x => !ids.includes(x.id)); p.features.splice(Math.max(0, i), 0, m); });
+  selectFeatures([m.id]);
+  toast(t('edit.merged', { n: fs.length, name: m.name }), 'ok', 5000);
+  return m;
+}
+// copies in place, selected, then handed to Move / rotate so that they can be dragged away (move: false for the tests)
+export function copySelection({ move = true } = {}) {
+  const fs = selectedFeatures();
+  if (!fs.length) return [];
+  const copies = copyFeatures(fs, name => t('edit.copyName', { name }));
+  mutate(p => { p.features.push(...copies); });
+  selectFeatures(copies.map(f => f.id));
+  toast(tn('edit.copied', copies.length), 'ok', 5000);
+  if (move) startMove(copies.map(f => f.id));
+  return copies;
+}
+export function deleteSelection() {
+  const fs = selectedFeatures();
+  if (!fs.length) return;
+  selection.clear();
+  removeFeatures(fs.map(f => f.id), fs.length === 1 ? t('areas.removed', { name: fs[0].name }) : tn('edit.removed', fs.length));
+  renderDraw();
+}
+// a box or a cutting line drawn with the sketch
+function startOp(kind, create, bannerHtml, label) {
+  if (drawing) stopDraw();
+  if (editing) sketchVM.complete();
+  if (op) cancelOp();
+  op = kind;
+  create();
+  banner(bannerHtml);
+  setMode(kind, label);
+  renderEditTools();
+}
+function startBox() {
+  startOp('box', () => {
+    sketchVM.polygonSymbol = { type: 'simple-fill', color: [57, 69, 207, 0.08], outline: { color: [57, 69, 207], width: 1.5, style: 'dash' } };
+    sketchVM.create('rectangle', { mode: 'click' });
+  }, t('sel.boxBanner'), t('sb.box'));
+}
+function startSplit() {
+  const f = singleSelected();
+  if (!f || !['polygon', 'line'].includes(geomKind(f.geometry))) return;
+  startOp('split', () => {
+    sketchVM.polylineSymbol = { type: 'simple-line', color: [229, 72, 77], width: 2, style: 'dash' };
+    sketchVM.create('polyline', { mode: 'click' });
+  }, t('edit.splitBanner', { name: esc(f.name) }), t('sb.split'));
+}
+function cancelOp() { if (op && sketchVM) sketchVM.cancel(); endOp(); }
+function endOp() {
+  if (!op) return;
+  op = null;
+  banner(null);
+  setMode('select', t('sb.select'));
+  renderEditTools();
+}
+function finishOp(graphic) {
+  const kind = op;
+  sketchLayer.remove(graphic);
+  endOp();
+  if (kind === 'box') selectByGeometry(graphic.geometry);
+  else if (kind === 'split') splitSelection(graphic.geometry);
+}
+
+// ── reshaping one object, moving and turning several ──
 function startEdit(id) {
+  if (op) cancelOp();
   if (drawing) { sketchVM.cancel(); endDraw(); }
   if (editing) sketchVM.complete();
   const f = store.project.features.find(x => x.id === id);
@@ -479,101 +719,65 @@ function startEdit(id) {
   const orig = featLayer.graphics.find(x => x.attributes && x.attributes.id === id);
   if (orig) orig.visible = false;
   sketchLayer.add(graphic);
-  editing = { id };
+  editing = { ids: [id], kind: 'reshape' };
+  renderSelection(); renderEditTools();
   sketchVM.update(graphic, { tool: geomKind(f.geometry) === 'point' ? 'move' : 'reshape' });
   banner(t('areas.editBanner', { name: esc(f.name) }));
   setMode('reshape', t('sb.reshape'));
 }
+// the selected objects to the sketch at once: Move / rotate (points only move)
+function startMove(ids) {
+  const fs = ids.map(id => store.project.features.find(x => x.id === id)).filter(Boolean);
+  if (!fs.length) return;
+  if (op) cancelOp();
+  if (drawing) { sketchVM.cancel(); endDraw(); }
+  if (editing) sketchVM.complete();
+  const { Graphic, projectOperator } = getSdk();
+  const grs = [];
+  for (const f of fs) {
+    const g = toSdk(f.geometry);
+    if (!g) continue;
+    grs.push(new Graphic({ geometry: projectOperator.execute(g, view.spatialReference), symbol: symbolFor(f), attributes: { id: f.id } }));
+    const orig = featLayer.graphics.find(x => x.attributes && x.attributes.id === f.id);
+    if (orig) orig.visible = false;
+  }
+  if (!grs.length) return;
+  sketchLayer.addMany(grs);
+  editing = { ids: fs.map(f => f.id), kind: 'move' };
+  renderSelection(); renderEditTools();
+  const points = fs.some(f => geomKind(f.geometry) === 'point');
+  sketchVM.update(grs, points ? { tool: 'move' } : { tool: 'transform', enableRotation: true, enableScaling: false });
+  banner(t('edit.moveBanner'));
+  setMode('move', t('sb.move'));
+}
+// the end of a reshape or a move: the new geometries go to the project (one step of the history), Esc keeps the old
 function finishEdit(e) {
   if (!editing) return;
-  const id = editing.id;
   editing = null;
   banner(null);
   setMode('select', t('sb.select'));
-  const gr = e.graphics && e.graphics[0];
-  const geometry = gr && !e.aborted ? toGeoJSON(gr.geometry) : null;
-  if (gr) sketchLayer.remove(gr);
-  if (geometry) mutate(p => { const f = p.features.find(x => x.id === id); if (f) f.geometry = geometry; });
+  const grs = e.graphics || [];
+  const geoms = e.aborted ? [] : grs.map(gr => [gr.attributes && gr.attributes.id, toGeoJSON(gr.geometry)]).filter(([id, g]) => id && g);
+  for (const gr of grs) sketchLayer.remove(gr);
+  if (geoms.length) mutate(p => { for (const [id, g] of geoms) { const f = p.features.find(x => x.id === id); if (f) f.geometry = g; } });
   else render();
 }
 
-// ── list events ──
+// ── the Layers panel ──
 function onCatsClick(e) {
-  const see = e.target.closest('[data-see]');
-  if (see) {   // «See in the collection ›» in the Last drawing box: the drawer opens on that row
-    e.preventDefault();
-    const f = store.project.features.find(x => x.id === see.dataset.see);
-    if (f) showInCollection(f.id, f.category);
-    return;
-  }
-  const sel = e.target.closest('.drawbtn[data-dsel]');
-  if (sel) {   // «Draw here» on a category card (in the drawer): ① takes the category, the drawing block of 1 · Site opens
-    e.preventDefault();
-    selectDrawCat(sel.dataset.dsel);
-    showStep('areas');
-    const d = $('secDraw'); if (d) d.open = true;
-    $('drawTools')?.querySelector('[data-dtool]:not(:disabled)')?.focus();
-    return;
-  }
-  const imp = e.target.closest('.drawbtn[data-imp]');
-  if (imp) { e.preventDefault(); pickFiles(imp.dataset.imp); return; }
-  const del = e.target.closest('button[data-del]');
-  if (del) {
-    const f = store.project.features.find(x => x.id === del.dataset.del);
-    if (f) removeFeatures([f.id], t('areas.removed', { name: f.name }));
-    return;
-  }
-  const ed = e.target.closest('button[data-edit]');
-  if (ed) { startEdit(ed.dataset.edit); return; }
-  const rn = e.target.closest('button[data-rename]');
-  if (rn) { renameInline(rn.dataset.rename, rn.closest('.it, .row')?.querySelector('.nm')); return; }
-  const clr = e.target.closest('button[data-clear]');
-  if (clr) {
-    const c = clr.dataset.clear, ids = store.project.features.filter(f => f.category === c).map(f => f.id);
-    removeFeatures(ids, t('areas.cleared', { n: ids.length, cat: t('cat.' + c) }));
-    return;
-  }
-  const zoom = e.target.closest('[data-zoom]');
-  if (zoom) zoomToFeatures([zoom.dataset.zoom]);
+  const zc = e.target.closest('[data-zoomcat]');
+  if (zc) { e.preventDefault(); e.stopPropagation(); zoomToFeatures(store.project.features.filter(f => f.category === zc.dataset.zoomcat).map(f => f.id)); return; }
+  const z = e.target.closest('[data-zoom]');
+  if (z) { e.preventDefault(); zoomToFeatures([z.dataset.zoom]); return; }
+  const row = e.target.closest('.it[data-id]');
+  if (row) pickRow(row, e);
 }
-function onCatsChange(e) {
-  const el = e.target;
-  const id = el.dataset.id;
-  if (!id) return;
-  if (el.classList.contains('mv')) { moveFeature(id, el.value); return; }
-  const attr = el.dataset.attr;
-  if (attr) mutate(p => {
-    const f = p.features.find(x => x.id === id);
-    if (!f) return;
-    f.attrs = f.attrs || {};
-    const v = el.type === 'number' ? (el.value === '' ? undefined : Math.max(0, Number(el.value))) : el.value;
-    if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete f.attrs[attr]; else f.attrs[attr] = v;
-    if (attr === 'type' && !POWER_TYPES.includes(f.attrs.type)) delete f.attrs.voltage;   // tension only for power lines
-  });
+// a row picks its object (Shift or Ctrl adds or removes it); the edit tools are in the ribbon of Site area
+function pickRow(row, e) {
+  const add = !!(e.shiftKey || e.ctrlKey || e.metaKey);
+  selectFeatures([row.dataset.id], { add, toggle: add });
+  if (currentTab() !== 'areas') showStep('areas');
 }
-function onRename(e) {
-  const nm = e.target.closest('.nm[data-zoom]');
-  if (nm) renameInline(nm.dataset.zoom, nm);
-}
-// the name becomes a text box in place (Enter keeps, Esc cancels)
-function renameInline(id, nm) {
-  const f = store.project.features.find(x => x.id === id);
-  if (!f || !nm) return;
-  const inp = document.createElement('input');
-  inp.type = 'text'; inp.value = f.name; inp.className = 'rename';
-  nm.replaceWith(inp); inp.focus(); inp.select();
-  let done = false;
-  const finish = ok => {
-    if (done) return;
-    done = true;
-    const v = inp.value.trim();
-    if (ok && v && v !== f.name) mutate(p => { const g = p.features.find(x => x.id === f.id); if (g) g.name = v; });
-    else render();
-  };
-  inp.onkeydown = ev => { if (ev.key === 'Enter') finish(true); if (ev.key === 'Escape') finish(false); };
-  inp.onblur = () => finish(true);
-}
-
 export function moveFeature(id, category) {
   const f = store.project.features.find(x => x.id === id);
   if (!f || f.category === category) return;
@@ -638,62 +842,38 @@ export function render() {
   featLayer.addMany(graphics);
 
   const pending = pendingCount();
-  $('areaCats').innerHTML = (pending ? catCard(CATEGORY[UNCLASSIFIED]) : '') + CATEGORIES.map(catCard).join('');
-  document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
+  // only the groups that hold objects, Unclassified first
+  $('areaCats').innerHTML = (catCard(CATEGORY[UNCLASSIFIED]) + CATEGORIES.map(catCard).join('')) || `<p class="hint coll-empty">${esc(t('coll.empty'))}</p>`;
   updateCollection([...(pending ? [{ id: UNCLASSIFIED, colour: CATEGORY[UNCLASSIFIED].colour, label: t('cat.' + UNCLASSIFIED), n: pending }] : []),
     ...CATEGORIES.map(c => ({ id: c.id, colour: c.colour, label: t('cat.' + c.id), n: store.project.features.filter(f => f.category === c.id).length }))]);
   renderHistory();
   $('boundarySetback').value = store.project.settings.boundarySetback;
   const rb = $('railAreas');
   if (rb) rb.textContent = store.project.features.length || '';
-  const qr = $('areasQuickRow');   // the quick predesign is offered once there is a site
-  if (qr) qr.hidden = !sitePolygons().length;
+  renderSelection();
+  renderDraw();
   renderSummarySoon();
 }
 
+// a group of the Layers panel: its name, count and magnifier, then its rows (nothing to edit there)
 function catCard(c) {
   const items = store.project.features.filter(f => f.category === c.id);
-  if (c.pending) return `<details class="cat pending" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
-    <summary><span class="ttl"><b>${esc(t('cat.' + c.id))}</b><small>${esc(t('cat.' + c.id + '.hint'))}</small></span><span class="cnt">${items.length || ''}</span></summary>
-    <div class="catbody">${items.map(f => row(f, c)).join('')}</div>
-  </details>`;
-  const imp = esc(t('areas.importInto', { cat: t('cat.' + c.id) })), here = esc(t('draw.hereTitle', { cat: t('cat.' + c.id) }));
-  const draw = `<button type="button" class="drawbtn" data-dsel="${c.id}" title="${here}" aria-label="${here}">${TOOL_ICON.draw}<span>${esc(t('draw.here'))}</span></button>`
-    + `<button type="button" class="drawbtn" data-imp="${c.id}" title="${imp}" aria-label="${imp}">${TOOL_ICON.import}<span>${esc(t('tool.import.short'))}</span></button>`;
-  return `<details class="cat" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
+  if (!items.length) return '';
+  const zoom = esc(t('coll.zoomGroup', { cat: t('cat.' + c.id) }));
+  return `<details class="cat${c.pending ? ' pending' : ''}" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
     <summary><span class="ttl"><b>${esc(t('cat.' + c.id))}</b><small>${esc(t('cat.' + c.id + '.hint'))}</small></span>
-      <span class="cnt">${items.length || ''}</span></summary>
-    <div class="draws">${draw}</div>
-    <div class="catbody">${items.length ? items.map(f => row(f, c)).join('') : `<div class="empty">${esc(t('areas.emptyCat'))}</div>`}</div>
-    ${items.length > 1 ? `<div class="catfoot"><button type="button" class="linkbtn" data-clear="${c.id}">${esc(t('areas.clearAll', { n: items.length }))}</button></div>` : ''}
+      <span class="cnt">${items.length}</span>
+      <button type="button" class="zx" data-zoomcat="${c.id}" title="${zoom}" aria-label="${zoom}">${icon('search', 'sm')}</button></summary>
+    <div class="catbody" role="listbox" aria-multiselectable="true" aria-label="${esc(t('cat.' + c.id))}">${items.map(row).join('')}</div>
   </details>`;
 }
-
-function row(f, c) {
-  const a = f.attrs || {};
-  const kind = geomKind(f.geometry);
-  const inputs = [];
-  if (c.attrs.includes('type')) {
-    const none = c.types.includes(a.type) ? '' : `<option value="" selected>${esc(t('type.none'))}</option>`;
-    inputs.push(`<select data-id="${f.id}" data-attr="type" title="${esc(t('attr.type'))}" aria-label="${esc(t('attr.type'))}">${none}${c.types.map(ty => `<option value="${ty}" ${a.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select>`);
-  }
-  if (c.attrs.includes('height')) inputs.push(num(f, 'height', a.height, t('attr.height')));
-  if (c.attrs.includes('buffer')) inputs.push(num(f, 'buffer', a.buffer, t('attr.buffer'), kind !== 'polygon' && !(a.buffer > 0)));
-  if (c.attrs.includes('voltage') && POWER_TYPES.includes(a.type)) inputs.push(num(f, 'voltage', a.voltage, t('attr.voltage')));
-  if (c.attrs.includes('width') && kind === 'line') inputs.push(num(f, 'width', a.width, t('attr.width'), !(a.width > 0)));
-  const moveOpts = (c.pending ? `<option value="${UNCLASSIFIED}" selected>${esc(t('areas.pickCategory'))}</option>` : '')
-    + CATEGORIES.filter(x => x.geom.includes(kind)).map(x => `<option value="${x.id}" ${x.id === f.category ? 'selected' : ''}>${esc(t('cat.' + x.id))}</option>`).join('');
+function row(f) {
   const sub = [f.sourceCategory, f.category === 'connection' ? `${fmt(lineLengthKm(f.geometry), 2)} km` : ''].filter(Boolean).join(' · ');
-  return `<div class="it" data-id="${f.id}">
-    <span class="grip" draggable="true" title="${esc(t('areas.dragTitle'))}" aria-hidden="true">${icon('grip', 'sm')}</span>
-    <span class="nm" data-zoom="${f.id}" draggable="true" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
-    <select class="mv" data-id="${f.id}" title="${esc(t('areas.moveTo'))}" aria-label="${esc(t('areas.moveTo'))}">${moveOpts}</select>
-    <span class="acts">${rowButtons(f)}</span>
-    ${inputs.length ? `<span class="attrs">${inputs.join('')}</span>` : ''}
+  const zoom = esc(t('coll.zoomTo', { name: f.name })), on = selection.has(f.id);
+  return `<div class="it${on ? ' sel' : ''}" data-id="${f.id}" role="option" aria-selected="${on}" tabindex="0" title="${esc(t('coll.rowTitle'))}">
+    <span class="nm">${esc(f.name)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+    <button type="button" class="zx" data-zoom="${f.id}" title="${zoom}" aria-label="${zoom}">${icon('search', 'sm')}</button>
   </div>`;
-}
-function num(f, attr, v, label, missing = false) {
-  return `<label class="ai${missing ? ' miss' : ''}"><span>${esc(label)}</span><input type="number" min="0" step="0.5" data-id="${f.id}" data-attr="${attr}" value="${v ?? ''}"></label>`;
 }
 
 // ── summary (areas in hectares) ──

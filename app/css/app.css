@@ -24,8 +24,6 @@ body.in-3d #view { visibility: hidden; pointer-events: none; }
 body.in-3d #view3d { display: block; }
 #view .esri-view-surface { background: var(--bg); }
 
-.last .see { display: inline-block; margin-top: 4px; font-size: 11.5px; color: var(--link); text-decoration: none; }
-.last .see:hover { text-decoration: underline; }
 @keyframes coll-flash { from { background: color-mix(in srgb, var(--accent) 28%, transparent); } to { background: transparent; } }
 #areaCats .it.flash { animation: coll-flash 1.6s ease-out; }
 
@@ -55,31 +53,19 @@ body.in-3d #view3d { display: block; }
 .cat .ttl small { font-size: 11px; color: var(--mut); }
 .cat .cnt { flex: none; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill); color: var(--txt); background: color-mix(in srgb, var(--c) 22%, transparent); }
 .cat .cnt:empty { display: none; }
-/* .over = a drag passing over the card (the kit's .drop is the dashed drop zone of a dialog) */
-.cat.over { box-shadow: 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
-#areaCats.dragging .cat:not(.over) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
-.cat .draws { display: flex; gap: 4px; flex-wrap: wrap; padding: 0 10px 8px; }
-.drawbtn { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 6px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); cursor: pointer; font-size: 11.5px; }
-.drawbtn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.drawbtn:hover { background: var(--hover); }
-.drawbtn.active { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 .catbody { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--line); }
 .catbody .empty { padding: 8px 10px; color: var(--mut); font-size: 12px; }
-.catfoot { padding: 4px 10px 7px; text-align: right; border-top: 1px solid var(--line); }
-.cat .it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 5px 6px; padding: 6px 8px; }
-.cat .it .acts { display: flex; gap: 1px; }
-.cat .it .grip { cursor: grab; color: var(--mut); font-size: 13px; line-height: 1; padding: 2px 1px; user-select: none; }
-.cat .it .nm { cursor: pointer; }
-.cat .it .nm:hover { color: var(--accent); }
-.cat .it .mv { max-width: 118px; }
-.cat .it .ed { font-size: 13px; }
-.cat .it .attrs { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.cat .it .attrs select { width: auto; max-width: 180px; padding: 2px 4px; font-size: 12px; }
-.cat .it.dragging { opacity: .45; }
-.ai { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--mut); white-space: nowrap; }
-.cat .ai input { width: 62px; padding: 2px 5px; font-size: 12px; }
-.cat .ai.miss input { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--field)); }
-input.rename { padding: 2px 6px; }
+/* the rows of the Layers panel (phase 2B): a click selects, the magnifier zooms; the selected rows in the accent */
+.cat .it { cursor: pointer; gap: 6px; padding: 5px 6px 5px 10px; }
+.cat .it:hover { background: var(--hover); }
+.cat .it:focus-visible { outline-offset: -2px; }
+.cat .it.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 3px 0 0 var(--link); }
+.cat .it.sel .nm { font-weight: 600; }
+.zx { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-sm); color: var(--mut); }
+.zx:hover { background: var(--hover); color: var(--txt); }
+.zx .icon { margin: 0; }
+.cat > summary .zx { margin-left: -2px; }
+.coll-empty { margin: 4px 6px; }
 #areaSummary { margin-top: 10px; }
 #areaSummary .kpi.big { background: color-mix(in srgb, var(--ok) 10%, transparent); }
 
@@ -135,8 +121,8 @@ input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); out
 .it .nm small { display: block; color: var(--mut); font-size: 11px; }
 .it .nm small.stale { color: var(--warn); font-weight: 600; white-space: normal; }
 .it select { width: auto; padding: 2px 4px; font-size: 12px; }
-.it .x, .last .x { flex: none; min-width: 24px; min-height: 24px; display: inline-grid; place-items: center; background: none; border: 0; cursor: pointer; color: var(--mut); font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: var(--radius-sm); }
-.it .x:hover, .last .x:hover { color: var(--err); background: var(--hover); }
+.it .x { flex: none; min-width: 24px; min-height: 24px; display: inline-grid; place-items: center; background: none; border: 0; cursor: pointer; color: var(--mut); font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: var(--radius-sm); }
+.it .x:hover { color: var(--err); background: var(--hover); }
 
 /* results: the kit draws the KPIs, the ledger and the target bar */
 .results .kpi.big { display: block; margin-top: 8px; }
@@ -212,14 +198,10 @@ body:not(.in-3d) #d3Card { display: none; }
 .mapcard.min .mapcard-b { display: none; }
 .mapcard.min { max-height: none; }
 
-/* ── the last drawing, the values of the new objects, the Advanced folds of the panels ── */
-.last { margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); }
-.last .ttl { font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
-.last .row { gap: 6px; margin-top: 3px; }
-/* .ctag = the category of the last object (the kit's .tag is the uppercase badge of the top bar) */
-.last .ctag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; color: var(--txt); background: color-mix(in srgb, var(--c) 22%, transparent); }
-.last .ctag::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
-.last .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ── the category tag, the Advanced folds of the panels ── */
+/* .ctag = the category of an object (the kit's .tag is the uppercase badge of the top bar) */
+.ctag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; color: var(--txt); background: color-mix(in srgb, var(--c) 22%, transparent); }
+.ctag::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
 .attrs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; margin-top: 6px; }
 .attrs2[hidden], .attrs2 > div[hidden] { display: none; }
 .attrs2 .lbl { margin-top: 2px; }
