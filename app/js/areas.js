@@ -59,8 +59,8 @@ export function initAreas(mapView) {
       sketchVM.labelOptions.enabled = !!p.labels;
     });
   } catch (e) { console.warn('[areas] sketch options', e); }
-  // a measure takes the pointer: the drawing or the reshaping in progress ends
-  document.addEventListener('pvp:measure', () => { if (drawing) stopDraw(); if (editing) sketchVM.complete(); });
+  // a measure or a dimension takes the pointer: the drawing or the reshaping in progress ends
+  for (const ev of ['pvp:measure', 'pvp:dim']) document.addEventListener(ev, () => { if (drawing) stopDraw(); if (editing) sketchVM.complete(); });
   sketchVM.on('create', e => {
     if (e.state === 'complete') finishDraw(e.graphic);
     else if (e.state === 'cancel' && sketchVM.state !== 'active') endDraw();   // not the cancel made to re-arm
@@ -327,6 +327,7 @@ export function startDraw(category, tool) {
   if (!TOOLS.includes(tool) || !CATEGORY[category] || !CATEGORY[category].geom.includes(TOOL_KIND[tool])) return;
   if (editing) sketchVM.complete();
   if (drawing) sketchVM.cancel();
+  document.dispatchEvent(new CustomEvent('pvp:draw'));   // a dimension in progress stops (dims.js)
   drawing = { category, tool };
   drawCat = category;
   const c = CATEGORY[category].colour;
@@ -347,7 +348,9 @@ function endDraw() {
   renderDraw();
   banner(null);
 }
-function banner(html) {
+// the layer of the objects (dims.js snaps to it) and the mode banner on the top edge of the map (shared with dims.js)
+export const areasLayer = () => featLayer;
+export function banner(html) {
   const b = $('banner');
   if (!b) return;
   if (html) { b.innerHTML = html; b.hidden = false; } else b.hidden = true;

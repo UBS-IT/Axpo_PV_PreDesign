@@ -10,6 +10,7 @@ import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/are
 import { stepState, refreshRail } from '../app/js/ui/rail.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/collection.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
+import { initDims, dimensionParts, removeDimension } from '../app/js/dims.js';
 import { structurePresets } from '../app/js/catalog.js';
 import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
 import { initModulesUi, library } from '../app/js/modules.js';
@@ -76,6 +77,7 @@ store.project = p;
 
 await test('panels start: areas, terrain, modules, fields, output', async () => {
   try { initAreas(view); } catch (e) { throw new Error('areas: ' + e.message); }
+  try { initDims(view); } catch (e) { throw new Error('dims: ' + e.message); }
   initTerrain(view); initModulesUi(); initField(view); initInfra(view); initOutput(); initQuick();
   await wait(600);
   assert(/Italy|RDN2008/.test(document.getElementById('outCrsAlerts').innerText + text('crsBadge')), 'national system proposed');
@@ -296,6 +298,27 @@ await test('half tables option and GeoJSON export', async () => {
   assert(tables.every(x => x.properties.wp === r.power.wp), 'power of the period');
   assert(fc.features.some(x => x.properties.category === 'fence') && fc.features.some(x => x.properties.kind === 'internal'), 'fence and roads exported');
   return `${r.halves} halves (1V14) of ${r.tables}`;
+});
+
+await test('dimensions: true metres per segment and total, drawn on the map, in the export model and the DXF, removed', async () => {
+  const { Point, SpatialReference } = getSdk();
+  const wgs = (x, y) => { const q = f.toSr(new Point({ x, y, spatialReference: f.sr }), SpatialReference.WGS84); return [q.x, q.y]; };
+  const d = { id: 'dimTest', points: [wgs(-100, -150), wgs(0, -150), wgs(0, -90)] };
+  change('dims', q => { q.dims = [d]; });
+  await wait(200);
+  const parts = dimensionParts(d, f);
+  assert(parts.segments.length === 2 && Math.abs(parts.segments[0].length - 100) < 0.01 && Math.abs(parts.segments[1].length - 60) < 0.01 && Math.abs(parts.total - 160) < 0.01, `segments ${parts.segments.map(s => s.length.toFixed(2))}, total ${parts.total.toFixed(2)}`);
+  const layer = view.map.layers.find(l => l.title === 'Dimensions');
+  const labels = layer ? layer.graphics.filter(g => g.symbol && g.symbol.type === 'text').map(g => g.symbol.text) : [];
+  assert(labels.join('|') === '100.0 m|60.0 m|total 160.0 m', 'labels on the map: ' + labels.join('|'));
+  const { exportModel } = await import('../app/js/export/model.js'), { buildDxf } = await import('../app/js/export/dxf.js');
+  const m = exportModel(), items = m.items.filter(i => i.layer === 'dimension');
+  assert(items.length === 4 && items.map(i => i.label).filter(Boolean).join('|') === '100 m|60 m', 'export model: 2 segments with labels + 2 tick pairs: ' + items.map(i => i.label));
+  assert(/PVP_DIM/.test(buildDxf(m)), 'DXF layer PVP_DIM');
+  removeDimension('dimTest');
+  await wait(200);
+  assert(store.project.dims.length === 0 && layer.graphics.length === 0, 'removed from the project and the map');
+  return `${parts.segments.length} segments, ${parts.total.toFixed(1)} m, ${items.length} DXF items`;
 });
 
 await test('KMZ for Google Earth and the one-page PDF report', async () => {

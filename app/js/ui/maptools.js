@@ -6,6 +6,7 @@
 import { getSdk, loadSdkMeasure } from '../sdk.js';
 import { t } from '../i18n.js';
 import { toast } from './toast.js';
+import { toggleDimension, isDrawingDimension, setDimsVisible, dimsVisible, clearDimensions } from '../dims.js';
 
 const $ = id => document.getElementById(id);
 // test pages set __PVP_TEST__ so that they never touch the settings of the app (same origin)
@@ -41,7 +42,14 @@ export function initMapTools(mapView) {
     if (b) { setDrawPref(b.dataset.pref, b.getAttribute('aria-pressed') !== 'true'); return; }
     const m = e.target.closest('button[data-measure]');
     if (m) { startMeasure(m.dataset.measure); return; }
+    const d = e.target.closest('button[data-dim]');
+    if (d) {
+      if (d.dataset.dim === 'draw') { stopMeasure(); toggleDimension(); toggleMenu(false); }
+      else if (d.dataset.dim === 'show') setDimsVisible(!dimsVisible());
+      else if (d.dataset.dim === 'clear') { toggleMenu(false); clearDimensions(); }
+    }
   });
+  document.addEventListener('pvp:dims-state', renderMenu);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && open) { toggleMenu(false); fab.focus(); } });
   document.addEventListener('click', e => { if (open && !e.target.closest('#tools')) toggleMenu(false); });
   const mc = $('measureClose');
@@ -65,6 +73,9 @@ function renderMenu() {
     b.querySelector('.st').textContent = on ? t('tools.on') : t('tools.off');
   }
   for (const b of document.querySelectorAll('#toolsMenu button[data-measure]')) b.setAttribute('aria-pressed', String(!!measure && measure.kind === b.dataset.measure));
+  const dd = document.querySelector('#toolsMenu button[data-dim="draw"]'), ds = document.querySelector('#toolsMenu button[data-dim="show"]');
+  if (dd) dd.setAttribute('aria-pressed', String(isDrawingDimension()));
+  if (ds) { ds.setAttribute('aria-pressed', String(dimsVisible())); ds.querySelector('.st').textContent = dimsVisible() ? t('tools.on') : t('tools.off'); }
 }
 
 // ── measure (temporary) ──

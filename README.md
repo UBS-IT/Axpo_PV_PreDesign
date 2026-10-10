@@ -18,8 +18,12 @@ The map opens on satellite imagery without labels (a toggle switches to the topo
 sets the opacity of the background, remembered in the browser, so the layout stays readable over busy imagery.
 A north arrow sits under the zoom (the map turns with a right drag; a click puts north back up), the scale bar at
 the bottom centre, and bottom left the **Tools** menu: the drawing support as switches remembered in the browser
-(snapping to objects, typed lengths and angles with Tab, segment lengths while drawing) and **Measure** (distance,
-area), a temporary measure with the Esri widgets that is never saved.
+(snapping to objects, typed lengths and angles with Tab, segment lengths while drawing), **Measure** (distance,
+area), a temporary measure with the Esri widgets that is never saved, and **Dimensions**: measured lines kept in the
+project, drawn like a polyline (the tool stays armed; Esc stops it), with the length of every segment in true metres
+and the total of a chain, ticks at the vertices; shown or hidden from the menu, removed one by one (click, then
+Delete, or the Remove button of the message) or all at once; they cut nothing and belong to no category. They go to
+the PDF report and to the DXF (layer `PVP_DIM`), not to the KMZ.
 
 The left rail is a **stepper** in the order of the dependencies: every step shows its state — *locked* (a
 prerequisite is missing: the step still opens, with a gate that says why and a link to the step to do first),

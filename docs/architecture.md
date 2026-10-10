@@ -83,6 +83,7 @@ Shared by every step:
 | `app/js/i18n.js` | Every visible text (about 580 uses of `t('…')` across the app). English only for now |
 | `app/js/catalog.js` | Reads `toolkit.json` once and answers "what does the toolkit say for this country and this key" |
 | `app/js/io/projectfile.js` | Save / Open of the `.pvpd` project file (a zip with `project.json` and, when there is a terrain, `terrain/grid.f32`) |
+| `app/js/dims.js` | Dimensions on the map: measured lines kept in `project.dims`, lengths in true metres from the local frame, ticks and labels, show / hide / remove; the export model and the PDF report ask it for the parts of every dimension |
 | `app/js/ui/` | The rail, the Collection drawer (the objects by category, reachable from every step; the cards inside it are drawn by `areas.js`), the Tools menu of the map (`maptools.js`: drawing-support preferences that `areas.js` applies to the sketch, and the temporary measures), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
 
 ## 3. How the data travel, from the drawing to the export
