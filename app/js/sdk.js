@@ -19,6 +19,7 @@ const MODULES = {
   SpatialReference: '@arcgis/core/geometry/SpatialReference.js',
   SketchViewModel: '@arcgis/core/widgets/Sketch/SketchViewModel.js',
   ScaleBar: '@arcgis/core/widgets/ScaleBar.js',
+  Compass: '@arcgis/core/widgets/Compass.js',
   BasemapToggle: '@arcgis/core/widgets/BasemapToggle.js',
   reactiveUtils: '@arcgis/core/core/reactiveUtils.js',
   projectOperator: '@arcgis/core/geometry/operators/projectOperator.js',
@@ -64,6 +65,20 @@ const MODULES_3D = {
   ShadowCast: '@arcgis/core/widgets/ShadowCast.js',
   LineOfSight: '@arcgis/core/widgets/LineOfSight.js',
 };
+// The measurement widgets (Tools menu on the map), loaded the first time a measure starts
+const MODULES_MEASURE = {
+  DistanceMeasurement2D: '@arcgis/core/widgets/DistanceMeasurement2D.js',
+  AreaMeasurement2D: '@arcgis/core/widgets/AreaMeasurement2D.js',
+};
+export async function loadSdkMeasure() {
+  const s = await loadSdk();
+  if (s.DistanceMeasurement2D) return s;
+  const names = Object.keys(MODULES_MEASURE);
+  const mods = await $arcgis.import(names.map(n => MODULES_MEASURE[n]));
+  names.forEach((n, i) => { s[n] = mods[i]; });
+  return s;
+}
+
 export async function loadSdk3d() {
   const s = await loadSdk();
   if (s.SceneView) return s;
