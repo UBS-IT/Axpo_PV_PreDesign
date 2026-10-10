@@ -2,6 +2,7 @@
 // The candidates are the national systems that place every sampled point inside their own country.
 import { t } from '../i18n.js';
 import { NATIONAL, crsLabel } from '../crs.js';
+import { whenClosed } from './dialog.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -41,21 +42,23 @@ export function chooseCrs({ file, candidates = [], current = null, validate = ()
     form.list.onchange = () => { other.checked = true; if (form.list.value) form.epsg.value = ''; };
     form.epsg.oninput = () => { other.checked = true; if (form.epsg.value) form.list.value = ''; };
     let result = null;
-    form.querySelector('[data-cancel]').onclick = () => dlg.close();
+    const finish = whenClosed(dlg, () => { dlg.remove(); resolve(result); });
+    form.querySelector('[data-cancel]').onclick = () => { dlg.close(); finish(); };
     form.onsubmit = e => {
+      e.preventDefault();
       const sel = form.querySelector('input[name=crsc]:checked');
       let wkid = null;
       if (sel && sel.value !== 'other') wkid = Number(sel.value);
       else wkid = Number(form.epsg.value || form.list.value) || null;
       if (!wkid || !validate(wkid)) {
-        e.preventDefault();
         bad.textContent = t('crs.dlgBad', { wkid: wkid || '—', label: wkid ? crsLabel(wkid) : '' });
         bad.hidden = false;
         return;
       }
       result = wkid;
+      dlg.close();
+      finish();
     };
-    dlg.addEventListener('close', () => { dlg.remove(); resolve(result); });
     dlg.showModal();
   });
 }
