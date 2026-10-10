@@ -7,6 +7,7 @@
 <link rel="stylesheet" id="esriTheme" href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.34/"></script>
 <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/kit.css">
 <link rel="stylesheet" href="./css/app.css">
 <link rel="stylesheet" href="./css/shell.css">
 </head>
@@ -16,7 +17,7 @@
 <header id="top" class="topbar">
   <div class="brand"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg></span>PV Predesign<small data-i18n="app.subtitle"></small></div>
   <span class="divider"></span>
-  <input id="projName" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName">
+  <input id="projName" class="project-name" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName">
   <span class="divider"></span>
   <div class="grp" role="group" data-i18n-aria="top.fileGroup">
     <button type="button" class="tb icon-only" id="btnNew" data-icon="file-plus" data-i18n-title="top.newTitle" data-i18n-aria="top.new"></button>
@@ -92,7 +93,7 @@
   <button type="button" class="strip left" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><span data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span></button>
 
   <div id="mapStack">
-    <div id="view"><div id="banner" hidden></div></div>
+    <div id="view"><div id="banner" class="banner" hidden></div></div>
     <div id="view3d"></div>
     <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
     <!-- the scale bar, bottom centre (the SDK has no such corner: its own container) -->
@@ -130,7 +131,7 @@
       <!-- the quick predesign is offered only once there is a site: one primary action per step -->
       <p class="suggest" id="areasQuickRow" hidden><span data-i18n="quick.siteReady"></span>
         <button type="button" class="linkbtn" id="areasQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
-      <details class="sec" id="secDraw" open>
+      <details class="fold" id="secDraw" open>
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-pen"/></svg></span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
         <div class="bd">
           <div class="pstep">
@@ -151,7 +152,7 @@
       <p class="hint coll-hint"><span data-i18n="areas.collHint"></span> <a href="#" data-coll-open data-i18n="areas.collOpen"></a></p>
       <div class="card">
         <div class="cardhd"><b data-i18n="areas.netTitle"></b></div>
-        <label class="l" for="boundarySetback" data-i18n="areas.setback"></label>
+        <label class="lbl" for="boundarySetback" data-i18n="areas.setback"></label>
         <input id="boundarySetback" type="number" min="0" step="0.5">
         <p class="hint" data-i18n="areas.setbackHint"></p>
         <div id="areaSummary"></div>
@@ -175,10 +176,10 @@
         <p class="hint" data-i18n="terrain.esriHint"></p>
         <details class="adv">
           <summary data-i18n="terrain.adv" data-icon="info"></summary>
-          <label class="l" for="terCell" data-i18n="terrain.cell"></label>
+          <label class="lbl" for="terCell" data-i18n="terrain.cell"></label>
           <input id="terCell" type="number" min="1" max="50" step="1">
           <p class="hint" data-i18n="terrain.cellHint"></p>
-          <label class="l" for="terMinPatch" data-i18n="terrain.minPatch"></label>
+          <label class="lbl" for="terMinPatch" data-i18n="terrain.minPatch"></label>
           <input id="terMinPatch" type="number" min="0" step="50">
           <p class="hint" data-i18n="terrain.minPatchHint"></p>
         </details>
@@ -186,7 +187,7 @@
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.limit"></b></div>
-        <label class="l" for="terTech" data-i18n="terrain.tech"></label>
+        <label class="lbl" for="terTech" data-i18n="terrain.tech"></label>
         <select id="terTech">
           <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
           <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
@@ -194,18 +195,18 @@
         </select>
         <p class="hint" data-i18n="terrain.techHint"></p>
         <div id="terRule"></div>
-        <label class="l" id="terLimitLabel" data-i18n="terrain.limitMode"></label>
+        <label class="lbl" id="terLimitLabel" data-i18n="terrain.limitMode"></label>
         <div class="chips plain" id="terLimitMode" role="radiogroup" aria-labelledby="terLimitLabel">
-          <button type="button" role="radio" data-lmode="toolkit" aria-checked="true" data-i18n="terrain.modeToolkit"></button>
-          <button type="button" role="radio" data-lmode="any" aria-checked="false" data-i18n="terrain.modeAny"></button>
-          <button type="button" role="radio" data-lmode="nsew" aria-checked="false" data-i18n="terrain.modeNsew"></button>
+          <button type="button" class="chip" role="radio" data-lmode="toolkit" aria-checked="true" data-i18n="terrain.modeToolkit"></button>
+          <button type="button" class="chip" role="radio" data-lmode="any" aria-checked="false" data-i18n="terrain.modeAny"></button>
+          <button type="button" class="chip" role="radio" data-lmode="nsew" aria-checked="false" data-i18n="terrain.modeNsew"></button>
         </div>
         <div class="row2" id="terLimitAny" hidden>
-          <div><label class="l" for="terMaxAny" data-i18n="terrain.maxAny"></label><input id="terMaxAny" type="number" min="0" max="100" step="0.5"></div>
+          <div><label class="lbl" for="terMaxAny" data-i18n="terrain.maxAny"></label><input id="terMaxAny" type="number" min="0" max="100" step="0.5"></div>
         </div>
         <div class="row2" id="terLimitNsew" hidden>
-          <div><label class="l" for="terMaxNS" data-i18n="terrain.maxNS"></label><input id="terMaxNS" type="number" min="0" max="100" step="0.5"></div>
-          <div><label class="l" for="terMaxEW" data-i18n="terrain.maxEW"></label><input id="terMaxEW" type="number" min="0" max="100" step="0.5"></div>
+          <div><label class="lbl" for="terMaxNS" data-i18n="terrain.maxNS"></label><input id="terMaxNS" type="number" min="0" max="100" step="0.5"></div>
+          <div><label class="lbl" for="terMaxEW" data-i18n="terrain.maxEW"></label><input id="terMaxEW" type="number" min="0" max="100" step="0.5"></div>
         </div>
         <div class="status" id="terLimitStatus" role="status"></div>
         <p class="hint" data-i18n="terrain.limitHint"></p>
@@ -216,8 +217,8 @@
         <div id="terStats"></div>
         <label class="chk"><input type="checkbox" id="terShow"> <span data-i18n="terrain.show"></span></label>
         <div class="chips plain" id="terView" role="radiogroup" data-i18n-aria="terrain.view">
-          <button type="button" role="radio" data-view="s" aria-checked="true" data-i18n="terrain.viewS"></button>
-          <button type="button" role="radio" data-view="z" aria-checked="false" data-i18n="terrain.viewZ"></button>
+          <button type="button" class="chip" role="radio" data-view="s" aria-checked="true" data-i18n="terrain.viewS"></button>
+          <button type="button" class="chip" role="radio" data-view="z" aria-checked="false" data-i18n="terrain.viewZ"></button>
         </div>
         <div class="legend" id="terLegend"></div>
       </div>
@@ -228,69 +229,69 @@
       <header class="stephd"><span class="num">3</span><div><h2 data-i18n="step.fields"></h2><p data-i18n="step.fields.sub"></p></div></header>
       <button type="button" class="sticky" id="fSticky" data-i18n-title="res.stickyTitle" hidden></button>
 
-      <details class="sec" id="secField" open>
+      <details class="fold" id="secField" open>
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-sun"/></svg></span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
         <div class="bd">
-          <label class="l" for="fTech" data-i18n="field.tech"></label>
+          <label class="lbl" for="fTech" data-i18n="field.tech"></label>
           <select id="fTech">
             <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
             <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
             <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
           </select>
-          <label class="l" for="fStructSel" data-i18n="field.structure"></label>
+          <label class="lbl" for="fStructSel" data-i18n="field.structure"></label>
           <select id="fStructSel"></select>
           <div id="fStructBox" hidden>
-            <label class="l" for="fStruct" data-i18n="field.structureCustom"></label>
+            <label class="lbl" for="fStruct" data-i18n="field.structureCustom"></label>
             <input id="fStruct" type="text" list="structPresets" autocomplete="off">
             <datalist id="structPresets"></datalist>
           </div>
           <div class="hint" id="fStructHint"></div>
-          <label class="l" for="fModule" data-i18n="field.module"></label>
+          <label class="lbl" for="fModule" data-i18n="field.module"></label>
           <select id="fModule"></select>
           <div id="fPeriodBox" hidden>
-            <label class="l" for="fPeriod" data-i18n="field.period"></label>
+            <label class="lbl" for="fPeriod" data-i18n="field.period"></label>
             <select id="fPeriod"></select>
             <div class="hint" data-i18n="field.periodHint"></div>
           </div>
           <div class="row2">
-            <div id="fTiltBox"><label class="l" for="fTilt" data-i18n="field.tilt"></label><input id="fTilt" type="number" min="0" max="60" step="0.5"></div>
-            <div><label class="l" for="fAz" data-i18n="field.azimuth"></label><input id="fAz" type="number" min="0" max="360" step="1"></div>
+            <div id="fTiltBox"><label class="lbl" for="fTilt" data-i18n="field.tilt"></label><input id="fTilt" type="number" min="0" max="60" step="0.5"></div>
+            <div><label class="lbl" for="fAz" data-i18n="field.azimuth"></label><input id="fAz" type="number" min="0" max="360" step="1"></div>
           </div>
           <div class="hint" data-i18n="field.azimuthHint"></div>
-          <label class="l" for="fPitch" data-i18n="field.pitch"></label>
+          <label class="lbl" for="fPitch" data-i18n="field.pitch"></label>
           <input id="fPitch" type="number" min="0.5" step="0.01">
           <div class="hint" id="fPitchHint"></div>
           <div class="hint" id="fOptHint"></div>
           <details class="adv" id="fAdv">
             <summary data-i18n="field.adv" data-icon="info"></summary>
             <div class="row2">
-              <div><label class="l" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
-              <div><label class="l" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
+              <div><label class="lbl" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
+              <div><label class="lbl" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
             </div>
             <label class="chk"><input type="checkbox" id="fTracks"> <span data-i18n="field.tracks"></span></label>
             <div class="row3">
-              <div><label class="l" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
-              <div><label class="l" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
-              <div><label class="l" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
+              <div><label class="lbl" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
+              <div><label class="lbl" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
+              <div><label class="lbl" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
             </div>
             <label class="chk"><input type="checkbox" id="fHalf"> <span data-i18n="field.half"></span></label>
             <div class="hint" id="fHalfHint"></div>
-            <label class="l" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
+            <label class="lbl" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
             <input id="fTarget" type="number" min="0" step="0.1">
-            <label class="l" data-i18n="field.position"></label>
+            <label class="lbl" data-i18n="field.position"></label>
             <div class="row2">
-              <div><label class="l" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
-              <div><label class="l" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
+              <div><label class="lbl" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
+              <div><label class="lbl" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
             </div>
           </details>
         </div>
       </details>
 
-      <details class="sec" id="secResults" open>
+      <details class="fold" id="secResults" open>
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-chart"/></svg></span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
         <div class="bd">
           <div class="results" id="kpis"></div>
-          <label class="l" for="specYield" data-i18n="res.specYield"></label>
+          <label class="lbl" for="specYield" data-i18n="res.specYield"></label>
           <input id="specYield" type="number" min="0" step="1">
           <div class="hint" data-i18n="res.specYieldHint"></div>
           <div class="warns" id="warns"></div>
@@ -300,7 +301,7 @@
         </div>
       </details>
 
-      <details class="sec" id="secModules">
+      <details class="fold" id="secModules">
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-table"/></svg></span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
         <div class="bd">
           <div class="list" id="modList" data-i18n-empty="mod.empty"></div>
@@ -310,13 +311,13 @@
           </div>
           <form id="modForm" hidden>
             <div class="row2">
-              <div><label class="l" for="mfMan" data-i18n="mod.manufacturer"></label><input id="mfMan" type="text"></div>
-              <div><label class="l" for="mfModel" data-i18n="mod.model"></label><input id="mfModel" type="text"></div>
+              <div><label class="lbl" for="mfMan" data-i18n="mod.manufacturer"></label><input id="mfMan" type="text"></div>
+              <div><label class="lbl" for="mfModel" data-i18n="mod.model"></label><input id="mfModel" type="text"></div>
             </div>
             <div class="row3">
-              <div><label class="l" for="mfWp" data-i18n="mod.wp"></label><input id="mfWp" type="number" min="1" step="1"></div>
-              <div><label class="l" for="mfLen" data-i18n="mod.length"></label><input id="mfLen" type="number" min="0" step="any"></div>
-              <div><label class="l" for="mfWid" data-i18n="mod.width"></label><input id="mfWid" type="number" min="0" step="any"></div>
+              <div><label class="lbl" for="mfWp" data-i18n="mod.wp"></label><input id="mfWp" type="number" min="1" step="1"></div>
+              <div><label class="lbl" for="mfLen" data-i18n="mod.length"></label><input id="mfLen" type="number" min="0" step="any"></div>
+              <div><label class="lbl" for="mfWid" data-i18n="mod.width"></label><input id="mfWid" type="number" min="0" step="any"></div>
             </div>
             <label class="chk"><input type="checkbox" id="mfBif"> <span data-i18n="mod.bifacial"></span></label>
             <div class="hint" data-i18n="mod.dimsHint"></div>
@@ -349,7 +350,7 @@
             <button type="button" class="btn" id="infSeparate" data-i18n="infra.separate"></button>
           </div>
         </div>
-        <label class="l" for="infClear" data-i18n="infra.clear"></label>
+        <label class="lbl" for="infClear" data-i18n="infra.clear"></label>
         <input id="infClear" type="number" min="0" step="0.5">
         <p class="hint" id="infClearHint"></p>
       </div>
@@ -408,10 +409,10 @@
 </main>
 
 <footer id="statusbar" class="statusbar">
-  <span class="sb-coord"><span class="k">E</span><span class="mono" id="sbE">—</span></span>
-  <span class="sb-coord"><span class="k">N</span><span class="mono" id="sbN">—</span></span>
-  <label class="sb-crs"><span class="k" data-i18n="sb.crs"></span><select id="outCrs" data-i18n-aria="out.crsTitle" data-i18n-title="top.crsTitle"></select></label>
-  <span class="sb-coord"><span class="k" data-i18n="sb.scale"></span><span class="mono" id="sbScale">—</span></span>
+  <span class="it xy"><span class="k">E</span><span class="v" id="sbE">—</span></span>
+  <span class="it xy"><span class="k">N</span><span class="v" id="sbN">—</span></span>
+  <label class="it sb-crs"><span class="k" data-i18n="sb.crs"></span><select id="outCrs" data-i18n-aria="out.crsTitle" data-i18n-title="top.crsTitle"></select></label>
+  <span class="it"><span class="k" data-i18n="sb.scale"></span><span class="v" id="sbScale">—</span></span>
   <span class="spacer"></span>
   <span id="sbMode" data-i18n="sb.select"></span>
   <button type="button" class="sb-toggle" id="sbSnap" aria-pressed="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-snap"/></svg><span></span></button>

@@ -428,7 +428,7 @@ function render() {
     html += `<div class="${same ? 'hint' : 'warn'}">${esc(t(sug ? 'infra.roadSugOn' : 'infra.roadSugOff', { mwp: fmt(r.dcMWp, 2), max: std.suggestedUpToMWp }))}
       ${same ? '' : ` <button type="button" class="linkbtn" id="infRoadApply">${esc(t('infra.apply'))}</button>`}</div>`;
   } else html += `<div class="hint">${esc(t('infra.roadSugNone', { max: std?.suggestedUpToMWp ?? 9 }))}</div>`;
-  if (I.perimeterRoad && (c.roadGap == null || !(c.roadWidth > 0))) html += `<div class="warn">${esc(t('infra.noRoadValues', { country }))}</div>`;
+  if (I.perimeterRoad && (c.roadGap == null || !(c.roadWidth > 0))) html += `<div class="notice warn">${esc(t('infra.noRoadValues', { country }))}</div>`;
   $('infRoadInfo').innerHTML = html;
   const ap = $('infRoadApply');
   if (ap) ap.onclick = () => change('infra', p => { p.infra.perimeterRoad = sug; });

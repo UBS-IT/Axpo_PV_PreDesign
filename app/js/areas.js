@@ -146,10 +146,10 @@ export function initAreas(mapView) {
       e.preventDefault();
       e.dataTransfer.dropEffect = types.includes(DRAG_TYPE) ? 'move' : 'copy';
       clearDrop(card);
-      card.classList.add('drop');
+      card.classList.add('over');
     }
   });
-  cats.addEventListener('dragleave', e => { const card = e.target.closest('.cat'); if (card && !card.contains(e.relatedTarget)) card.classList.remove('drop'); });
+  cats.addEventListener('dragleave', e => { const card = e.target.closest('.cat'); if (card && !card.contains(e.relatedTarget)) card.classList.remove('over'); });
   cats.addEventListener('drop', async e => {
     const card = e.target.closest('.cat');
     if (!card) return;
@@ -183,7 +183,7 @@ export function initAreas(mapView) {
   updateCrs(false);
 }
 
-function clearDrop(except) { document.querySelectorAll('#areaCats .cat.drop').forEach(c => { if (c !== except) c.classList.remove('drop'); }); }
+function clearDrop(except) { document.querySelectorAll('#areaCats .cat.over').forEach(c => { if (c !== except) c.classList.remove('over'); }); }
 
 export function pickFiles(category = null) {
   const input = $('fileImport');
@@ -399,7 +399,7 @@ const TOOL_ICON = {
 function renderDraw() {
   const box = $('drawCats');
   if (!box) return;
-  box.innerHTML = CATEGORIES.map(c => `<button type="button" role="radio" aria-checked="${c.id === drawCat}" tabindex="${c.id === drawCat ? 0 : -1}" data-dcat="${c.id}" style="--c:rgb(${c.colour.join(',')})" title="${esc(t('cat.' + c.id + '.hint'))}">${esc(t('cat.' + c.id))}</button>`).join('');
+  box.innerHTML = CATEGORIES.map(c => `<button type="button" class="chip" role="radio" aria-checked="${c.id === drawCat}" tabindex="${c.id === drawCat ? 0 : -1}" data-dcat="${c.id}" style="--c:rgb(${c.colour.join(',')})" title="${esc(t('cat.' + c.id + '.hint'))}">${esc(t('cat.' + c.id))}</button>`).join('');
   const c = CATEGORY[drawCat];
   $('drawTools').innerHTML = TOOLS.map(tool => {
     const ok = c.geom.includes(TOOL_KIND[tool]), on = !!drawing && drawing.tool === tool;
@@ -408,8 +408,8 @@ function renderDraw() {
   }).join('');
   const d = drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id));
   const parts = [];
-  if (c.attrs.includes('type')) parts.push(`<div><label class="l" for="dAttr_type">${esc(t('attr.type'))}</label><select id="dAttr_type" data-dattr="type">${c.types.map(ty => `<option value="${ty}" ${d.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select></div>`);
-  for (const a of ['buffer', 'height', 'width']) if (c.attrs.includes(a)) parts.push(`<div><label class="l" for="dAttr_${a}">${esc(t('attr.' + a))}</label><input id="dAttr_${a}" type="number" min="0" step="0.5" data-dattr="${a}" value="${d[a] ?? ''}"></div>`);
+  if (c.attrs.includes('type')) parts.push(`<div><label class="lbl" for="dAttr_type">${esc(t('attr.type'))}</label><select id="dAttr_type" data-dattr="type">${c.types.map(ty => `<option value="${ty}" ${d.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select></div>`);
+  for (const a of ['buffer', 'height', 'width']) if (c.attrs.includes(a)) parts.push(`<div><label class="lbl" for="dAttr_${a}">${esc(t('attr.' + a))}</label><input id="dAttr_${a}" type="number" min="0" step="0.5" data-dattr="${a}" value="${d[a] ?? ''}"></div>`);
   $('drawAttrs').innerHTML = parts.join('');
   $('drawAttrs').hidden = !parts.length;
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
@@ -433,7 +433,7 @@ function renderLast() {
   el.hidden = !f;
   if (!f) return;
   const c = CATEGORY[f.category] || CATEGORY.reference;
-  el.innerHTML = `<div class="ttl">${esc(t('draw.last'))}</div><div class="row"><span class="tag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>
+  el.innerHTML = `<div class="ttl">${esc(t('draw.last'))}</div><div class="row"><span class="ctag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>
     <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>
     <a href="#" class="see" data-see="${f.id}">${esc(t('draw.see'))}</a>`;
 }
@@ -699,8 +699,8 @@ function renderSummary() {
     <div class="hint">${esc(t(r.netMode === 'given' ? 'areas.modeGiven' : 'areas.modeComputed'))}</div>
     ${(r.notes || []).map(n => `<div class="hint">${esc(n)}</div>`).join('')}
     ${routes ? `<div class="hint">${esc(routes)}</div>` : ''}
-    ${spread > SPREAD_WARN_KM ? `<div class="warn">${esc(t('warn.spread', { km: fmt(spread, 0) }))}</div>` : ''}
-    ${r.ignored ? `<div class="warn">${esc(tn('warn.lineNoBuffer', r.ignored))}</div>` : ''}
+    ${spread > SPREAD_WARN_KM ? `<div class="notice warn">${esc(t('warn.spread', { km: fmt(spread, 0) }))}</div>` : ''}
+    ${r.ignored ? `<div class="notice warn">${esc(tn('warn.lineNoBuffer', r.ignored))}</div>` : ''}
     ${r.netMode === 'given' && store.project.settings.boundarySetback > 0 ? `<div class="hint">${esc(t('areas.setbackIgnored'))}</div>` : ''}`;
 }
 

@@ -353,7 +353,7 @@ function renderResults(r) {
     k.innerHTML = a && a.siteArea
       ? group('res.gLand', [row('res.siteArea', ha(a.siteArea)), row('res.buildable', ha(a.buildableArea || 0), 'areas')])
       : `<div class="hint">${t('res.none')}</div>`;
-    w.innerHTML = (r && r.warns || []).map(x => `<div class="warn">${escapeHtml(x)}</div>`).join('');
+    w.innerHTML = (r && r.warns || []).map(x => `<div class="notice warn">${escapeHtml(x)}</div>`).join('');
     if (s) s.hidden = true;
     return;
   }
@@ -381,7 +381,7 @@ function renderResults(r) {
       row('res.density', fmt(r.dcMWp / (r.siteArea / 1e4), 3)),
       y > 0 ? row(t('res.energyY', { y: fmt(y, 0) }), `${fmt(r.dcMWp * y, 0)} MWh`, '', true) : '',
     ]);
-  w.innerHTML = r.warns.map(x => `<div class="warn">${escapeHtml(x)}</div>`).join('');
+  w.innerHTML = r.warns.map(x => `<div class="notice warn">${escapeHtml(x)}</div>`).join('');
   if (s) {
     s.textContent = t('res.sticky', { mwp: fmt(r.dcMWp, 2), tables: fmt(r.tables), ha: fmt(r.buildableArea / 1e4, 2) });
     s.hidden = false;

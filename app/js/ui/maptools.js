@@ -47,10 +47,10 @@ export function initMapTools(mapView) {
   // the controls column, a component of the view's UI under the zoom and the north arrow
   if (view && view.ui && typeof view.ui.add === 'function' && !$('mapCtl')) {
     const col = document.createElement('div');
-    col.className = 'esri-widget mapctl';
+    col.className = 'map-ctl';
     col.id = 'mapCtl';
     col.innerHTML = [['ctlFit', 'home', 'tools.fit'], ['ctlMeasure', 'measure', 'tools.measure'], ['ctlDim', 'dimension', 'tools.dimDraw']]
-      .map(([id, ic, key]) => `<button type="button" id="${id}" class="mapctl-b" title="${esc(t(key))}" aria-label="${esc(t(key))}" aria-pressed="false">${icon(ic)}</button>`).join('');
+      .map(([id, ic, key]) => `<button type="button" id="${id}" title="${esc(t(key))}" aria-label="${esc(t(key))}" aria-pressed="false">${icon(ic)}</button>`).join('');
     view.ui.add(col, 'top-left');
     col.querySelector('#ctlFit').onclick = () => zoomToFeatures();
     col.querySelector('#ctlMeasure').onclick = () => (measure ? stopMeasure() : startMeasure('distance'));
