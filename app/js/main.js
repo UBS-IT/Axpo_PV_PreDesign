@@ -20,6 +20,7 @@ import { initBasemap } from './ui/basemap.js';
 import { initView3d } from './view3d/scene.js';
 import { initCollection } from './ui/layers.js';
 import { initMapTools } from './ui/maptools.js';
+import { initStatusBar } from './ui/statusbar.js';
 import { initDims } from './dims.js';
 import { loadIcons, icon } from './ui/icons.js';
 
@@ -52,15 +53,15 @@ async function start() {
     center: [10.5, 46.5], zoom: 5,
     constraints: { snapToZoom: false },
   });
-  // north arrow under the zoom (the map turns with a right drag; a click puts north back up); the scale bar at the
-  // bottom centre in its own container (the SDK has no such corner); the Tools menu bottom left
+  // north arrow under the zoom (the map turns with a right drag; a click puts north back up), then the controls
+  // column (ui/maptools.js); the scale bar at the bottom centre in its own container (the SDK has no such corner);
+  // the basemap stack bottom right; the status bar reads the pointer and the scale of the view
   view.ui.add(new Compass({ view }), 'top-left');
   new ScaleBar({ view, unit: 'metric', container: $('scalebar') });
   initBasemap(view);
   initMapTools(view);
+  initStatusBar(view);
   window.__view = view;   // debug hook
-  mapView = view;
-  document.dispatchEvent(new CustomEvent('pvp:panels'));   // the map controls keep clear of the open panels
   view.map.basemap.load().then(b => Promise.all(b.baseLayers.map(l => l.load())))
     .catch(e => { console.warn('[map] background map not available', e); toast(t('toast.noBasemap'), '', 15000); });
   try { await view.when(); }
@@ -121,9 +122,8 @@ async function start() {
   if (store.project.features.length) zoomToFeatures();
 }
 
-// The two floating panels: Properties on the right (collapse / reopen), Layers on the left (ui/layers.js); the map
-// controls of the SDK keep clear of the open panels through the padding of the view's UI.
-let mapView = null;
+// The two docked panels: Properties on the right (collapsed to a strip / reopened here), Layers on the left
+// (ui/layers.js). The map sits between them and resizes with them, so the controls of the SDK never overlap.
 function initPanels() {
   const close = $('rpClose'), open = $('rpOpen'), panel = $('rightPanel');
   const setRight = on => {
@@ -136,11 +136,6 @@ function initPanels() {
   if (open) open.onclick = () => { setRight(true); close?.focus(); };
   // a step opened from a link or a gate shows the Properties panel again
   onStep(() => { if (panel && panel.hidden) setRight(true); });
-  document.addEventListener('pvp:panels', () => {
-    if (!mapView || !mapView.ui) return;
-    const left = document.body.classList.contains('left-closed') ? 0 : 248, right = document.body.classList.contains('right-closed') ? 0 : 312;
-    try { mapView.ui.padding = { left, right, top: 0, bottom: 0 }; } catch {}
-  });
 }
 
 // «Saved 14:32» in the top bar, from the autosave of state.js

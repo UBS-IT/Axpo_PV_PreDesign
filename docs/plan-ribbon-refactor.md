@@ -120,6 +120,9 @@ phase 1 needs D1, D2, D3, D7, D9, D10 decided; phase 2 needs D4, D5.
 
 Estimate, in sessions of work: 0 = 1 · 1 = 3 · 2 = 2 · 3 = 1 · 4 = 1 · 6 = 1, before the functions of §4.
 
+Progress: phase 0 merged (PR 29); phase 1 split in three PRs — 1A the shell (PR 30), 1B the status bar, the docked
+panels and the map controls column in place of the Tools menu (PR 31), 1C the kit `bundle.css` (next).
+
 ## 6. Rollback and safety
 
 - Every phase is one PR; reverting a phase is reverting its merge commit on `main` (a PR of its own).

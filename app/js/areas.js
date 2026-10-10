@@ -338,6 +338,7 @@ export function startDraw(category, tool) {
   sketchVM.create(tool, tool === 'point' ? undefined : { mode: 'click' });
   renderDraw();
   banner(t(tool === 'point' ? 'areas.drawPointBanner' : tool === 'rectangle' ? 'areas.drawRectBanner' : 'areas.drawBanner', { cat: esc(t('cat.' + category)) }));
+  setMode('draw', t('sb.draw', { cat: t('cat.' + category) }));
 }
 export function stopDraw() {
   if (drawing) sketchVM.cancel();
@@ -345,10 +346,14 @@ export function stopDraw() {
 }
 export const drawingState = () => (drawing ? { ...drawing } : null);
 function endDraw() {
+  const was = drawing;
   drawing = null;
   renderDraw();
   banner(null);
+  if (was) setMode('select', t('sb.select'));
 }
+// the mode shown in the status bar (ui/statusbar.js listens)
+const setMode = (mode, label) => document.dispatchEvent(new CustomEvent('pvp:mode', { detail: { mode, label } }));
 // the layer of the objects (dims.js snaps to it) and the mode banner on the top edge of the map (shared with dims.js)
 export const areasLayer = () => featLayer;
 export function banner(html) {
@@ -451,12 +456,14 @@ function startEdit(id) {
   editing = { id };
   sketchVM.update(graphic, { tool: geomKind(f.geometry) === 'point' ? 'move' : 'reshape' });
   banner(t('areas.editBanner', { name: esc(f.name) }));
+  setMode('reshape', t('sb.reshape'));
 }
 function finishEdit(e) {
   if (!editing) return;
   const id = editing.id;
   editing = null;
   banner(null);
+  setMode('select', t('sb.select'));
   const gr = e.graphics && e.graphics[0];
   const geometry = gr && !e.aborted ? toGeoJSON(gr.geometry) : null;
   if (gr) sketchLayer.remove(gr);

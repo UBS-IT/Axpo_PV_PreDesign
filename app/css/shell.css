@@ -63,13 +63,25 @@ body { overflow: hidden; display: block; }
 .ribbon-context span { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
 .ribbon-context strong { font-size: 20px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* ---- workspace: the map fills the row, the panels float ---- */
-.workspace { position: relative; min-height: 0; overflow: hidden; isolation: isolate; }
-#mapStack { position: absolute; inset: 0; }
-.panel { position: absolute; z-index: 4; display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--panel); box-shadow: var(--shadow-xl); }
-.panel.left { left: 12px; top: 12px; bottom: 44px; width: 236px; }
-.panel.right { right: 12px; top: 12px; bottom: 44px; width: 300px; }
+/* ---- workspace: the panels are docked at the sides, the map takes the rest; a collapsed panel is a strip ---- */
+.workspace { display: flex; min-height: 0; overflow: hidden; }
+#mapStack { position: relative; flex: 1; min-width: 0; min-height: 0; }
+.panel { flex: none; display: flex; flex-direction: column; min-height: 0; width: 236px; background: var(--panel); border-right: 1px solid var(--line); }
+.panel.right { width: 300px; border-right: 0; border-left: 1px solid var(--line); }
 .panel[hidden] { display: none; }
+.panel-f { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-top: 1px solid var(--line); font-size: 12px; }
+.panel-f .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.panel-f .ttl small { font-size: 11px; color: var(--mut); }
+.panel-f > .icon { color: var(--mut); }
+.panel-f[hidden] { display: none; }
+.panel-f .ibtn[aria-pressed="false"] { color: var(--mut); opacity: .5; }
+.strip { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--mut); cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 600; }
+.strip.right { border-right: 0; border-left: 1px solid var(--line); }
+.strip:hover { background: var(--hover); color: var(--txt); }
+.strip[hidden] { display: none; }
+.strip > span:not(.tot):not(.dots) { writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: .03em; }
+.strip .tot { min-width: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--fill); color: var(--on-fill); font-size: 10px; line-height: 17px; font-weight: 700; }
+.strip .tot:empty, .strip .dots { display: none; }
 .panel-h { display: flex; align-items: center; gap: var(--space-2); padding: 8px 10px 8px 12px; border-bottom: 1px solid var(--line); }
 .panel-h .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .panel-h .ttl b { font-size: 13px; }
@@ -81,22 +93,21 @@ body { overflow: hidden; display: block; }
 .panel-b { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); }
 .panel.left .panel-b { padding: 8px 8px; }
 .panel.left #areaCats { margin: 0; }
-.reopen { position: absolute; z-index: 4; top: 12px; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); color: var(--txt); cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; box-shadow: var(--shadow-md); }
-.reopen[hidden] { display: none; }
-.reopen.left { left: 12px; }
-.reopen.right { right: 12px; }
-.reopen .tot { min-width: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--fill); color: var(--on-fill); font-size: 10px; line-height: 17px; font-weight: 700; }
-.reopen .tot:empty, .reopen .dots { display: none; }
-/* the map chrome keeps clear of the right panel; the 3D card and the measure card too */
-.mapchips { right: 324px; }
-body.right-closed .mapchips { right: 12px; }
-.mapcard.measure { left: 260px; }
-body.left-closed .mapcard.measure { left: 12px; }
-#tools { left: 260px; }
-body.left-closed #tools { left: 12px; }
-#d3Card { left: 260px; }
-body.left-closed #d3Card { left: 12px; }
-#scalebar { bottom: 10px; }
+/* the map chrome: the controls column under the zoom and the north arrow (a component of the view's UI), the
+   measure card next to it, the basemap stack bottom right above a compact attribution, the scale bar bottom centre */
+.mapctl { display: flex; flex-direction: column; gap: 2px; padding: 2px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+.mapctl-b { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: var(--radius-md); background: none; color: var(--txt); cursor: pointer; }
+.mapctl-b:hover { background: var(--hover); }
+.mapctl-b[aria-pressed="true"] { background: var(--fill); color: var(--on-fill); }
+.mapctl-b .icon { width: 16px; height: 16px; margin: 0; }
+.mapcard.measure { left: 56px; top: 12px; bottom: auto; width: 280px; }
+.mapcard.measure .mapcard-h { flex-wrap: wrap; }
+.mapcard.measure .chips { margin: 0 0 0 auto; }
+.bmstack { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.bmstack .esri-basemap-toggle { margin: 0; }
+.esri-ui .esri-attribution { font-size: 9px; line-height: 14px; opacity: .55; max-width: 60%; }
+.esri-ui .esri-attribution:hover { opacity: 1; }
+#scalebar { bottom: 22px; }
 
 /* the sections of the steps inside the Properties panel: the panel header carries the title */
 .step > .stephd { display: none; }
@@ -108,11 +119,21 @@ body.left-closed #d3Card { left: 12px; }
 /* ---- status bar ---- */
 .statusbar { display: flex; align-items: center; gap: var(--space-4); height: 24px; padding: 0 var(--space-35); background: var(--panel); border-top: 1px solid var(--line); font-size: 11px; color: var(--mut); white-space: nowrap; overflow: hidden; }
 .statusbar b { color: var(--txt); font-weight: 600; }
-.statusbar .mono { font-family: var(--font-mono); font-size: 11px; color: var(--txt); }
+.statusbar .mono { font-family: var(--font-mono); font-size: 11px; color: var(--txt); font-variant-numeric: tabular-nums; }
+.sb-coord, .sb-crs { display: inline-flex; align-items: center; gap: 6px; }
+.statusbar .k { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+.sb-coord .mono { min-width: 92px; }
+.sb-crs select { height: 18px; max-width: 260px; padding: 0 4px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--field); color: var(--txt); font: inherit; font-size: 11px; }
+.sb-crs select.alert { border-color: var(--warn); }
+.sb-toggle { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: none; color: var(--mut); cursor: pointer; font: inherit; font-size: 11px; }
+.sb-toggle .icon { width: 12px; height: 12px; margin: 0; }
+.sb-toggle[aria-pressed="true"] { color: var(--link); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.support { margin-top: 6px; }
+.support .chk { font-size: 11.5px; color: var(--mut); }
 
 /* ---- widths ---- */
 @media (max-width: 1500px) { .brand small { display: none; } .ribbon-context { display: none; } .tool { min-width: 54px; max-width: 80px; padding: 4px 3px; } .rgroup { padding: 0 6px; } }
-@media (max-width: 1400px) { .panel.right { width: 280px; } .mapchips { right: 304px; } }
+@media (max-width: 1400px) { .panel.right { width: 280px; } }
 /* a desktop tool: under 760 px the app gives way to a message */
 .narrow { display: none; }
 @media (max-width: 760px) {
