@@ -27,6 +27,9 @@ jobs:
       - name: toolkit workbook matches app/catalog/toolkit.json
         working-directory: ${{ github.workspace }}
         run: python3 -m pip install --quiet openpyxl && python3 scripts/make_toolkit.py --check
+      - name: tokens.css and icons.svg match design/ (the design system)
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/make_tokens.py --check && python3 scripts/make_icons.py --check
       - name: vendored libraries match package-lock.json
         run: npm run vendor && git status --porcelain -- ../../app/vendor && test -z "$(git status --porcelain -- ../../app/vendor)"
       - run: npx playwright install --with-deps chromium

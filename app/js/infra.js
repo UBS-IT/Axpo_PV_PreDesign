@@ -12,6 +12,7 @@ import { countryValue, countryName, getCatalog, standardFor } from './catalog.js
 import { siteFrame, extraCuts, crsState, computeArea } from './areas.js';
 import { last } from './field.js';
 import { toast } from './ui/toast.js';
+import { icon } from './ui/icons.js';
 import { stepProvider } from './ui/rail.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
@@ -445,8 +446,8 @@ function render() {
     const row = document.createElement('div');
     row.className = 'it';
     row.innerHTML = `<span class="sw" style="background:rgb(${GREY.join(',')})"></span><span class="nm"></span>
-      <button type="button" class="x" data-redit="${rd.id}" title="${esc(t('infra.editRoad'))}" aria-label="${esc(t('infra.editRoad'))}">✎</button>
-      <button type="button" class="x" data-rdel="${rd.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">×</button>`;
+      <button type="button" class="x" data-redit="${rd.id}" title="${esc(t('infra.editRoad'))}" aria-label="${esc(t('infra.editRoad'))}">${icon('pen')}</button>
+      <button type="button" class="x" data-rdel="${rd.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">${icon('close')}</button>`;
     row.querySelector('.nm').textContent = t('infra.roadRow', { kind: t('infra.roadKindShort.' + rd.kind), len: fmt(rd.length, 0), w: fmt(rd.width, 1) });
     $('infRoadList').appendChild(row);
   }
@@ -460,9 +461,9 @@ function render() {
     const row = document.createElement('div');
     row.className = 'it' + (s.id === moving ? ' moving' : '');
     row.innerHTML = `<span class="sw" style="background:rgb(${STATION_COLOUR[s.kind].join(',')})"></span><span class="nm"></span>
-      <button type="button" class="x" data-move="${s.id}" title="${esc(t('infra.move'))}" aria-label="${esc(t('infra.move'))}">✥</button>
-      <button type="button" class="x" data-rot="${s.id}" title="${esc(t('infra.rotate'))}" aria-label="${esc(t('infra.rotate'))}">⟳</button>
-      <button type="button" class="x" data-del="${s.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">×</button>`;
+      <button type="button" class="x" data-move="${s.id}" title="${esc(t('infra.move'))}" aria-label="${esc(t('infra.move'))}">${icon('cursor')}</button>
+      <button type="button" class="x" data-rot="${s.id}" title="${esc(t('infra.rotate'))}" aria-label="${esc(t('infra.rotate'))}">${icon('refresh')}</button>
+      <button type="button" class="x" data-del="${s.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">${icon('close')}</button>`;
     const nm = row.querySelector('.nm');
     nm.textContent = t('infra.kind.' + s.kind);
     const sm = document.createElement('small');

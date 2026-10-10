@@ -250,6 +250,12 @@ over the map; the side panel keeps its step and the editing stays in 2D. Enterin
   still to be checked have `"verify": true`. `tools/cad/dwg_dump.mjs` reads toolkit DWGs.
   Table sizes are not stored: they come from the module, `n × W + (n − 1) × 0.02`, which reproduces every table
   length of the toolkit (2V13 14.98 m, 3V9 10.37 m, 3V18 20.75 m).
+- **Design system** — `design/tokens.json` and `design/icons/` are copies of the PV Predesign design system (the UI
+  design session's artifact, `APP UI-UX DESIGN/design-system`); `python scripts/make_tokens.py` writes
+  `app/css/tokens.css` (every colour, spacing, radius, shadow and font, light and dark; `app.css` defines no colour
+  of its own) and `python scripts/make_icons.py` the sprite `app/icons.svg` (84 line icons; buttons declare
+  `data-icon`, no emoji or glyph characters in labels). The CI checks both match their sources. The ribbon
+  workspace of the design system is the refactor planned in `docs/plan-ribbon-refactor.md`.
 - **True metres** — areas and the layout are computed in a Transverse Mercator frame centred on the site with
   scale factor 1 (`app/js/geo/localframe.js`): a 100 × 50 m rectangle is 5 000.000 m² on the ellipsoid, and a
   400 × 250 m Lambert-93 rectangle (100 000 m² on the grid) measures 100 172.46 m², exactly the geodesic area

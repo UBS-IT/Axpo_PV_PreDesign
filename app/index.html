@@ -6,6 +6,7 @@
 <title>PV Predesign</title>
 <link rel="stylesheet" id="esriTheme" href="https://js.arcgis.com/4.34/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.34/"></script>
+<link rel="stylesheet" href="./css/tokens.css">
 <link rel="stylesheet" href="./css/app.css">
 </head>
 <body>
@@ -14,15 +15,15 @@
   <input id="projName" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName">
   <div class="actions">
     <div class="grp">
-      <button class="tb" id="btnNew" data-i18n="top.new" data-i18n-title="top.newTitle"></button>
-      <button class="tb" id="btnOpen" data-i18n="top.open" data-i18n-title="top.openTitle"></button>
-      <button class="tb" id="btnSave" data-i18n="top.save" data-i18n-title="top.saveTitle"></button>
-      <button class="tb" id="btnSaveAs" data-i18n="top.saveAs" data-i18n-title="top.saveAsTitle"></button>
+      <button class="tb" id="btnNew" data-icon="file-plus" data-i18n="top.new" data-i18n-title="top.newTitle"></button>
+      <button class="tb" id="btnOpen" data-icon="folder" data-i18n="top.open" data-i18n-title="top.openTitle"></button>
+      <button class="tb" id="btnSave" data-icon="save" data-i18n="top.save" data-i18n-title="top.saveTitle"></button>
+      <button class="tb" id="btnSaveAs" data-icon="export" data-i18n="top.saveAs" data-i18n-title="top.saveAsTitle"></button>
     </div>
-    <button class="tb" id="btnImport" data-i18n="top.import" data-i18n-title="top.importTitle"></button>
-    <button class="tb quick" id="btnQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button>
+    <button class="tb" id="btnImport" data-icon="import" data-i18n="top.import" data-i18n-title="top.importTitle"></button>
+    <button class="tb quick" id="btnQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button>
     <button class="tb crs" id="crsBadge" data-i18n-title="top.crsTitle"></button>
-    <button class="tb" id="btnTheme" data-i18n-title="top.theme" data-i18n-aria="top.theme">☾</button>
+    <button class="tb" id="btnTheme" data-i18n-title="top.theme" data-i18n-aria="top.theme"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg></button>
   </div>
 </header>
 
@@ -50,16 +51,16 @@
     <!-- 1 · site -->
     <section class="step" data-step="areas" hidden>
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
-      <div class="btns"><button type="button" class="btn primary" id="areasImport" data-i18n="areas.import"></button></div>
+      <div class="btns"><button type="button" class="btn primary" id="areasImport" data-icon="import" data-i18n="areas.import"></button></div>
       <p class="hint" data-i18n="areas.importHint"></p>
-      <details class="gloss"><summary data-i18n="areas.gloss2"></summary>
+      <details class="gloss"><summary data-i18n="areas.gloss2" data-icon="info"></summary>
         <ul><li data-i18n="areas.importMore1"></li><li data-i18n="areas.importMore2"></li><li data-i18n="areas.importMore3"></li></ul>
       </details>
       <!-- the quick predesign is offered only once there is a site: one primary action per step -->
       <p class="suggest" id="areasQuickRow" hidden><span data-i18n="quick.siteReady"></span>
-        <button type="button" class="linkbtn" id="areasQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
+        <button type="button" class="linkbtn" id="areasQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
       <details class="sec" id="secDraw" open>
-        <summary><span class="ico" aria-hidden="true">✎</span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
+        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-pen"/></svg></span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
         <div class="bd">
           <div class="pstep">
             <div class="pstep-h"><span class="pnum" aria-hidden="true">1</span><div class="pstep-t"><b data-i18n="draw.what"></b><small data-i18n="draw.whatSub"></small></div></div>
@@ -68,7 +69,7 @@
           </div>
           <div class="pstep">
             <div class="pstep-h"><span class="pnum" aria-hidden="true">2</span><div class="pstep-t"><b data-i18n="draw.how"></b><small data-i18n="draw.howSub"></small></div>
-              <div class="acts"><button type="button" class="gact" id="drawUndo" data-i18n-title="draw.undo" data-i18n-aria="draw.undo" disabled>↶</button><button type="button" class="gact" id="drawRedo" data-i18n-title="draw.redo" data-i18n-aria="draw.redo" disabled>↷</button></div></div>
+              <div class="acts"><button type="button" class="gact" id="drawUndo" data-i18n-title="draw.undo" data-i18n-aria="draw.undo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-undo"/></svg></button><button type="button" class="gact" id="drawRedo" data-i18n-title="draw.redo" data-i18n-aria="draw.redo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-redo"/></svg></button></div></div>
             <div class="cards" id="drawTools"></div>
             <div class="status" id="drawStatus" role="status"></div>
           </div>
@@ -82,7 +83,7 @@
         <input id="boundarySetback" type="number" min="0" step="0.5">
         <p class="hint" data-i18n="areas.setbackHint"></p>
         <div id="areaSummary"></div>
-        <details class="gloss"><summary data-i18n="areas.gloss"></summary>
+        <details class="gloss"><summary data-i18n="areas.gloss" data-icon="info"></summary>
           <ul><li data-i18n="areas.gl1"></li><li data-i18n="areas.gl2"></li><li data-i18n="areas.gl3"></li><li data-i18n="areas.gl4"></li></ul>
         </details>
       </div>
@@ -92,7 +93,7 @@
     <section class="step" data-step="terrain" hidden>
       <header class="stephd"><span class="num">2</span><div><h2 data-i18n="step.terrain"></h2><p data-i18n="step.terrain.sub"></p></div></header>
       <p class="hint" data-i18n="terrain.intro"></p>
-      <details class="gloss"><summary data-i18n="terrain.gloss"></summary>
+      <details class="gloss"><summary data-i18n="terrain.gloss" data-icon="info"></summary>
         <ul><li data-i18n="terrain.introMore1"></li><li data-i18n="terrain.introMore2"></li></ul>
       </details>
       <div class="card">
@@ -100,12 +101,12 @@
         <div id="terInfo"></div>
         <div class="btns col">
           <button type="button" class="btn primary" id="terEsri" data-i18n="terrain.esriBtn"></button>
-          <button type="button" class="btn" id="terDtm" data-i18n="terrain.dtmBtn"></button>
+          <button type="button" class="btn" id="terDtm" data-icon="import" data-i18n="terrain.dtmBtn"></button>
         </div>
         <div id="terStatus" class="status" role="status" hidden></div>
         <p class="hint" data-i18n="terrain.esriHint"></p>
         <details class="adv">
-          <summary data-i18n="terrain.adv"></summary>
+          <summary data-i18n="terrain.adv" data-icon="info"></summary>
           <label class="l" for="terCell" data-i18n="terrain.cell"></label>
           <input id="terCell" type="number" min="1" max="50" step="1">
           <p class="hint" data-i18n="terrain.cellHint"></p>
@@ -160,7 +161,7 @@
       <button type="button" class="sticky" id="fSticky" data-i18n-title="res.stickyTitle" hidden></button>
 
       <details class="sec" id="secField" open>
-        <summary><span class="ico" aria-hidden="true">☀</span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
+        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-sun"/></svg></span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
         <div class="bd">
           <label class="l" for="fTech" data-i18n="field.tech"></label>
           <select id="fTech">
@@ -191,10 +192,10 @@
           <label class="l" for="fPitch" data-i18n="field.pitch"></label>
           <input id="fPitch" type="number" min="0.5" step="0.01">
           <div class="hint" id="fPitchHint"></div>
-          <div class="btns"><button type="button" class="btn" id="fOptimise" data-i18n="field.optimise"></button></div>
+          <div class="btns"><button type="button" class="btn" id="fOptimise" data-icon="refresh" data-i18n="field.optimise"></button></div>
           <div class="hint" id="fOptHint"></div>
           <details class="adv" id="fAdv">
-            <summary data-i18n="field.adv"></summary>
+            <summary data-i18n="field.adv" data-icon="info"></summary>
             <div class="row2">
               <div><label class="l" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
               <div><label class="l" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
@@ -219,29 +220,29 @@
       </details>
       <!-- the quick predesign as an alternative to the parameters above, not above them -->
       <p class="suggest"><span data-i18n="quick.fieldsHint"></span>
-        <button type="button" class="linkbtn" id="fQuick" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
+        <button type="button" class="linkbtn" id="fQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
 
       <details class="sec" id="secResults" open>
-        <summary><span class="ico" aria-hidden="true">📊</span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
+        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-chart"/></svg></span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
         <div class="bd">
           <div class="results" id="kpis"></div>
           <label class="l" for="specYield" data-i18n="res.specYield"></label>
           <input id="specYield" type="number" min="0" step="1">
           <div class="hint" data-i18n="res.specYieldHint"></div>
           <div class="warns" id="warns"></div>
-          <details class="gloss"><summary data-i18n="res.gloss"></summary>
+          <details class="gloss"><summary data-i18n="res.gloss" data-icon="info"></summary>
             <ul><li data-i18n="res.gl1"></li><li data-i18n="res.gl2"></li><li data-i18n="res.gl3"></li><li data-i18n="res.gl4"></li></ul>
           </details>
         </div>
       </details>
 
       <details class="sec" id="secModules">
-        <summary><span class="ico" aria-hidden="true">▦</span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
+        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-table"/></svg></span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
         <div class="bd">
           <div class="list" id="modList" data-i18n-empty="mod.empty"></div>
           <div class="btns">
-            <button type="button" class="btn" id="modAddBtn" data-i18n="mod.add"></button>
-            <button type="button" class="btn" id="modImportBtn" data-i18n="mod.import" data-i18n-title="mod.importTitle"></button>
+            <button type="button" class="btn" id="modAddBtn" data-icon="plus" data-i18n="mod.add"></button>
+            <button type="button" class="btn" id="modImportBtn" data-icon="import" data-i18n="mod.import" data-i18n-title="mod.importTitle"></button>
           </div>
           <form id="modForm" hidden>
             <div class="row2">
@@ -269,7 +270,7 @@
     <section class="step" data-step="infra" hidden>
       <header class="stephd"><span class="num">4</span><div><h2 data-i18n="step.infra"></h2><p data-i18n="step.infra.sub"></p></div></header>
       <p class="hint" data-i18n="infra.intro"></p>
-      <details class="gloss"><summary data-i18n="infra.gloss"></summary>
+      <details class="gloss"><summary data-i18n="infra.gloss" data-icon="info"></summary>
         <ul><li data-i18n="infra.introMore1"></li><li data-i18n="infra.introMore2"></li></ul>
       </details>
       <div class="card">
@@ -298,7 +299,7 @@
         <div id="infRoads"></div>
         <div class="row2">
           <div><select id="infRoadKind" data-i18n-aria="infra.roadKindLabel"><option value="heavy"></option><option value="light"></option></select></div>
-          <div><button type="button" class="btn" id="infRoadDraw" data-i18n="infra.drawRoad"></button></div>
+          <div><button type="button" class="btn" id="infRoadDraw" data-icon="road" data-i18n="infra.drawRoad"></button></div>
         </div>
         <div class="list" id="infRoadList" data-i18n-empty="infra.roadListNone"></div>
       </div>
@@ -309,9 +310,9 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.stations"></b></div>
         <div class="btns">
-          <button type="button" class="btn" id="infCC" data-i18n="infra.addCC"></button>
-          <button type="button" class="btn" id="infCU" data-i18n="infra.addCU"></button>
-          <button type="button" class="btn" id="infCT" data-i18n="infra.addCT"></button>
+          <button type="button" class="btn" id="infCC" data-icon="plus" data-i18n="infra.addCC"></button>
+          <button type="button" class="btn" id="infCU" data-icon="plus" data-i18n="infra.addCU"></button>
+          <button type="button" class="btn" id="infCT" data-icon="plus" data-i18n="infra.addCT"></button>
         </div>
         <div class="btns"><button type="button" class="linkbtn" id="infAtAccess" data-i18n="infra.atAccess"></button></div>
         <div class="list" id="infStations" data-i18n-empty="infra.stationsNone"></div>
@@ -326,11 +327,11 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="out.lookTitle"></b></div>
         <div class="btns col">
-          <button type="button" class="btn primary" id="outReport" data-i18n="out.reportBtn"></button>
-          <button type="button" class="btn" id="outKml" data-i18n="out.kml"></button>
+          <button type="button" class="btn primary" id="outReport" data-icon="report" data-i18n="out.reportBtn"></button>
+          <button type="button" class="btn" id="outKml" data-icon="globe" data-i18n="out.kml"></button>
         </div>
         <p class="hint" data-i18n="out.lookHint"></p>
-        <details class="gloss"><summary data-i18n="out.gloss"></summary>
+        <details class="gloss"><summary data-i18n="out.gloss" data-icon="info"></summary>
           <ul><li data-i18n="out.reportHint"></li><li data-i18n="out.kmlMore"></li></ul>
         </details>
       </div>
@@ -340,14 +341,14 @@
         <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
         <div id="outCrsAlerts" class="warns"></div>
         <div class="btns col">
-          <button type="button" class="btn" id="outShp" data-i18n="out.shp"></button>
-          <button type="button" class="btn" id="outGpkg" data-i18n="out.gpkg"></button>
-          <button type="button" class="btn" id="outDxf" data-i18n="out.dxf"></button>
-          <button type="button" class="btn" id="outBoq" data-i18n="out.boq"></button>
-          <button type="button" class="btn" id="outGeojson" data-i18n="out.geojson"></button>
+          <button type="button" class="btn" id="outShp" data-icon="vector" data-i18n="out.shp"></button>
+          <button type="button" class="btn" id="outGpkg" data-icon="database" data-i18n="out.gpkg"></button>
+          <button type="button" class="btn" id="outDxf" data-icon="pen" data-i18n="out.dxf"></button>
+          <button type="button" class="btn" id="outBoq" data-icon="table" data-i18n="out.boq"></button>
+          <button type="button" class="btn" id="outGeojson" data-icon="braces" data-i18n="out.geojson"></button>
         </div>
         <p class="hint" data-i18n="out.engShort"></p>
-        <details class="gloss"><summary data-i18n="out.gloss"></summary>
+        <details class="gloss"><summary data-i18n="out.gloss" data-icon="info"></summary>
           <ul><li data-i18n="out.crsInfo"></li><li data-i18n="out.engHint"></li><li data-i18n="out.exportHint"></li></ul>
         </details>
       </div>
@@ -381,7 +382,7 @@
       </button>
     </div>
     <aside id="measureCard" class="mapcard measure" hidden>
-      <div class="mapcard-h"><b id="measureTitle"></b><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose">×</button></div>
+      <div class="mapcard-h"><b id="measureTitle"></b><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
       <div class="mapcard-b"><div id="measureBox"></div><p class="hint" data-i18n="tools.measureHint"></p></div>
     </aside>
     <div class="mapchips" role="group" data-i18n-aria="map.mode">
@@ -389,7 +390,7 @@
       <button type="button" data-mode="3d" aria-pressed="false">3D</button>
     </div>
     <aside id="d3Card" class="mapcard">
-      <div class="mapcard-h"><b data-i18n="d3.title"></b><button type="button" class="x" id="d3CardMin" data-i18n-title="d3.minimise" data-i18n-aria="d3.minimise">▾</button></div>
+      <div class="mapcard-h"><b data-i18n="d3.title"></b><button type="button" class="x" id="d3CardMin" data-i18n-title="d3.minimise" data-i18n-aria="d3.minimise"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg></button></div>
       <div class="mapcard-b"><div id="d3Panel"></div></div>
     </aside>
   </div>
@@ -401,7 +402,7 @@
     </button>
     <div id="collPanel">
       <div class="coll-h"><div><b id="collTitle" data-i18n="coll.title"></b><small data-i18n="coll.sub"></small></div>
-        <button type="button" class="x" id="collClose" data-i18n-title="coll.close" data-i18n-aria="coll.close">×</button></div>
+        <button type="button" class="x" id="collClose" data-i18n-title="coll.close" data-i18n-aria="coll.close"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
       <div class="coll-b"><div id="areaCats"></div></div>
     </div>
   </aside>

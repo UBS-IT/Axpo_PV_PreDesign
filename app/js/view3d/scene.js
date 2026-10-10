@@ -7,6 +7,7 @@
 import { getSdk, loadSdk3d } from '../sdk.js';
 import { store, change, on } from '../state.js';
 import { t, fmt } from '../i18n.js';
+import { icon } from '../ui/icons.js';
 import { countryValue, countryName } from '../catalog.js';
 import { crsState, siteFrame } from '../areas.js';
 import { last } from '../field.js';
@@ -284,11 +285,11 @@ function renderPanel() {
     <label class="chk"><input type="checkbox" id="d3Shadow" ${widgets.shadow ? 'checked' : ''}> <span>${esc(t('d3.shadowCast'))}</span></label>
     <p class="hint">${esc(t('d3.sunHint'))}</p></div>`);
   // views
-  const vps = v.viewpoints.map(x => `<li><span>${esc(x.name)}</span><button type="button" class="x" data-go="${x.id}" title="${esc(t('d3.go'))}">➜</button><button type="button" class="x" data-del="${x.id}" title="${esc(t('d3.del'))}">×</button></li>`).join('');
+  const vps = v.viewpoints.map(x => `<li><span>${esc(x.name)}</span><button type="button" class="x" data-go="${x.id}" title="${esc(t('d3.go'))}">${icon('chevron-right')}</button><button type="button" class="x" data-del="${x.id}" title="${esc(t('d3.del'))}">${icon('close')}</button></li>`).join('');
   parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.viewsTitle'))}</b></div>
     <div class="row"><input id="d3Name" type="text" placeholder="${esc(t('d3.viewName', { n: v.viewpoints.length + 1 }))}"><button type="button" class="btn" id="d3Save">${esc(t('d3.save'))}</button></div>
     ${vps ? `<ul class="list">${vps}</ul>` : `<p class="hint">${esc(t('d3.noViews'))}</p>`}
-    <div class="btns wrap"><button type="button" class="btn" id="d3Png">${esc(t('d3.png'))}</button>
+    <div class="btns wrap"><button type="button" class="btn" id="d3Png">${icon('export')}${esc(t('d3.png'))}</button>
     <button type="button" class="btn" id="d3Report" ${v.viewpoints.length ? '' : 'disabled'}>${esc(t('d3.report'))}</button></div>
     <label class="chk"><input type="checkbox" id="d3Los" ${widgets.los ? 'checked' : ''}> <span>${esc(t('d3.los'))}</span></label></div>`);
   // export
@@ -422,7 +423,7 @@ export function initView3d(view) {
   };
   if (mq) { narrowChanged(); mq.addEventListener('change', narrowChanged); }
   const min = $('d3CardMin');
-  if (min) min.onclick = () => { const c = $('d3Card'); c.classList.toggle('min'); min.textContent = c.classList.contains('min') ? '▸' : '▾'; };
+  if (min) min.onclick = () => { const c = $('d3Card'); c.classList.toggle('min'); min.innerHTML = icon(c.classList.contains('min') ? 'chevron-right' : 'chevron-down'); };
   for (const ev of ['layout', 'infra', 'terrain', 'site', 'field', 'crs', 'project']) on(ev, () => { if (active) later(); else renderPanel(); });
   // heights change the model; the tracker mode, the angle set by hand and the viewpoints only the panel
   on('view3d', () => { renderPanel(); if (active) later(); });
