@@ -1,11 +1,12 @@
 // Step 4 · Output: the coordinate system for exports (proposed from the site, with alerts) and the exports.
 import { getSdk } from './sdk.js';
 import { store, change, on } from './state.js';
-import { t, fmt } from './i18n.js';
+import { t, tn, fmt } from './i18n.js';
 import { NATIONAL, crsLabel } from './crs.js';
-import { crsState, siteFrame } from './areas.js';
+import { crsState, siteFrame, pendingCount } from './areas.js';
 import { last } from './field.js';
 import { toGeoJSON } from './geo/convert.js';
+import { classified } from './categories.js';
 import { moduleLabel } from './modules.js';
 import { layoutInfra } from './infra.js';
 import { exportReport } from './report.js';
@@ -39,6 +40,11 @@ export function initOutput() {
   $('outBoq').onclick = () => exportEngineering('boq');
   on('crs', renderCrs);
   on('project', renderCrs);
+  // objects drawn without a category are left out of every export: say so above the exports
+  const pending = () => { const el = $('outPending'), n = pendingCount(); if (el) el.innerHTML = n ? `<div class="notice warn">${esc(tn('out.pending', n))}</div>` : ''; };
+  on('site', pending);
+  on('project', pending);
+  pending();
   // the rail: the outputs describe a layout, so the step waits for the site and then for the tables
   stepProvider('output', () => {
     if (!siteFrame()) return { state: 'locked', reason: t('gate.needSite') };
@@ -87,7 +93,7 @@ export function buildGeoJSON() {
   const { Polygon, SpatialReference, projectOperator } = getSdk();
   const r = last.result;
   const feats = [];
-  for (const f of store.project.features) {
+  for (const f of classified(store.project.features)) {   // objects without a category stay in the app
     feats.push({ type: 'Feature', geometry: f.geometry, properties: { name: f.name, category: f.category, ...(f.attrs || {}), source_layer: f.sourceCategory || '' } });
   }
   const area = r && r.area;

@@ -32,6 +32,9 @@ const MODULES = {
   geodeticAreaOperator: '@arcgis/core/geometry/operators/geodeticAreaOperator.js',
   geodeticLengthOperator: '@arcgis/core/geometry/operators/geodeticLengthOperator.js',
   centroidOperator: '@arcgis/core/geometry/operators/centroidOperator.js',
+  generalizeOperator: '@arcgis/core/geometry/operators/generalizeOperator.js',   // freehand drawings, thinned
+  cutOperator: '@arcgis/core/geometry/operators/cutOperator.js',                 // Split
+  intersectsOperator: '@arcgis/core/geometry/operators/intersectsOperator.js',   // box selection
 };
 
 let sdk = null;

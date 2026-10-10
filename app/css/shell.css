@@ -24,6 +24,57 @@ body { overflow: hidden; display: block; }
 /* ---- ribbon: the kit draws it; the groups of the other tabs are hidden ---- */
 .rgroup[hidden] { display: none; }
 .tool > .icon { margin: 0; }
+/* phase 2 tools the kit has no class for: a medium tool (the drawing tools: 20 px icon over a short caption, a tick
+   when armed, as in the reference of 2026-10-10), a row of tools, a caption above a field, the radio small tools */
+.tool-row { display: flex; align-items: stretch; gap: var(--space-05); }
+.tool.medium { position: relative; flex-direction: column; justify-content: center; gap: 3px; min-width: 54px; padding: 4px 6px; text-align: center; font-size: 11px; line-height: 13px; }
+.tool.medium .icon { width: 20px; height: 20px; }
+.tool.medium[aria-pressed="true"]::before { content: ''; position: absolute; top: 3px; right: 3px; width: 13px; height: 13px; border-radius: 50%; background: var(--fill); }
+.tool.medium[aria-pressed="true"]::after { content: ''; position: absolute; top: 5px; right: 7px; width: 3px; height: 6px; border-right: 1.6px solid var(--on-fill); border-bottom: 1.6px solid var(--on-fill); transform: rotate(45deg); }
+.tool[role="radio"][aria-checked="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--link); }
+.rfield { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-right: var(--space-2); }
+.rcap { color: var(--mut); font-size: 10.5px; line-height: 13px; }
+/* Site definition (decisions A1-A3): Category and Type in line, label left and menu right; the geometries over the
+   Freehand box; the values of the next drawings and the two drawing-support boxes in a column */
+.rform { display: grid; grid-template-columns: auto auto; align-items: center; align-content: center; column-gap: 8px; row-gap: 6px; padding-right: var(--space-1); }
+.rsel { width: 214px; height: 26px; padding: 0 6px; font-size: 12px; }
+.rsel:disabled { opacity: .5; cursor: not-allowed; }
+.tool-col { display: flex; flex-direction: column; gap: 2px; }
+.tool-col .tool-row { flex: 1; min-height: 0; }
+.tool-col .tool.medium { padding: 2px 4px; min-width: 50px; }
+.tool-col > .chk { padding-left: 4px; }
+.rvals { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-left: var(--space-1); }
+.rline { display: flex; align-items: center; gap: 6px; }
+.rline .rcap[hidden], .rline .unit[hidden] { display: none; }
+.unit.sm { width: 68px; height: 22px; }
+.unit .input { height: 20px; padding: 0 2px 0 6px; font-size: 12px; }
+.unit:has(.input:disabled) { opacity: .5; }
+.chk.mini { margin: 0; gap: 5px; font-size: 11px; line-height: 14px; color: var(--mut); white-space: nowrap; }
+.chk.mini input { width: 12px; height: 12px; }
+/* the category menu (ui/catmenu.js): a field-like button with the colour of the category, a list under it */
+.catsel { display: flex; align-items: center; gap: 8px; width: 214px; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); font-size: 12.5px; text-align: left; }
+.catsel:hover { border-color: var(--accent); }
+.catsel[aria-expanded="true"] { border-color: var(--focus); }
+.catsel .nm, .catlist .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.catsel .icon { color: var(--mut); transition: transform .15s; }
+.catsel[aria-expanded="true"] .icon { transform: rotate(180deg); }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.dot.none { background: none; border: 1.5px dashed var(--mut); }
+.catlist { position: fixed; z-index: 60; margin: 0; padding: 4px; list-style: none; max-height: min(420px, 70vh); overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-xl); font-size: 12.5px; }
+.catlist:focus-visible { outline: none; }
+.catlist[hidden] { display: none; }
+.catlist [role="option"] { display: flex; align-items: center; gap: 10px; padding: 6px 30px 6px 10px; border-radius: var(--radius-sm); cursor: pointer; position: relative; }
+.catlist [role="option"]:hover, .catlist [role="option"].active { background: var(--hover); }
+.catlist [role="option"].active { outline: 1px solid color-mix(in srgb, var(--focus) 60%, transparent); outline-offset: -1px; }
+.catlist [role="option"][aria-selected="true"] { background: color-mix(in srgb, var(--accent) 10%, transparent); font-weight: 600; }
+.catlist [role="option"][aria-selected="true"]::after { content: ''; position: absolute; right: 12px; top: 50%; width: 4px; height: 8px; margin-top: -6px; border-right: 2px solid var(--link); border-bottom: 2px solid var(--link); transform: rotate(45deg); }
+/* the PDF report on the right of the Report tab, apart from the working files (R6) */
+.rgroup.end { margin-left: auto; border-left: 1px solid var(--line); }
+.ribbon:has(.rgroup.end:not([hidden])) .ribbon-context { margin-left: 0; }
+/* the values of the new objects under the drawing status (Properties panel) */
+#drawAttrs .cap { grid-column: 1 / -1; color: var(--mut); font-size: 11px; font-weight: 600; }
+/* the Unclassified card of the Layers panel: dashed, first, until its objects get a category */
+.cat.pending { border-style: dashed; border-left-style: dashed; }
 
 /* ---- workspace: the panels are docked at the sides, the map takes the rest; a collapsed panel is a strip ---- */
 .workspace { display: flex; min-height: 0; overflow: hidden; }

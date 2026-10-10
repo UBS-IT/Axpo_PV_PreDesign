@@ -344,7 +344,15 @@ export function initModulesUi() {
 
   seedCatalogModules();
   adoptProjectModules();
-  document.getElementById('modAddBtn').onclick = () => { form.hidden = !form.hidden; if (!form.hidden) document.getElementById('mfMan').focus(); };
+  // «Add module» is a ribbon tool: the form opens in the Modules section of the Properties panel (opened and shown;
+  // the panel itself reopens by the rule of the ribbon, so the focus waits for it)
+  document.getElementById('modAddBtn').onclick = () => {
+    form.hidden = !form.hidden;
+    if (form.hidden) return;
+    const sec = document.getElementById('secModules');
+    if (sec) sec.open = true;
+    setTimeout(() => { form.scrollIntoView({ block: 'nearest' }); document.getElementById('mfMan').focus(); }, 0);
+  };
   document.getElementById('mfCancel').onclick = () => { form.hidden = true; };
   form.onsubmit = e => {
     e.preventDefault();

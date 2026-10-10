@@ -1,8 +1,9 @@
-// The ribbon under the tabs: the tools of the active tab, in groups. In this phase the groups hold the buttons that
-// used to sit at the top of the step panels (Import; Analyse the slopes, Own model; Quick predesign, Optimise,
-// the stations; the exports): they live in the ribbon markup of index.html, grouped by tab (data-tab on the group),
-// with their ids, so the step modules wire them as before. The ribbon shows the groups of the active tab and the
-// key figure of the tab in its context block on the right.
+// The ribbon under the tabs: the tools of the active tab, in groups (phase 2: the actions of the panels — import, the
+// drawing menu and tools, the terrain and its image, roads, stations, modules, the exports). They live in the ribbon
+// markup of index.html, grouped by tab (data-tab on the group), with their ids, so the step modules wire them. The
+// ribbon shows the groups of the active tab and the key figure of the tab in its context block on the right. A tool of
+// tabs 1–3 writes its outcome in the Properties panel, so it asks for the panel when it is collapsed (pvp:properties,
+// main.js); the exports of tab 4 answer with a message and leave the panel as it is.
 import { onStep, onRefresh, currentTab, tabState, TABS } from './tabs.js';
 import { t } from '../i18n.js';
 
@@ -11,6 +12,11 @@ export function initRibbon() {
   if (!ribbon) return;
   onStep(show);
   onRefresh(context);
+  ribbon.addEventListener('click', e => {
+    const b = e.target.closest('button, [role=option]'), g = e.target.closest('.rgroup');
+    if (!b || b.disabled || !g || g.dataset.tab === 'output') return;
+    document.dispatchEvent(new CustomEvent('pvp:properties'));
+  });
   show();
 }
 

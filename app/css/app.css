@@ -9,7 +9,7 @@
 .icon { vertical-align: -4px; }
 .icon.sm { vertical-align: -2px; }
 [data-icon] > .icon { margin-right: 5px; }
-.x > .icon, .gact > .icon, .tx > .icon { width: 16px; height: 16px; margin: 0; vertical-align: middle; }
+.x > .icon, .tx > .icon { width: 16px; height: 16px; margin: 0; vertical-align: middle; }
 
 html, body { height: 100%; }
 
@@ -212,28 +212,7 @@ body:not(.in-3d) #d3Card { display: none; }
 .mapcard.min .mapcard-b { display: none; }
 .mapcard.min { max-height: none; }
 
-/* ── numbered steps inside a panel, chips and tool cards (the Geoportale's Disegna pattern) ── */
-.pstep { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 9px 10px 10px; margin: 0 0 10px; background: var(--panel); }
-.pstep-h { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
-.pnum { flex: none; width: 22px; height: 22px; border-radius: 11px; background: var(--fill); color: var(--on-fill); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
-.pstep-t { flex: 1; min-width: 0; line-height: 1.25; }
-.pstep-t b { display: block; font-size: 13px; }
-.pstep-t small { color: var(--mut); font-size: 11px; }
-.pstep-h .acts { display: flex; gap: 2px; }
-.gact { min-width: 26px; min-height: 26px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--txt); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; display: grid; place-items: center; }
-.gact:hover:not(:disabled) { border-color: var(--accent); color: var(--link); }
-.gact:disabled { opacity: .35; cursor: default; }
-/* the chips of the categories carry the colour of the category (C6); the kit's chip tints itself blue */
-.chips:not(.plain) .chip:hover { border-color: var(--c); }
-.chips:not(.plain) .chip[aria-checked="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
-.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.tcard { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 8px 9px; min-height: 64px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg); color: var(--txt); cursor: pointer; line-height: 1.25; }
-.tcard svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.tcard b { font-size: 12.5px; font-weight: 600; }
-.tcard small { font-size: 11px; color: var(--mut); }
-.tcard:hover:not(:disabled) { border-color: var(--accent); }
-.tcard[aria-pressed="true"] { border-color: var(--fill); box-shadow: inset 0 0 0 1px var(--fill); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
-.tcard:disabled { opacity: .45; cursor: not-allowed; }
+/* ── the last drawing, the values of the new objects, the Advanced folds of the panels ── */
 .last { margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); }
 .last .ttl { font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
 .last .row { gap: 6px; margin-top: 3px; }

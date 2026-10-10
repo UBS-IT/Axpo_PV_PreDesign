@@ -476,11 +476,10 @@ function render() {
   const P = store.project, m = P.terrain.grid, have = !!(m && terrainData.z && terrainData.meta?.id === m.id);
   const stale = have && terrainStale();
   $('terCell').value = P.terrain.cellSize;
-  $('terShow').checked = !!P.terrain.showSlope;
   $('terApply').checked = !!P.terrain.applySlopeLimit;
   $('terMinPatch').value = P.terrain.minPatch;
   $('terTech').value = P.field.technology;
-  $('terClear').hidden = !m;
+  $('terClear').disabled = !m;   // a ribbon tool: off rather than gone
   const eb = $('terEsri');   // a ribbon tool: a short caption, the full text as its tooltip
   if (eb) { eb.innerHTML = icon('terrain') + t(m ? 'ribbon.analyseAgain' : 'ribbon.analyse'); eb.title = t(m ? 'terrain.esriAgain' : 'terrain.esriBtn'); }
   $('terPill').textContent = t(stale ? 'terrain.pillStale' : have ? 'terrain.pillOn' : m ? 'terrain.pillMissing' : 'terrain.pillOff');
@@ -492,7 +491,8 @@ function render() {
     + (!have ? `<div class="notice warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
   // the image on the map: view and legend
   const kind = P.terrain.view === 'z' ? 'z' : 's';
-  document.querySelectorAll('#terView [data-view]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.view === kind)); b.tabIndex = b.dataset.view === kind ? 0 : -1; });
+  // the two views of the ribbon are switches: pressed while their image is on the map, off without a terrain
+  document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.setAttribute('aria-pressed', String(!!P.terrain.showSlope && b.dataset.view === kind)); b.disabled = !have; });
   $('terLegend').innerHTML = (kind === 's'
     ? SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('')
     : (m ? `<span class="lg bar"><i class="ramp"></i>${fmt(m.zmin, 0)} – ${fmt(m.zmax, 0)} m</span>` : ''))
@@ -566,14 +566,12 @@ export function initTerrain(mapView) {
   $('terMaxNS').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terMaxEW').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terCell').onchange = () => change('terrain', p => { p.terrain.cellSize = Math.min(50, Math.max(1, Number($('terCell').value) || 5)); });
-  $('terShow').onchange = () => change('terrain', p => { p.terrain.showSlope = $('terShow').checked; });
-  $('terView').onclick = e => { const b = e.target.closest('[data-view]'); if (b) { change('terrain', p => { p.terrain.view = b.dataset.view; }); b.focus(); } };
-  $('terView').onkeydown = e => {
-    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
-    e.preventDefault();
-    const all = [...$('terView').querySelectorAll('[data-view]')], i = all.findIndex(b => b.getAttribute('aria-checked') === 'true');
-    all[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length].click();
-  };
+  // Slope classes / Elevations in the ribbon: a click shows that image, a second click on the same one hides it
+  document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.onclick = () => change('terrain', p => {
+    const v = b.dataset.view, cur = p.terrain.view === 'z' ? 'z' : 's';
+    if (p.terrain.showSlope && cur === v) p.terrain.showSlope = false;
+    else { p.terrain.showSlope = true; p.terrain.view = v; }
+  }); });
   $('terApply').onchange = () => change('terrain', p => { p.terrain.applySlopeLimit = $('terApply').checked; });
   $('terMinPatch').onchange = () => change('terrain', p => { p.terrain.minPatch = Math.max(0, Number($('terMinPatch').value) || 0); });
   for (const topic of ['terrain', 'field', 'site']) on(topic, render);

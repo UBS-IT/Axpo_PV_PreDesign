@@ -6,7 +6,8 @@ import { loadCatalog } from '../app/js/catalog.js';
 import { applyI18n } from '../app/js/i18n.js';
 import { store, defaultProject, replaceProject, change } from '../app/js/state.js';
 import { loadCountries } from '../app/js/crs.js';
-import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/areas.js';
+import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame } from '../app/js/areas.js';
+import { initRibbon } from '../app/js/ui/ribbon.js';
 import { stepState, refreshRail } from '../app/js/ui/tabs.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
@@ -139,22 +140,46 @@ await test('drawing support (snapping switch of the status bar, boxes of the dra
   return 'snap, typed, labels';
 });
 
-await test('drawing in two steps: category chips, tools allowed by the category, defaults, undo / redo of a removal', async () => {
-  const chips = document.querySelectorAll('#drawCats [role=radio]');
-  assert(chips.length === 10 && document.querySelector('#drawCats [aria-checked="true"]').dataset.dcat === 'gross', 'one chip per category, gross first');
+await test('drawing in two steps from the ribbon: the category menu (Unclassified first), the tools of the category, defaults, undo / redo of a removal', async () => {
+  const btn = document.getElementById('drawCatBtn'), list = document.getElementById('drawCatList');
   const tool = id => document.querySelector(`#drawTools [data-dtool="${id}"]`);
-  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled, 'a gross area takes polygons only');
-  assert(/polygons|points/.test(tool('point').title), 'the disabled card says why: ' + tool('point').title);
-  assert(document.getElementById('drawAttrs').hidden, 'no defaults for the gross area');
+  const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+  const all = ['point', 'polyline', 'polygon', 'rectangle', 'circle'];
+  const off = id => document.getElementById(id).disabled;
+  // the menu: Unclassified, then the ten categories of the model; Unclassified is the default and takes every tool
+  btn.click();
+  const opts = list.querySelectorAll('[role=option]');
+  assert(!list.hidden && btn.getAttribute('aria-expanded') === 'true', 'the menu opens');
+  assert(opts.length === 11 && opts[0].dataset.id === 'unclassified' && opts[0].getAttribute('aria-selected') === 'true', 'Unclassified first and chosen: ' + opts.length);
+  assert(opts[1].querySelector('.dot').style.getPropertyValue('--c') && opts[0].querySelector('.dot.none'), 'colour dots, a dashed one for Unclassified');
+  assert(all.every(k => !tool(k).disabled), 'without a category every tool is on');
+  assert(off('drawType') && off('drawBuffer'), 'Unclassified: no type and no buffer yet');
+  key(list, 'Escape');
+  assert(list.hidden && btn.getAttribute('aria-expanded') === 'false', 'Esc closes the menu');
+  // a click picks a category: the tools follow it
+  btn.click(); list.querySelector('[data-id="gross"]').click();
+  assert(list.hidden && /Gross area/.test(btn.textContent), 'gross chosen: ' + btn.textContent);
+  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled && !tool('circle').disabled, 'a gross area takes polygons only (circle too)');
+  assert(/polygons|points/.test(tool('point').title), 'the disabled tool says why: ' + tool('point').title);
+  assert(off('drawType') && off('drawBuffer') && document.getElementById('drawSizeBox').hidden, 'no type, buffer or size for the gross area');
+  // the keyboard: Arrow down opens, End goes to the last category, Enter picks it
+  key(btn, 'ArrowDown'); key(list, 'End'); key(list, 'Enter');
+  assert(list.hidden && /Reference/.test(btn.textContent), 'keyboard pick: ' + btn.textContent);
   selectDrawCat('exclusion');
-  assert(['point', 'polyline', 'polygon', 'rectangle'].every(k => !tool(k).disabled), 'exclusions take every geometry');
-  const type = document.querySelector('#drawAttrs [data-dattr="type"]'), buf = document.querySelector('#drawAttrs [data-dattr="buffer"]');
-  assert(type && buf && !document.getElementById('drawAttrs').hidden, 'type and buffer defaults for exclusions');
-  assert(/Pick a category/.test(text('drawStatus')), 'status at rest: ' + text('drawStatus'));
+  assert(all.every(k => !tool(k).disabled), 'exclusions take every geometry');
+  const ty = document.getElementById('drawType'), buf = document.getElementById('drawBuffer');
+  assert(!ty.disabled && ty.options.length === 13 && !buf.disabled && document.getElementById('drawSizeBox').hidden, 'exclusions: type and buffer on, no size');
+  buf.value = '7'; buf.dispatchEvent(new Event('change'));
+  selectDrawCat('obstacle');
+  assert(!document.getElementById('drawSizeBox').hidden && text('drawSizeCap') === 'Height' && ty.value === 'tree', 'obstacles: height next to the buffer, tree by default');
+  selectDrawCat('exclusion');
+  assert(buf.value === '7', 'the buffer given to the next exclusions is remembered');
+  const fh = document.getElementById('drawFreehand');
+  assert(fh && !fh.checked, 'the Freehand box, off');
   assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
   // «Draw here» on a card takes the category
   document.querySelector('#areaCats .drawbtn[data-dsel="obstacle"]').click();
-  assert(document.querySelector('#drawCats [aria-checked="true"]').dataset.dcat === 'obstacle' && !tool('point').disabled, 'obstacle chosen from its card');
+  assert(/Obstacles/.test(btn.textContent) && !tool('point').disabled, 'obstacle chosen from its card');
   assert(!document.querySelector('#areaCats .drawbtn[data-tool]'), 'no drawing buttons left on the cards');
   // remove the site: a message with Undo instead of a confirmation; Undo brings it back where it was
   document.querySelector('#areaCats .it[data-id="g"] [data-del]').click();
@@ -167,10 +192,35 @@ await test('drawing in two steps: category chips, tools allowed by the category,
   assert(store.project.features.length === 1 && store.project.features[0].id === 'g', 'site back');
   assert(historySize().undo === 2 && !document.getElementById('drawUndo').disabled, 'two steps in the history');
   assert(undo() && store.project.features.length === 0 && redo() && store.project.features.length === 1, 'undo / redo');
-  assert(/Redone/.test(text('drawStatus')), 'status says: ' + text('drawStatus'));
+  assert([...document.querySelectorAll('#toast .toast')].some(x => /Redone/.test(x.textContent)), 'a message says Redone');
   selectDrawCat('gross');
   await wait(300);
-  return `${chips.length} chips · ${historySize().undo} undo steps`;
+  return `${opts.length} entries in the menu · ${historySize().undo} undo steps`;
+});
+
+await test('objects without a category: first card of the Layers panel, counted nowhere, exported nowhere, then classified', async () => {
+  const frame = siteFrame(), before = computeArea(frame).buildableArea;
+  const { Polygon } = getSdk();
+  const blob = new Polygon({ rings: [[[-50, -50], [-50, 50], [50, 50], [50, -50], [-50, -50]]], spatialReference: f.sr });
+  change('site', q => { q.features.push({ id: 'u1', name: 'Object 1', category: 'unclassified', geometry: toGeoJSON(f.toSr(blob, SpatialReference.WGS84)), attrs: {}, source: 'drawn', sourceCategory: '' }); });
+  await wait(400);
+  const first = document.querySelector('#areaCats .cat');
+  assert(first && first.dataset.cat === 'unclassified' && first.classList.contains('pending') && /1/.test(first.querySelector('.cnt').textContent), 'the Unclassified card comes first with its count');
+  assert(pendingCount() === 1 && Math.abs(computeArea(frame).buildableArea - before) < 0.01, 'the buildable area does not move');
+  assert(/1 object has no category/.test(text('areaSummary')), 'the ledger says so: ' + text('areaSummary'));
+  assert(!buildGeoJSON().features.some(x => x.properties.category === 'unclassified'), 'not in the GeoJSON / KMZ');
+  const m = exportModel();
+  assert(!m.error && !m.items.some(i => i.fid === 'u1'), 'not in the files for Engineering');
+  // its menu offers «Give a category…» and the categories that take a polygon; picking one classifies it
+  const mv = first.querySelector('select.mv');
+  assert(mv.value === 'unclassified' && [...mv.options].some(o => o.value === 'exclusion') && ![...mv.options].some(o => o.value === 'connection'), 'menu of the row');
+  mv.value = 'exclusion'; mv.dispatchEvent(new Event('change', { bubbles: true }));
+  await wait(400);
+  assert(pendingCount() === 0 && store.project.features.find(x => x.id === 'u1').category === 'exclusion', 'classified');
+  assert(document.querySelector('#areaCats .cat').dataset.cat !== 'unclassified' && computeArea(frame).buildableArea < before - 9000, 'card gone, the exclusion cuts');
+  change('site', q => { q.features = q.features.filter(x => x.id !== 'u1'); });
+  await wait(300);
+  return 'counted and exported only once classified';
 });
 
 await test('layout: structure chosen from the toolkit presets, custom notation on request', async () => {
@@ -244,11 +294,20 @@ await test('terrain: DTM loaded, slope map drawn, 3V cut (10 %), tracker kept (1
   assert(slopes && slopes.graphics.length === 1, `outline of the cut: ${slopes && slopes.graphics.length}`);
   assert(img && img.source && img.source.elements.length === 1 && img.source.elements.getItemAt(0).image.width > 0, 'terrain image on the map');
   assert(/Inside the site: mean slope 12\.0 %/.test(text('terStats')) && /100 % of the site/.test(text('terStats')), 'figures inside the site: ' + text('terStats'));
-  document.querySelector('#terView [data-view="z"]').click();
+  const vs = document.getElementById('terViewS'), vz = document.getElementById('terViewZ');
+  assert(!vs.disabled && !vz.disabled && document.getElementById('terClear').disabled === false, 'the view switches and Remove are on with a terrain');
+  vz.click();
   await wait(300);
-  assert(store.project.terrain.view === 'z' && /\d+ – \d+ m/.test(text('terLegend')), 'elevation view with its legend: ' + text('terLegend'));
-  document.querySelector('#terView [data-view="s"]').click();
+  assert(store.project.terrain.view === 'z' && vz.getAttribute('aria-pressed') === 'true' && /\d+ – \d+ m/.test(text('terLegend')), 'elevation view with its legend: ' + text('terLegend'));
+  vs.click();
   await wait(300);
+  assert(store.project.terrain.view === 's' && vs.getAttribute('aria-pressed') === 'true' && vz.getAttribute('aria-pressed') === 'false', 'slope view');
+  vs.click();
+  await wait(300);
+  assert(!store.project.terrain.showSlope && vs.getAttribute('aria-pressed') === 'false', 'a second click hides the image');
+  vs.click();
+  await wait(300);
+  assert(store.project.terrain.showSlope && store.project.terrain.view === 's', 'and a third shows it again');
   assert(/Fixed 3V/.test(text('terRule')) && /Ground-mounted, fixed/.test(text('terRule')), 'rule shown with its technology: ' + text('terRule'));
   assert(text('terPill') === 'loaded' && document.getElementById('terTech').value === 'ground-fixed' && /again/.test(text('terEsri')), 'panel: loaded, technology mirrored, «analyse again»');
   const ts = stepState('terrain');
@@ -524,6 +583,28 @@ await test('infrastructure panel: lots numbered, two of them joined in one fence
   assert(/fence A/.test(text('infLots')) && (text('infLots').match(/fence A/g) || []).length === 2, text('infLots'));
   const labels = view.map.layers.find(l => l.title === 'Infrastructure').graphics.filter(g => g.symbol?.type === 'text').map(g => g.symbol.text);
   assert(labels.includes('1 · A') && labels.includes('2 · A') && labels.includes('3'), 'labels on the map: ' + labels.join(' '));
+  // the tools of the ribbon: a station tool is pressed while it places, the road kinds are a radio pair with their widths
+  const cc = document.getElementById('infCC');
+  cc.click();
+  assert(cc.getAttribute('aria-pressed') === 'true' && document.getElementById('infCT').getAttribute('aria-pressed') === 'false', 'the station tool is pressed');
+  cc.click();
+  assert(cc.getAttribute('aria-pressed') === 'false', 'a second click releases it');
+  const kinds = [...document.querySelectorAll('#infRoadKind [data-roadkind]')];
+  assert(kinds.length === 2 && kinds[0].getAttribute('aria-checked') === 'true' && /Heavy · \d/.test(kinds[0].textContent), 'road kinds: ' + kinds.map(k => k.textContent).join(' / '));
+  kinds[1].click();
+  await wait(400);
+  assert(document.querySelector('#infRoadKind [data-roadkind="light"]').getAttribute('aria-checked') === 'true', 'light chosen');
+  document.querySelector('#infRoadKind [data-roadkind="heavy"]').click();
+  await wait(300);
+  // a tool of tabs 1-3 asks for the Properties panel (main.js reopens it when collapsed)
+  initRibbon();
+  let asked = 0;
+  const ask = () => { asked++; };
+  document.addEventListener('pvp:properties', ask);
+  document.getElementById('modAddBtn').click();
+  document.getElementById('modAddBtn').click();   // and closes the module form again
+  document.removeEventListener('pvp:properties', ask);
+  assert(asked === 2 && document.getElementById('modForm').hidden, 'ribbon tools ask for the Properties panel: ' + asked);
   change('site', q => { q.features = q.features.filter(x => x.category !== 'linear'); q.infra.fenceGroups = []; });
   await wait(500);
   return labels.join(' | ');

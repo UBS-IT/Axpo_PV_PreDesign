@@ -134,8 +134,10 @@ function initPanels() {
   };
   if (close) close.onclick = () => { setRight(false); open?.focus(); };
   if (open) open.onclick = () => { setRight(true); close?.focus(); };
-  // a step opened from a link or a gate shows the Properties panel again
+  // a step opened from a link or a gate shows the Properties panel again, and so does a ribbon tool whose outcome is
+  // written there (ui/ribbon.js)
   onStep(() => { if (panel && panel.hidden) setRight(true); });
+  document.addEventListener('pvp:properties', () => { if (panel && panel.hidden) setRight(true); });
 }
 
 // «Saved 14:32» in the top bar, from the autosave of state.js

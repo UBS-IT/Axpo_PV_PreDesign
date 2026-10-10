@@ -30,7 +30,9 @@ lengths while drawing are two boxes under the drawing block of 1 · Site.
 The shell is the **ribbon workspace** of the design system (`docs/plan-ribbon-refactor.md`): a top bar (project
 name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **four tabs** in the order of
 the dependencies — Site area, Terrain Analysis, Layout & Infrastructure, Report & exports — the **ribbon** of the
-active tab (its tools: Import; Analyse the slopes, Own model; Quick predesign, Optimise, the stations; the exports),
+active tab (its tools, since phase 2: Import and the drawing menu and tools; Analyse the slopes, Own model, Remove
+and the two views of the terrain image; Quick predesign, Optimise, roads, stations and modules; the working files, then
+the PDF report on the right),
 and the map between two docked panels that collapse to a narrow strip at their edge (the strip keeps the name and,
 for Layers, the count of the objects): **Layers** on the left (the objects by category) and **Properties** on the
 right (the parameters, figures and notices of the steps of the active tab; the third tab stacks Layout and
@@ -92,13 +94,19 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Geoportale's *Pendenze da DTM* come with their grid and limit: see 2 · Terrain. The Geoportale's automatic
   drawings (the buffer strips that follow an object, the automatic net area) are left out, since this app computes
   them from the objects with the same rules; its boundary setback (*rientro dal confine*) is taken when none is set.
-- **Drawing** — the pattern of the Geoportale's *Disegna*, in two numbered steps: **① What you draw** (the category
-  as a row of coloured chips, then the type and buffer / height / width given to the next drawings) and **② With
-  which tool** (Point, Line, Area, Rectangle cards: a card is disabled with the reason when the category does not take
-  that geometry). The armed tool stays armed after each drawing (a second click or Esc stops it); a status line says
-  what is going on and a *Last drawing* box where the object went. **↶ ↷ undo / redo** (Ctrl+Z / Ctrl+Y, 40 steps)
-  cover every change of the objects; removing one object or all of a category shows a message with *Undo* instead
-  of a confirmation. Each row has rename (✎), reshape (⬠) and remove (×); *Draw here* on a category card picks it.
+- **Drawing** — the pattern of the Geoportale's *Disegna*, in two steps, all in the ribbon group *Site definition*:
+  the **Category** menu (the categories with their colour dots; *Unclassified* first and chosen by default) with the
+  **Type** menu under it (off until a category with types is chosen), the drawing tools **Area, Rectangle, Circle,
+  Line, Point** (a tool is off, with the reason as its tooltip, when the category does not take that geometry; a tick
+  marks the armed one) with a **Freehand** box (Area and Line follow the pointer, thinned to 0.5 m), **Undo / Redo**
+  (Ctrl+Z / Ctrl+Y, 40 steps) for every change of the objects, then the **Buffer** given to the next drawings (and
+  their Height for obstacles, Width for the strips) and the two drawing-support boxes. The boundary setback is the
+  *Constraints* group next to it. The Site panel on the right only shows the figures. The armed tool stays armed after
+  each drawing (a second click or Esc stops it); the map banner and the status bar say what is going on. Objects drawn as *Unclassified* wait in the first group of the Layers panel, dashed on the map, counted
+  nowhere and exported nowhere, until each one gets its category (the menu of its row, or a drag onto a category);
+  the area ledger and the Report tab say how many are waiting. Removing one object or all of a category shows a
+  message with *Undo* instead of a confirmation. Each row has rename, reshape and remove; *Draw here* on a category
+  card picks it in the menu.
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel
@@ -360,7 +368,7 @@ app/                  the web app (index.html, css/, js/)
   css/                tokens.css (generated), kit.css (a copy of the design system's kit), app.css (what the kit lacks), shell.css (the layout)
   catalog/            toolkit.json, countries.json (outlines), regions.json (German zone-33 Länder)
   js/terrain/         step 2: grid sampling (Esri, GeoTIFF), slopes and masks (pure), storage
-  js/areas.js         step 1: categories, import, drawing in two steps, undo / redo, net area
+  js/areas.js         step 1: categories, import, drawing in two steps (menu and tools in the ribbon), Unclassified, undo / redo, net area
   js/categories.js    categories and automatic sorting (pure)
   js/crs.js           national systems, country detection, proposals and alerts (pure)
   js/field.js         step 3: parametric layout and results
