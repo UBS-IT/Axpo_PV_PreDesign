@@ -12,6 +12,7 @@ import { loadTerrain } from './terrain/terrain.js';
 import { suggestedRoad } from './infra.js';
 import { showStep } from './ui/rail.js';
 import { toast } from './ui/toast.js';
+import { whenClosed } from './ui/dialog.js';
 
 const TECHS = ['ground-fixed', 'agri-tracker', 'agri-fixed'];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -116,9 +117,14 @@ export function openQuick() {
   refresh();
   return new Promise(resolve => {
     let run = null;
-    form.querySelector('[data-cancel]').onclick = () => dlg.close();
-    form.onsubmit = () => { run = { technology: form.tech.value, pitch: Number(form.pitch.value) || null, terrain: !!form.terrain?.checked }; };
-    dlg.addEventListener('close', async () => { dlg.remove(); resolve(run ? await runQuick(run) : null); });
+    const finish = whenClosed(dlg, async () => { dlg.remove(); resolve(run ? await runQuick(run) : null); });
+    form.querySelector('[data-cancel]').onclick = () => { dlg.close(); finish(); };
+    form.onsubmit = e => {
+      e.preventDefault();   // the browser's own validation has passed by now (the pitch is required)
+      run = { technology: form.tech.value, pitch: Number(form.pitch.value) || null, terrain: !!form.terrain?.checked };
+      dlg.close();
+      finish();
+    };
     dlg.showModal();
   });
 }
