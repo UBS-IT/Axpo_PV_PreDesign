@@ -10,7 +10,7 @@ import { applyStandard, toolkitMinPitch, optimise, generateNow, last } from './f
 import { moduleById, moduleLabel, defaultModuleId } from './modules.js';
 import { loadTerrain } from './terrain/terrain.js';
 import { suggestedRoad } from './infra.js';
-import { showStep } from './ui/rail.js';
+import { showStep } from './ui/tabs.js';
 import { toast } from './ui/toast.js';
 import { whenClosed } from './ui/dialog.js';
 import { icon } from './ui/icons.js';
@@ -131,7 +131,7 @@ export function openQuick() {
 }
 
 export function initQuick() {
-  for (const id of ['btnQuick', 'areasQuick', 'fQuick']) {
+  for (const id of ['btnQuick', 'areasQuick']) {
     const b = document.getElementById(id);
     if (b) b.onclick = () => openQuick();
   }

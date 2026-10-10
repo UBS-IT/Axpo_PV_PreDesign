@@ -12,8 +12,8 @@ import { readAnyFile } from './io/importers.js';
 import { suggestCrs, candidatesForProjected, crsLabel } from './crs.js';
 import { chooseCrs } from './ui/crsdialog.js';
 import { toast } from './ui/toast.js';
-import { stepProvider, refreshRail, showStep } from './ui/rail.js';
-import { updateCollection, showInCollection } from './ui/collection.js';
+import { stepProvider, refreshRail, showStep } from './ui/tabs.js';
+import { updateCollection, showInCollection } from './ui/layers.js';
 import { onDrawPrefs } from './ui/maptools.js';
 import { icon } from './ui/icons.js';
 

@@ -8,50 +8,138 @@
 <script src="https://js.arcgis.com/4.34/"></script>
 <link rel="stylesheet" href="./css/tokens.css">
 <link rel="stylesheet" href="./css/app.css">
+<link rel="stylesheet" href="./css/shell.css">
 </head>
 <body>
-<header id="top">
-  <div class="brand">PV Predesign<small data-i18n="app.subtitle"></small></div>
+<div id="narrow" class="narrow" data-i18n="narrow.msg"></div>
+<div id="app" class="app">
+<header id="top" class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg></span>PV Predesign<small data-i18n="app.subtitle"></small></div>
+  <span class="divider"></span>
   <input id="projName" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName">
-  <div class="actions">
-    <div class="grp">
-      <button class="tb" id="btnNew" data-icon="file-plus" data-i18n="top.new" data-i18n-title="top.newTitle"></button>
-      <button class="tb" id="btnOpen" data-icon="folder" data-i18n="top.open" data-i18n-title="top.openTitle"></button>
-      <button class="tb" id="btnSave" data-icon="save" data-i18n="top.save" data-i18n-title="top.saveTitle"></button>
-      <button class="tb" id="btnSaveAs" data-icon="export" data-i18n="top.saveAs" data-i18n-title="top.saveAsTitle"></button>
-    </div>
-    <button class="tb" id="btnImport" data-icon="import" data-i18n="top.import" data-i18n-title="top.importTitle"></button>
-    <button class="tb quick" id="btnQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button>
-    <button class="tb crs" id="crsBadge" data-i18n-title="top.crsTitle"></button>
-    <button class="tb" id="btnTheme" data-i18n-title="top.theme" data-i18n-aria="top.theme"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg></button>
+  <span class="divider"></span>
+  <div class="grp" role="group" data-i18n-aria="top.fileGroup">
+    <button type="button" class="tb icon-only" id="btnNew" data-icon="file-plus" data-i18n-title="top.newTitle" data-i18n-aria="top.new"></button>
+    <button type="button" class="tb icon-only" id="btnOpen" data-icon="folder" data-i18n-title="top.openTitle" data-i18n-aria="top.open"></button>
+    <button type="button" class="tb icon-only" id="btnSave" data-icon="save" data-i18n-title="top.saveTitle" data-i18n-aria="top.save"></button>
+    <button type="button" class="tb icon-only" id="btnSaveAs" data-icon="export" data-i18n-title="top.saveAsTitle" data-i18n-aria="top.saveAs"></button>
   </div>
+  <span class="spacer"></span>
+  <div class="save-state" role="status" id="saveState"><span class="dot"></span><span id="saveStateText"></span></div>
+  <span class="divider"></span>
+  <button type="button" class="tb icon-only" id="btnTheme" data-i18n-title="top.theme" data-i18n-aria="top.theme"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg></button>
 </header>
 
-<div id="body">
-  <nav id="rail" data-i18n-aria="rail.label">
-    <button type="button" data-step="areas"><span class="n">1</span><span class="badge" id="railAreas"></span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 5-2.5 11L6 20z"/><path d="M10 10l4 1-1 4-3.5-1z"/></svg>
-      <span class="lb" data-i18n="step.areas"></span><span class="fig"></span><span class="sr"></span></button>
-    <button type="button" data-step="terrain"><span class="n">2</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19l6.5-10 4 6 2.5-3.5L22 19z"/><path d="M6 13.5c2-.8 3.5-.8 5 0"/></svg>
-      <span class="lb" data-i18n="step.terrain"></span><span class="fig"></span><span class="sr"></span></button>
-    <button type="button" data-step="fields"><span class="n">3</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14l-2 4H3z"/><path d="M5 10h14l-2 4H3z"/><path d="M5 16h14l-2 4H3z"/></svg>
-      <span class="lb" data-i18n="step.fields"></span><span class="fig"></span><span class="sr"></span></button>
-    <button type="button" data-step="infra"><span class="n">4</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21L9.5 3M19 21L14.5 3"/><path d="M12 6v2M12 11v2.5M12 17v3"/></svg>
-      <span class="lb" data-i18n="step.infra.short"></span><span class="fig"></span><span class="sr"></span></button>
-    <button type="button" data-step="output"><span class="n">5</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M12 10v7M9 14l3 3 3-3"/></svg>
-      <span class="lb" data-i18n="step.output"></span><span class="fig"></span><span class="sr"></span></button>
-  </nav>
+<!-- the workflow: four tabs (ui/tabs.js builds them) and the ribbon of the active tab, whose tools keep their ids -->
+<nav id="tabs" class="tabs" role="tablist" data-i18n-aria="tabs.label"></nav>
+<section id="ribbon" class="ribbon" data-i18n-aria="ribbon.label">
+  <div class="rgroup" data-tab="areas" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="areasImport" data-icon="import" data-i18n="ribbon.import" data-i18n-title="areas.import"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.import"></div>
+  </div>
+  <div class="rgroup" data-tab="terrain" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="terEsri" data-icon="terrain" data-i18n="ribbon.analyse" data-i18n-title="terrain.esriBtn"></button>
+      <button type="button" class="tool large" id="terDtm" data-icon="import" data-i18n="ribbon.ownModel" data-i18n-title="terrain.dtmBtn"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.elevation"></div>
+  </div>
+  <div class="rgroup" data-tab="fields" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="btnQuick" data-icon="bolt" data-i18n="ribbon.quick" data-i18n-title="quick.btnTitle"></button>
+      <button type="button" class="tool large" id="fOptimise" data-icon="refresh" data-i18n="ribbon.optimise" data-i18n-title="field.optimise"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.layout"></div>
+  </div>
+  <div class="rgroup" data-tab="fields" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large" id="infCC" data-icon="station" data-i18n="infra.addCC" data-i18n-title="infra.addCC"></button>
+      <button type="button" class="tool large" id="infCU" data-icon="station" data-i18n="infra.addCU" data-i18n-title="infra.addCU"></button>
+      <button type="button" class="tool large" id="infCT" data-icon="station" data-i18n="infra.addCT" data-i18n-title="infra.addCT"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.stations"></div>
+  </div>
+  <div class="rgroup" data-tab="output" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="outReport" data-icon="report" data-i18n="ribbon.pdf" data-i18n-title="out.reportBtn"></button>
+      <button type="button" class="tool large" id="outKml" data-icon="globe" data-i18n="ribbon.kmz" data-i18n-title="out.kml"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.firstLook"></div>
+  </div>
+  <div class="rgroup" data-tab="output" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large" id="outShp" data-icon="vector" data-i18n="ribbon.shp" data-i18n-title="out.shp"></button>
+      <button type="button" class="tool large" id="outGpkg" data-icon="database" data-i18n="ribbon.gpkg" data-i18n-title="out.gpkg"></button>
+      <button type="button" class="tool large" id="outDxf" data-icon="pen" data-i18n="ribbon.dxf" data-i18n-title="out.dxf"></button>
+      <button type="button" class="tool large" id="outBoq" data-icon="table" data-i18n="ribbon.boq" data-i18n-title="out.boq"></button>
+      <button type="button" class="tool large" id="outGeojson" data-icon="braces" data-i18n="ribbon.geojson" data-i18n-title="out.geojson"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.engineering"></div>
+  </div>
+  <div class="ribbon-context" id="ribbonCtx"></div>
+</section>
 
-  <aside id="side">
+<main id="workspace" class="workspace" data-i18n-aria="workspace.label">
+  <div id="mapStack">
+    <div id="view"><div id="banner" hidden></div></div>
+    <div id="view3d"></div>
+    <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
+    <!-- the scale bar, bottom centre (the SDK has no such corner: its own container) -->
+    <div id="scalebar"></div>
+    <!-- Tools: drawing support and measures, bottom left (2D only) -->
+    <div id="tools">
+      <div id="toolsMenu" class="toolsmenu" role="group" data-i18n-aria="tools.title" hidden>
+        <div class="tm-h" data-i18n="tools.support"></div>
+        <button type="button" data-pref="snap" aria-pressed="true"><span data-i18n="tools.snap"></span><span class="st"></span></button>
+        <button type="button" data-pref="typed" aria-pressed="true"><span data-i18n="tools.typed"></span><span class="st"></span></button>
+        <button type="button" data-pref="labels" aria-pressed="true"><span data-i18n="tools.labels"></span><span class="st"></span></button>
+        <div class="tm-h" data-i18n="tools.measure"></div>
+        <button type="button" data-measure="distance" aria-pressed="false"><span data-i18n="tools.distance"></span></button>
+        <button type="button" data-measure="area" aria-pressed="false"><span data-i18n="tools.area"></span></button>
+        <div class="tm-h" data-i18n="tools.dims"></div>
+        <button type="button" data-dim="draw" aria-pressed="false"><span data-i18n="tools.dimDraw"></span></button>
+        <button type="button" data-dim="show" aria-pressed="true"><span data-i18n="tools.dimShow"></span><span class="st"></span></button>
+        <button type="button" data-dim="clear"><span data-i18n="tools.dimClear"></span></button>
+      </div>
+      <button type="button" id="toolsFab" class="fab" aria-expanded="false" aria-controls="toolsMenu" data-i18n-title="tools.title" data-i18n-aria="tools.title">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L13 18a2.1 2.1 0 0 1-3-3z"/><path d="M4 20l5-5"/><path d="M19.5 4.5l-3 3"/></svg>
+      </button>
+    </div>
+    <aside id="measureCard" class="mapcard measure" hidden>
+      <div class="mapcard-h"><b id="measureTitle"></b><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
+      <div class="mapcard-b"><div id="measureBox"></div><p class="hint" data-i18n="tools.measureHint"></p></div>
+    </aside>
+    <div class="mapchips" role="group" data-i18n-aria="map.mode">
+      <button type="button" data-mode="2d" aria-pressed="true">2D</button>
+      <button type="button" data-mode="3d" aria-pressed="false">3D</button>
+    </div>
+    <aside id="d3Card" class="mapcard">
+      <div class="mapcard-h"><b data-i18n="d3.title"></b><button type="button" class="x" id="d3CardMin" data-i18n-title="d3.minimise" data-i18n-aria="d3.minimise"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg></button></div>
+      <div class="mapcard-b"><div id="d3Panel"></div></div>
+    </aside>
+  </div>
+
+
+  <!-- Layers: the objects of the site by category, floating over the map on the left (ui/layers.js) -->
+  <aside id="leftPanel" class="panel left" aria-labelledby="collTitle">
+    <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
+      <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
+    <div class="panel-b" id="collPanel"><div id="areaCats"></div></div>
+  </aside>
+  <button type="button" class="reopen left" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><span data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span></button>
+
+  <!-- Properties: the sections of the steps of the active tab, floating over the map on the right -->
+  <aside id="rightPanel" class="panel right" aria-labelledby="rpTitle">
+    <header class="panel-h"><div class="ttl"><b id="rpTitle"></b><small id="rpSub"></small></div>
+      <button type="button" class="ibtn" id="rpClose" data-icon="collapse-right" data-i18n-title="panel.close" data-i18n-aria="panel.close"></button></header>
+    <div class="panel-b" id="side">
+
 
     <!-- 1 · site -->
     <section class="step" data-step="areas" hidden>
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
-      <div class="btns"><button type="button" class="btn primary" id="areasImport" data-icon="import" data-i18n="areas.import"></button></div>
       <p class="hint" data-i18n="areas.importHint"></p>
       <details class="gloss"><summary data-i18n="areas.gloss2" data-icon="info"></summary>
         <ul><li data-i18n="areas.importMore1"></li><li data-i18n="areas.importMore2"></li><li data-i18n="areas.importMore3"></li></ul>
@@ -99,10 +187,6 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.model"></b><span class="pill" id="terPill"></span></div>
         <div id="terInfo"></div>
-        <div class="btns col">
-          <button type="button" class="btn primary" id="terEsri" data-i18n="terrain.esriBtn"></button>
-          <button type="button" class="btn" id="terDtm" data-icon="import" data-i18n="terrain.dtmBtn"></button>
-        </div>
         <div id="terStatus" class="status" role="status" hidden></div>
         <p class="hint" data-i18n="terrain.esriHint"></p>
         <details class="adv">
@@ -192,7 +276,6 @@
           <label class="l" for="fPitch" data-i18n="field.pitch"></label>
           <input id="fPitch" type="number" min="0.5" step="0.01">
           <div class="hint" id="fPitchHint"></div>
-          <div class="btns"><button type="button" class="btn" id="fOptimise" data-icon="refresh" data-i18n="field.optimise"></button></div>
           <div class="hint" id="fOptHint"></div>
           <details class="adv" id="fAdv">
             <summary data-i18n="field.adv" data-icon="info"></summary>
@@ -218,9 +301,6 @@
           </details>
         </div>
       </details>
-      <!-- the quick predesign as an alternative to the parameters above, not above them -->
-      <p class="suggest"><span data-i18n="quick.fieldsHint"></span>
-        <button type="button" class="linkbtn" id="fQuick" data-icon="bolt" data-i18n="quick.btn" data-i18n-title="quick.btnTitle"></button></p>
 
       <details class="sec" id="secResults" open>
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-chart"/></svg></span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
@@ -309,11 +389,6 @@
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.stations"></b></div>
-        <div class="btns">
-          <button type="button" class="btn" id="infCC" data-icon="plus" data-i18n="infra.addCC"></button>
-          <button type="button" class="btn" id="infCU" data-icon="plus" data-i18n="infra.addCU"></button>
-          <button type="button" class="btn" id="infCT" data-icon="plus" data-i18n="infra.addCT"></button>
-        </div>
         <div class="btns"><button type="button" class="linkbtn" id="infAtAccess" data-i18n="infra.atAccess"></button></div>
         <div class="list" id="infStations" data-i18n-empty="infra.stationsNone"></div>
         <p class="hint" id="infStationsHint"></p>
@@ -326,10 +401,6 @@
       <!-- the outputs in the order of use: a first look (PDF, KMZ), then the files for Engineering and GIS -->
       <div class="card">
         <div class="cardhd"><b data-i18n="out.lookTitle"></b></div>
-        <div class="btns col">
-          <button type="button" class="btn primary" id="outReport" data-icon="report" data-i18n="out.reportBtn"></button>
-          <button type="button" class="btn" id="outKml" data-icon="globe" data-i18n="out.kml"></button>
-        </div>
         <p class="hint" data-i18n="out.lookHint"></p>
         <details class="gloss"><summary data-i18n="out.gloss" data-icon="info"></summary>
           <ul><li data-i18n="out.reportHint"></li><li data-i18n="out.kmlMore"></li></ul>
@@ -340,13 +411,6 @@
         <label class="l" for="outCrs" data-i18n="out.crsTitle"></label>
         <select id="outCrs" data-i18n-aria="out.crsTitle"></select>
         <div id="outCrsAlerts" class="warns"></div>
-        <div class="btns col">
-          <button type="button" class="btn" id="outShp" data-icon="vector" data-i18n="out.shp"></button>
-          <button type="button" class="btn" id="outGpkg" data-icon="database" data-i18n="out.gpkg"></button>
-          <button type="button" class="btn" id="outDxf" data-icon="pen" data-i18n="out.dxf"></button>
-          <button type="button" class="btn" id="outBoq" data-icon="table" data-i18n="out.boq"></button>
-          <button type="button" class="btn" id="outGeojson" data-icon="braces" data-i18n="out.geojson"></button>
-        </div>
         <p class="hint" data-i18n="out.engShort"></p>
         <details class="gloss"><summary data-i18n="out.gloss" data-icon="info"></summary>
           <ul><li data-i18n="out.crsInfo"></li><li data-i18n="out.engHint"></li><li data-i18n="out.exportHint"></li></ul>
@@ -355,57 +419,13 @@
       <p class="hint" data-i18n="elec.hint"></p>
     </section>
 
-  </aside>
-  <div id="mapStack">
-    <div id="view"><div id="banner" hidden></div></div>
-    <div id="view3d"></div>
-    <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
-    <!-- the scale bar, bottom centre (the SDK has no such corner: its own container) -->
-    <div id="scalebar"></div>
-    <!-- Tools: drawing support and measures, bottom left (2D only) -->
-    <div id="tools">
-      <div id="toolsMenu" class="toolsmenu" role="group" data-i18n-aria="tools.title" hidden>
-        <div class="tm-h" data-i18n="tools.support"></div>
-        <button type="button" data-pref="snap" aria-pressed="true"><span data-i18n="tools.snap"></span><span class="st"></span></button>
-        <button type="button" data-pref="typed" aria-pressed="true"><span data-i18n="tools.typed"></span><span class="st"></span></button>
-        <button type="button" data-pref="labels" aria-pressed="true"><span data-i18n="tools.labels"></span><span class="st"></span></button>
-        <div class="tm-h" data-i18n="tools.measure"></div>
-        <button type="button" data-measure="distance" aria-pressed="false"><span data-i18n="tools.distance"></span></button>
-        <button type="button" data-measure="area" aria-pressed="false"><span data-i18n="tools.area"></span></button>
-        <div class="tm-h" data-i18n="tools.dims"></div>
-        <button type="button" data-dim="draw" aria-pressed="false"><span data-i18n="tools.dimDraw"></span></button>
-        <button type="button" data-dim="show" aria-pressed="true"><span data-i18n="tools.dimShow"></span><span class="st"></span></button>
-        <button type="button" data-dim="clear"><span data-i18n="tools.dimClear"></span></button>
-      </div>
-      <button type="button" id="toolsFab" class="fab" aria-expanded="false" aria-controls="toolsMenu" data-i18n-title="tools.title" data-i18n-aria="tools.title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L13 18a2.1 2.1 0 0 1-3-3z"/><path d="M4 20l5-5"/><path d="M19.5 4.5l-3 3"/></svg>
-      </button>
-    </div>
-    <aside id="measureCard" class="mapcard measure" hidden>
-      <div class="mapcard-h"><b id="measureTitle"></b><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
-      <div class="mapcard-b"><div id="measureBox"></div><p class="hint" data-i18n="tools.measureHint"></p></div>
-    </aside>
-    <div class="mapchips" role="group" data-i18n-aria="map.mode">
-      <button type="button" data-mode="2d" aria-pressed="true">2D</button>
-      <button type="button" data-mode="3d" aria-pressed="false">3D</button>
-    </div>
-    <aside id="d3Card" class="mapcard">
-      <div class="mapcard-h"><b data-i18n="d3.title"></b><button type="button" class="x" id="d3CardMin" data-i18n-title="d3.minimise" data-i18n-aria="d3.minimise"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg></button></div>
-      <div class="mapcard-b"><div id="d3Panel"></div></div>
-    </aside>
-  </div>
 
-  <!-- the Collection: the objects of the site by category, in a drawer on the right (closed by default) -->
-  <aside id="coll" aria-labelledby="collTitle">
-    <button type="button" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle">
-      <span class="lb" data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span>
-    </button>
-    <div id="collPanel">
-      <div class="coll-h"><div><b id="collTitle" data-i18n="coll.title"></b><small data-i18n="coll.sub"></small></div>
-        <button type="button" class="x" id="collClose" data-i18n-title="coll.close" data-i18n-aria="coll.close"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
-      <div class="coll-b"><div id="areaCats"></div></div>
     </div>
   </aside>
+  <button type="button" class="reopen right" id="rpOpen" data-i18n-title="panel.open" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg><span data-i18n="panel.properties"></span></button>
+</main>
+
+<footer id="statusbar" class="statusbar"><span id="sbMode" data-i18n="sb.select"></span><span class="spacer"></span><span id="sbSave" data-i18n="sb.autosave"></span></footer>
 </div>
 
 <div id="toast" aria-live="polite"></div>

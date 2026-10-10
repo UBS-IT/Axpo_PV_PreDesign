@@ -15,49 +15,11 @@ html, body { margin: 0; height: 100%; }
 body { font: 13px/1.45 var(--font); background: var(--bg); color: var(--txt); display: flex; flex-direction: column; }
 button, input, select { font: inherit; color: inherit; }
 
-/* top bar */
-#top { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
-#top::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--axpo-gradient); }
-#top .brand { font-weight: 700; font-size: 15px; white-space: nowrap; }
-#top .brand small { font-weight: 400; color: var(--mut); margin-left: 6px; }
-#projName { flex: 1; min-width: 80px; max-width: 360px; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 4px 8px; font-weight: 600; }
-#projName:hover, #projName:focus { border-color: var(--line); background: var(--field); }
 /* keyboard focus visible on every control (WCAG 2.4.7) */
 button:focus-visible, summary:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-#top .actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.tb { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
-.tb:hover { background: var(--hover); }
-.grp { display: flex; }
-.grp .tb { border-radius: 0; margin-left: -1px; }
-.grp .tb:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
-.grp .tb:last-child { border-radius: 0 6px 6px 0; }
-.tb.crs { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--mut); }
-.tb.crs.alert { border-color: var(--warn); color: var(--txt); }
 
-/* layout: rail · side panel · map */
-#body { flex: 1; display: flex; min-height: 0; }
-#rail { flex: none; width: 92px; display: flex; flex-direction: column; gap: 3px; padding: 8px 6px; background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; }
-#rail button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 2px 7px; border: 0; border-radius: 8px; background: none; color: var(--mut); cursor: pointer; font-size: 11px; line-height: 1.15; }
-#rail button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-#rail button:hover { background: var(--hover); color: var(--txt); }
-#rail button.on { color: var(--link); background: color-mix(in srgb, var(--accent) 13%, transparent); font-weight: 600; }
-#rail button.on::before { content: ''; position: absolute; left: -6px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--axpo-gradient); }
-#rail .n { position: absolute; top: 4px; left: 5px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; display: grid; place-items: center; font-size: 9px; font-weight: 700; border: 1px solid currentColor; opacity: .8; }
-#rail button[data-state="done"] .n { background: var(--ok); border-color: var(--ok); color: #fff; opacity: 1; }
-#rail button[data-state="done"] .n::after { content: ' ✓'; }
-#rail button[data-state="locked"] { opacity: .55; }
-#rail button[data-state="locked"] .n { border-style: dashed; }
-#rail .fig { font-size: 9.5px; font-weight: 400; color: var(--mut); white-space: nowrap; max-width: 84px; overflow: hidden; text-overflow: ellipsis; min-height: 11px; }
-#rail .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-#rail .badge { position: absolute; top: 3px; right: 4px; min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--fill); color: var(--on-fill); font-size: 9.5px; line-height: 15px; font-weight: 700; }
-#rail .badge:empty { display: none; }
-#rail .sp { flex: 1; }
-#rail button.later { opacity: .6; }
-#side { width: 372px; flex: none; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
-body.side-off #side { display: none; }
 /* Keep the 2D view measurable when 3D opens; hiding it with display:none
    collapses the renderer while both views still share the same Map. */
-#mapStack { flex: 1; min-width: 0; min-height: 0; position: relative; }
 #view, #view3d { position: absolute; inset: 0; min-width: 0; min-height: 0; }
 /* A view can report ready while its internal root remains at auto height (0).
    The renderer's absolute surface and 100%-height canvas then also collapse. */
@@ -65,57 +27,11 @@ body.side-off #side { display: none; }
 #view3d { display: none; }
 body.in-3d #view { visibility: hidden; pointer-events: none; }
 body.in-3d #view3d { display: block; }
-@media (max-width: 760px) {
-  /* phone: map on top, the steps as a strip, the panel below; the page itself never scrolls */
-  #top { flex-wrap: wrap; gap: 6px 10px; padding: 6px 10px; }
-  #top .brand small { display: none; }
-  #top .actions { margin-left: 0; width: 100%; gap: 4px; }
-  #top .tb { padding: 4px 8px; font-size: 12px; }
-  #top .tb.crs { display: none; }
-  #body { flex-direction: column; }
-  #mapStack { order: 1; flex: none; height: 36vh; }
-  #rail { order: 2; flex: none; width: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--line); padding: 4px 6px; scrollbar-width: none; }
-  #rail::-webkit-scrollbar { display: none; }
-  #rail button { flex: none; min-width: 62px; }
-  #rail button.on::before { left: 10px; right: 10px; top: auto; bottom: -4px; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
-  #rail .sp { display: none; }
-  #side { order: 3; flex: 1; min-height: 0; width: auto; border-right: 0; }
-}
 
-/* the Collection drawer on the right: a tab strip always visible, the panel only when body.coll-open */
-#coll { flex: none; display: flex; flex-direction: row-reverse; min-height: 0; border-left: 1px solid var(--line); background: var(--panel); }
-#collTab { flex: none; width: 34px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; border: 0; background: none; color: var(--mut); cursor: pointer; font: inherit; }
-#collTab:hover { background: var(--hover); color: var(--txt); }
-body.coll-open #collTab { color: var(--link); background: color-mix(in srgb, var(--accent) 13%, transparent); }
-#collTab .lb { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11.5px; font-weight: 600; letter-spacing: .03em; }
-#collTab .tot { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--fill); color: var(--on-fill); font-size: 10px; line-height: 17px; font-weight: 700; }
-#collTab .tot:empty { display: none; }
-#collTab .dots { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-#collTab .dot { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; line-height: 1; color: var(--mut); font-variant-numeric: tabular-nums; }
-#collTab .dot i { display: block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
-#collPanel { display: none; width: 340px; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); }
-body.coll-open #collPanel { display: flex; }
-.coll-h { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid var(--line); }
-.coll-h > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
-.coll-h b { font-size: 13px; }
-.coll-h small { font-size: 11px; color: var(--mut); }
-.coll-h .x { min-width: 24px; min-height: 24px; background: none; border: 0; cursor: pointer; color: var(--mut); font-size: 16px; }
-.coll-b { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; }
-.coll-b #areaCats { margin: 0; }
-.coll-hint a { color: var(--link); text-decoration: none; }
-.coll-hint a:hover { text-decoration: underline; }
 .last .see { display: inline-block; margin-top: 4px; font-size: 11.5px; color: var(--link); text-decoration: none; }
 .last .see:hover { text-decoration: underline; }
 @keyframes coll-flash { from { background: color-mix(in srgb, var(--accent) 28%, transparent); } to { background: transparent; } }
 #areaCats .it.flash { animation: coll-flash 1.6s ease-out; }
-@media (max-width: 760px) {
-  /* narrow screens: the tab is a bar under the rail, the panel a sheet over the bottom of the page */
-  #coll { order: 4; flex-direction: column; border-left: 0; border-top: 1px solid var(--line); }
-  #collTab { width: auto; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 5px 10px; }
-  #collTab .lb { writing-mode: horizontal-tb; transform: none; }
-  #collTab .dots { flex-direction: row; gap: 8px; }
-  body.coll-open #collPanel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; width: auto; max-height: 60vh; border-right: 0; border-top: 1px solid var(--line); border-radius: 12px 12px 0 0; background: var(--panel); box-shadow: 0 -4px 16px rgba(0, 0, 0, .18); }
-}
 
 /* steps */
 .step[hidden] { display: none; }
@@ -308,8 +224,6 @@ kbd { font: 11px/1 var(--font); border: 1px solid var(--line); border-radius: 4p
 .legend .lg i.hatch { background: repeating-linear-gradient(45deg, #be1e3c 0 2px, #f3d2d8 2px 5px); opacity: 1; }
 
 /* quick predesign */
-.tb.quick { background: var(--axpo-gradient); color: #fff; border-color: transparent; font-weight: 600; }
-.tb.quick:hover { filter: brightness(1.08); background: var(--axpo-gradient); }
 dialog.dlg.quick { max-width: 420px; }
 .it.lot { cursor: pointer; }
 .it.moving { background: color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -364,7 +278,6 @@ body.in-3d #scalebar, body.in-3d #tools, body.in-3d #measureCard { display: none
 .mapchips button[aria-pressed="true"] { background: var(--fill); color: var(--on-fill); }
 .mapchips button[aria-disabled="true"] { opacity: .45; }
 /* a narrow map (the drawer open, a small window): the floating widgets of the map make room for each other */
-#mapStack { container-type: inline-size; }
 @container (max-width: 600px) {
   .bm-opacity { width: 104px; padding: 4px 6px; }
   .bm-opacity span { font-size: 10px; white-space: nowrap; }

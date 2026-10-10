@@ -11,13 +11,14 @@ import { initOutput } from './output.js';
 import { initTerrain } from './terrain/terrain.js';
 import { initQuick } from './quick.js';
 import { initInfra } from './infra.js';
-import { initRail, showStep, startStep } from './ui/rail.js';
+import { initTabs, showStep, startStep, onStep } from './ui/tabs.js';
+import { initRibbon } from './ui/ribbon.js';
 import { confirmDialog } from './ui/dialog.js';
 import { saveProject, openProjectPick, openProjectFile, forgetHandle, PROJECT_EXT } from './io/projectfile.js';
 import { toast } from './ui/toast.js';
 import { initBasemap } from './ui/basemap.js';
 import { initView3d } from './view3d/scene.js';
-import { initCollection } from './ui/collection.js';
+import { initCollection } from './ui/layers.js';
 import { initMapTools } from './ui/maptools.js';
 import { initDims } from './dims.js';
 import { loadIcons, icon } from './ui/icons.js';
@@ -28,7 +29,10 @@ async function start() {
   loadIcons();   // the sprite of the design system; the buttons reference it by name before it arrives
   applyI18n();
   initTheme();
-  initRail();
+  initTabs();
+  initRibbon();
+  initPanels();
+  initSaveState();
   let sdk;
   try {
     [sdk] = await Promise.all([loadSdk(), loadCatalog(),
@@ -55,6 +59,8 @@ async function start() {
   initBasemap(view);
   initMapTools(view);
   window.__view = view;   // debug hook
+  mapView = view;
+  document.dispatchEvent(new CustomEvent('pvp:panels'));   // the map controls keep clear of the open panels
   view.map.basemap.load().then(b => Promise.all(b.baseLayers.map(l => l.load())))
     .catch(e => { console.warn('[map] background map not available', e); toast(t('toast.noBasemap'), '', 15000); });
   try { await view.when(); }
@@ -93,8 +99,6 @@ async function start() {
   projIn.onchange = async () => { const f = projIn.files && projIn.files[0]; projIn.value = ''; if (f) await openProjectFile(f); };
   $('btnSave').onclick = () => saveProject(false);
   $('btnSaveAs').onclick = () => saveProject(true);
-  $('btnImport').onclick = () => { showStep('areas'); pickFiles(null); };
-  $('crsBadge').onclick = () => { showStep('output'); $('outCrs').focus(); };
   document.addEventListener('keydown', e => {
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     const k = e.key.toLowerCase();
@@ -115,6 +119,41 @@ async function start() {
 
   showStep(startStep());
   if (store.project.features.length) zoomToFeatures();
+}
+
+// The two floating panels: Properties on the right (collapse / reopen), Layers on the left (ui/layers.js); the map
+// controls of the SDK keep clear of the open panels through the padding of the view's UI.
+let mapView = null;
+function initPanels() {
+  const close = $('rpClose'), open = $('rpOpen'), panel = $('rightPanel');
+  const setRight = on => {
+    document.body.classList.toggle('right-closed', !on);
+    if (panel) panel.hidden = !on;
+    if (open) open.hidden = on;
+    document.dispatchEvent(new CustomEvent('pvp:panels'));
+  };
+  if (close) close.onclick = () => { setRight(false); open?.focus(); };
+  if (open) open.onclick = () => { setRight(true); close?.focus(); };
+  // a step opened from a link or a gate shows the Properties panel again
+  onStep(() => { if (panel && panel.hidden) setRight(true); });
+  document.addEventListener('pvp:panels', () => {
+    if (!mapView || !mapView.ui) return;
+    const left = document.body.classList.contains('left-closed') ? 0 : 248, right = document.body.classList.contains('right-closed') ? 0 : 312;
+    try { mapView.ui.padding = { left, right, top: 0, bottom: 0 }; } catch {}
+  });
+}
+
+// «Saved 14:32» in the top bar, from the autosave of state.js
+function initSaveState() {
+  const el = $('saveStateText'), box = $('saveState');
+  if (!el) return;
+  el.textContent = t('top.unsaved');
+  document.addEventListener('pvp:saved', e => {
+    const d = e.detail instanceof Date ? e.detail : new Date();
+    el.textContent = t('top.saved', { time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+    box?.classList.remove('dirty');
+  });
+  on('*', () => box?.classList.add('dirty'));
 }
 
 // light / dark (follows the system unless chosen), also switches the Esri widget theme

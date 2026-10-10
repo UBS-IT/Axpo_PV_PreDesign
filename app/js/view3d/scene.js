@@ -16,7 +16,7 @@ import { bilinear } from '../terrain/slope.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
 import { toast } from '../ui/toast.js';
-import { toggleCollection, isOpen as isCollectionOpen } from '../ui/collection.js';
+import { toggleCollection, isOpen as isCollectionOpen } from '../ui/layers.js';
 import { exportReport } from '../report.js';
 import { fileName } from '../export/model.js';
 import { heights3d, terrainMesh, axisAzimuth } from './geometry.js';

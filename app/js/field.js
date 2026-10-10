@@ -9,7 +9,7 @@ import { library, moduleById, moduleLabel, modulePower, modulePeriods, periodLab
 import { siteFrame, computeArea, crsState } from './areas.js';
 import { ringsOf } from './geo/localframe.js';
 import { toast } from './ui/toast.js';
-import { stepProvider } from './ui/rail.js';
+import { stepProvider } from './ui/tabs.js';
 
 // Defaults when the technology changes: the group standard of the catalog, else these
 const TECH_FALLBACK = {
