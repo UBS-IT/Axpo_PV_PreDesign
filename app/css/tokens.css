@@ -163,7 +163,6 @@
   --axpo-gradient: linear-gradient(90deg, #3945cf, #0ce6cd);
   --font-sans: 'Open Sans', 'Segoe UI', Arial, sans-serif;
   --font-mono: ui-monospace, Consolas, 'Cascadia Mono', Menlo, monospace;
-  --font: var(--font-sans);   /* the name app.css has always used */
 }
 .text-body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 13px; line-height: 19px; font-weight: 400; }
 .text-strong { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 13px; line-height: 19px; font-weight: 600; }

@@ -122,7 +122,8 @@ Estimate, in sessions of work: 0 = 1 · 1 = 3 · 2 = 2 · 3 = 1 · 4 = 1 · 6 = 
 
 Progress: phase 0 merged (PR 29); phase 1 split in three PRs — 1A the shell (PR 30), 1B the status bar, the docked
 panels and the map controls column in place of the Tools menu (PR 31), 1C the kit `bundle.css` as `app/css/kit.css`
-(PR 32). Next: phase 2, the ribbon tools.
+(PR 32). Phase 2, the ribbon tools with the category menu and Unclassified objects: PR 34. Next: phase 3, the visibility
+switches of the Layers panel.
 
 ## 6. Rollback and safety
 

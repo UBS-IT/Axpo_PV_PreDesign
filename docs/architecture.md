@@ -59,9 +59,10 @@ Three ideas explain most of the design:
 
 ## 2. The steps of the rail and the files behind them
 
-Since the ribbon refactor (phases 1A and 1B, 2026-10-10) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
+Since the ribbon refactor (phases 1A to 2, 2026-10-10) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
 Site area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab
-(`ui/ribbon.js`, whose tools keep the ids of the buttons they replace), the map between two docked panels that
+(`ui/ribbon.js`: the actions of the panels, whose tools keep the ids of the buttons they replace; the drawing menu
+of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–3 reopens a collapsed Properties panel), the map between two docked panels that
 collapse to a strip, Layers on the left (`ui/layers.js`, the objects by category, the Dimensions row at its foot)
 and Properties on the right (the sections of the steps of the active tab), and a status bar (`ui/statusbar.js`:
 the pointer coordinates in the export system, the CRS select, the scale, the mode the modules announce with a
@@ -75,12 +76,12 @@ to each other only through the project and a small publish/subscribe (`change(to
 
 | Step | What the designer does | Main file | Helpers | Reads | Writes into the project |
 |---|---|---|---|---|---|
-| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback; the objects by category are in the Collection, a drawer on the right of the map | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js`, `ui/collection.js` (the drawer: tab with counters, open / close, "see in the collection") | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
+| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback; draws from the ribbon (category menu, four tools; *Unclassified* by default, counted nowhere until classified); the objects by category are in the Layers panel on the left | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js`, `ui/layers.js` (the Layers panel: strip with counters, open / collapse, "see in the Layers panel"), `ui/catmenu.js` (the category menu of the ribbon) | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
 | **2 · Terrain** (optional) | Samples the elevations on a grid, chooses the slope limit, sees the areas too steep | `app/js/terrain/terrain.js` | `terrain/slope.js` (slopes and masks, pure maths), `terrain/dtm.js` (GeoTIFF reading), `terrain/store.js` (the grid in memory, in IndexedDB and in the file) | the site, the structure of step 3 (for the toolkit rule), Esri World Elevation or a GeoTIFF | `terrain` (description of the grid, limit, view); the grid itself goes to IndexedDB |
 | **3 · Layout** | Chooses technology, structure, module, tilt, azimuth, pitch; reads the results | `app/js/field.js` | `layout/structures.js` (the nVm notation and the size of a table), `layout/rows.js` (the row-fill engine), `modules.js` (the module library and the roadmaps), `catalog.js` | the buildable area of step 1, the cuts of steps 2 and 4, the module | `field`, `plannedModules`, `moduleDefs`, `specificYield` |
 | **4 · Infrastructure** | Fences, perimeter road, gates, internal roads, stations | `app/js/infra.js` | `catalog.js` (the country values) | the usable land of step 1, the rows of step 3, the country of the site | `infra` (fence groups, perimeter road, clearance, stations, roads) |
 | **5 · Outputs** | Picks the export coordinate system, exports | `app/js/output.js` | `export/model.js` (what goes to Engineering), `export/shp.js`, `export/gpkg.js`, `export/dxf.js`, `export/boq.js`, `report.js` (the PDF), `io/xlsxwrite.js` | everything above | `crs` (when chosen by hand) |
-| **⚡ Quick predesign** (top bar) | One dialog, one click: group standards and the best grid position | `app/js/quick.js` | calls steps 2, 3 and 4 | the site | `field`, `terrain`, `infra` |
+| **Quick predesign** (ribbon of Layout & Infrastructure) | One dialog, one click: group standards and the best grid position | `app/js/quick.js` | calls steps 2, 3 and 4 | the site | `field`, `terrain`, `infra` |
 | **2D / 3D** (map switch) | Looks at the plant in 3D with sun and shadows, saves views, exports glTF | `app/js/view3d/scene.js` | `view3d/model.js` (what to draw), `view3d/geometry.js` (heights and vertices), `view3d/sun.js` (sun position, trackers), `view3d/glb.js` (the glTF writer) | the layout, the infrastructure, the terrain, the toolkit heights | `view3d` (heights, tracker mode, saved viewpoints) |
 
 Shared by every step:
@@ -95,7 +96,7 @@ Shared by every step:
 | `app/js/catalog.js` | Reads `toolkit.json` once and answers "what does the toolkit say for this country and this key" |
 | `app/js/io/projectfile.js` | Save / Open of the `.pvpd` project file (a zip with `project.json` and, when there is a terrain, `terrain/grid.f32`) |
 | `app/js/dims.js` | Dimensions on the map: measured lines kept in `project.dims`, lengths in true metres from the local frame, ticks and labels, show / hide / remove; the export model and the PDF report ask it for the parts of every dimension |
-| `app/js/ui/` | The tabs and the ribbon (`tabs.js`, `ribbon.js`), the Layers panel (`layers.js`: the objects by category, reachable from every tab; the cards inside it are drawn by `areas.js`), the map controls column and the drawing-support preferences (`maptools.js`: Fit the site, the measure card with the Esri widgets, the Dimensions button; the preferences that `areas.js` and `dims.js` apply to their sketch), the status bar (`statusbar.js`), the icons of the design system (`icons.js`), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
+| `app/js/ui/` | The tabs and the ribbon (`tabs.js`, `ribbon.js`; the category menu of the drawing tools, `catmenu.js`), the Layers panel (`layers.js`: the objects by category, reachable from every tab; the cards inside it are drawn by `areas.js`), the map controls column and the drawing-support preferences (`maptools.js`: Fit the site, the measure card with the Esri widgets, the Dimensions button; the preferences that `areas.js` and `dims.js` apply to their sketch), the status bar (`statusbar.js`), the icons of the design system (`icons.js`), the toasts (with Undo), the app's own confirmation dialog, the background map and its opacity, the coordinate-system dialog |
 
 ## 3. How the data travel, from the drawing to the export
 

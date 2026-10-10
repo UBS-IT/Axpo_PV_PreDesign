@@ -40,12 +40,42 @@
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.import"></div>
   </div>
+  <div class="rgroup" data-tab="areas" role="group" hidden>
+    <div class="rgroup-tools">
+      <div class="rfield">
+        <span class="rcap" id="drawCatCap" data-i18n="draw.category"></span>
+        <button type="button" class="catsel" id="drawCatBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="drawCatList" aria-labelledby="drawCatCap drawCatBtn"></button>
+        <ul class="catlist" id="drawCatList" role="listbox" tabindex="-1" aria-labelledby="drawCatCap" hidden></ul>
+      </div>
+      <div class="tool-row" id="drawTools" role="group" data-i18n-aria="draw.how">
+        <button type="button" class="tool medium" data-dtool="polygon" aria-pressed="false"></button>
+        <button type="button" class="tool medium" data-dtool="rectangle" aria-pressed="false"></button>
+        <button type="button" class="tool medium" data-dtool="polyline" aria-pressed="false"></button>
+        <button type="button" class="tool medium" data-dtool="point" aria-pressed="false"></button>
+      </div>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="drawUndo" data-icon="undo" data-i18n="draw.undoShort" data-i18n-title="draw.undo" disabled></button>
+        <button type="button" class="tool small" id="drawRedo" data-icon="redo" data-i18n="draw.redoShort" data-i18n-title="draw.redo" disabled></button>
+      </div>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.site"></div>
+  </div>
   <div class="rgroup" data-tab="terrain" role="group" hidden>
     <div class="rgroup-tools">
       <button type="button" class="tool large primary" id="terEsri" data-icon="terrain" data-i18n="ribbon.analyse" data-i18n-title="terrain.esriBtn"></button>
       <button type="button" class="tool large" id="terDtm" data-icon="import" data-i18n="ribbon.ownModel" data-i18n-title="terrain.dtmBtn"></button>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="terClear" data-icon="trash" data-i18n="ribbon.removeTerrain" data-i18n-title="terrain.clear" disabled></button>
+      </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.elevation"></div>
+  </div>
+  <div class="rgroup" data-tab="terrain" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large" id="terViewS" data-view="s" aria-pressed="false" data-icon="slope" data-i18n="ribbon.viewSlope" data-i18n-title="ribbon.viewSlopeTitle" disabled></button>
+      <button type="button" class="tool large" id="terViewZ" data-view="z" aria-pressed="false" data-icon="sun" data-i18n="ribbon.viewElev" data-i18n-title="ribbon.viewElevTitle" disabled></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.view"></div>
   </div>
   <div class="rgroup" data-tab="fields" role="group" hidden>
     <div class="rgroup-tools">
@@ -56,28 +86,50 @@
   </div>
   <div class="rgroup" data-tab="fields" role="group" hidden>
     <div class="rgroup-tools">
-      <button type="button" class="tool large" id="infCC" data-icon="station" data-i18n="infra.addCC" data-i18n-title="infra.addCC"></button>
-      <button type="button" class="tool large" id="infCU" data-icon="station" data-i18n="infra.addCU" data-i18n-title="infra.addCU"></button>
-      <button type="button" class="tool large" id="infCT" data-icon="station" data-i18n="infra.addCT" data-i18n-title="infra.addCT"></button>
+      <button type="button" class="tool large" id="infRoadDraw" aria-pressed="false" data-icon="road" data-i18n="infra.drawRoad" data-i18n-title="ribbon.drawRoadTitle"></button>
+      <div class="tool-stack" id="infRoadKind" role="radiogroup" data-i18n-aria="infra.roadKindLabel">
+        <button type="button" class="tool small" role="radio" data-roadkind="heavy" aria-checked="true"></button>
+        <button type="button" class="tool small" role="radio" data-roadkind="light" aria-checked="false"></button>
+      </div>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.roads"></div>
+  </div>
+  <div class="rgroup" data-tab="fields" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large" id="infCC" aria-pressed="false" data-icon="station" data-i18n="infra.addCC" data-i18n-title="infra.addCC"></button>
+      <button type="button" class="tool large" id="infCU" aria-pressed="false" data-icon="station" data-i18n="infra.addCU" data-i18n-title="infra.addCU"></button>
+      <button type="button" class="tool large" id="infCT" aria-pressed="false" data-icon="station" data-i18n="infra.addCT" data-i18n-title="infra.addCT"></button>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="infAtAccess" data-icon="gate" data-i18n="ribbon.atAccess" data-i18n-title="infra.atAccess"></button>
+      </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.stations"></div>
   </div>
-  <div class="rgroup" data-tab="output" role="group" hidden>
+  <div class="rgroup" data-tab="fields" role="group" hidden>
     <div class="rgroup-tools">
-      <button type="button" class="tool large primary" id="outReport" data-icon="report" data-i18n="ribbon.pdf" data-i18n-title="out.reportBtn"></button>
-      <button type="button" class="tool large" id="outKml" data-icon="globe" data-i18n="ribbon.kmz" data-i18n-title="out.kml"></button>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="modAddBtn" data-icon="plus" data-i18n="mod.add"></button>
+        <button type="button" class="tool small" id="modImportBtn" data-icon="import" data-i18n="mod.import" data-i18n-title="mod.importTitle"></button>
+      </div>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.firstLook"></div>
+    <div class="rgroup-label" data-i18n="ribbon.g.modules"></div>
   </div>
   <div class="rgroup" data-tab="output" role="group" hidden>
     <div class="rgroup-tools">
+      <button type="button" class="tool large" id="outKml" data-icon="globe" data-i18n="ribbon.kmz" data-i18n-title="out.kml"></button>
       <button type="button" class="tool large" id="outShp" data-icon="vector" data-i18n="ribbon.shp" data-i18n-title="out.shp"></button>
       <button type="button" class="tool large" id="outGpkg" data-icon="database" data-i18n="ribbon.gpkg" data-i18n-title="out.gpkg"></button>
       <button type="button" class="tool large" id="outDxf" data-icon="pen" data-i18n="ribbon.dxf" data-i18n-title="out.dxf"></button>
       <button type="button" class="tool large" id="outBoq" data-icon="table" data-i18n="ribbon.boq" data-i18n-title="out.boq"></button>
       <button type="button" class="tool large" id="outGeojson" data-icon="braces" data-i18n="ribbon.geojson" data-i18n-title="out.geojson"></button>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.engineering"></div>
+    <div class="rgroup-label" data-i18n="ribbon.g.files"></div>
+  </div>
+  <div class="rgroup end" data-tab="output" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="outReport" data-icon="report" data-i18n="ribbon.pdf" data-i18n-title="out.reportBtn"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.report"></div>
   </div>
   <div class="ribbon-context" id="ribbonCtx"></div>
 </section>
@@ -134,18 +186,9 @@
       <details class="fold" id="secDraw" open>
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-pen"/></svg></span><span class="ttl"><b data-i18n="draw.title"></b><small data-i18n="draw.sub"></small></span></summary>
         <div class="bd">
-          <div class="pstep">
-            <div class="pstep-h"><span class="pnum" aria-hidden="true">1</span><div class="pstep-t"><b data-i18n="draw.what"></b><small data-i18n="draw.whatSub"></small></div></div>
-            <div class="chips" id="drawCats" role="radiogroup" data-i18n-aria="draw.what"></div>
-            <div class="attrs2" id="drawAttrs" hidden></div>
-          </div>
-          <div class="pstep">
-            <div class="pstep-h"><span class="pnum" aria-hidden="true">2</span><div class="pstep-t"><b data-i18n="draw.how"></b><small data-i18n="draw.howSub"></small></div>
-              <div class="acts"><button type="button" class="gact" id="drawUndo" data-i18n-title="draw.undo" data-i18n-aria="draw.undo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-undo"/></svg></button><button type="button" class="gact" id="drawRedo" data-i18n-title="draw.redo" data-i18n-aria="draw.redo" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-redo"/></svg></button></div></div>
-            <div class="cards" id="drawTools"></div>
-            <div class="status" id="drawStatus" role="status"></div>
-            <div class="row2 support"><label class="chk"><input type="checkbox" id="drawTyped"> <span data-i18n="tools.typed"></span></label><label class="chk"><input type="checkbox" id="drawLabels"> <span data-i18n="tools.labels"></span></label></div>
-          </div>
+          <div class="status" id="drawStatus" role="status"></div>
+          <div class="attrs2" id="drawAttrs" hidden></div>
+          <div class="row2 support"><label class="chk"><input type="checkbox" id="drawTyped"> <span data-i18n="tools.typed"></span></label><label class="chk"><input type="checkbox" id="drawLabels"> <span data-i18n="tools.labels"></span></label></div>
           <div class="last" id="drawLast" hidden></div>
         </div>
       </details>
@@ -183,7 +226,6 @@
           <input id="terMinPatch" type="number" min="0" step="50">
           <p class="hint" data-i18n="terrain.minPatchHint"></p>
         </details>
-        <div class="btns"><button type="button" class="linkbtn" id="terClear" data-i18n="terrain.clear" hidden></button></div>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.limit"></b></div>
@@ -215,11 +257,6 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
         <div id="terStats"></div>
-        <label class="chk"><input type="checkbox" id="terShow"> <span data-i18n="terrain.show"></span></label>
-        <div class="chips plain" id="terView" role="radiogroup" data-i18n-aria="terrain.view">
-          <button type="button" class="chip" role="radio" data-view="s" aria-checked="true" data-i18n="terrain.viewS"></button>
-          <button type="button" class="chip" role="radio" data-view="z" aria-checked="false" data-i18n="terrain.viewZ"></button>
-        </div>
         <div class="legend" id="terLegend"></div>
       </div>
     </section>
@@ -305,10 +342,6 @@
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-table"/></svg></span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
         <div class="bd">
           <div class="list" id="modList" data-i18n-empty="mod.empty"></div>
-          <div class="btns">
-            <button type="button" class="btn" id="modAddBtn" data-icon="plus" data-i18n="mod.add"></button>
-            <button type="button" class="btn" id="modImportBtn" data-icon="import" data-i18n="mod.import" data-i18n-title="mod.importTitle"></button>
-          </div>
           <form id="modForm" hidden>
             <div class="row2">
               <div><label class="lbl" for="mfMan" data-i18n="mod.manufacturer"></label><input id="mfMan" type="text"></div>
@@ -362,10 +395,6 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.roads"></b></div>
         <div id="infRoads"></div>
-        <div class="row2">
-          <div><select id="infRoadKind" data-i18n-aria="infra.roadKindLabel"><option value="heavy"></option><option value="light"></option></select></div>
-          <div><button type="button" class="btn" id="infRoadDraw" data-icon="road" data-i18n="infra.drawRoad"></button></div>
-        </div>
         <div class="list" id="infRoadList" data-i18n-empty="infra.roadListNone"></div>
       </div>
       <div class="card">
@@ -374,7 +403,6 @@
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.stations"></b></div>
-        <div class="btns"><button type="button" class="linkbtn" id="infAtAccess" data-i18n="infra.atAccess"></button></div>
         <div class="list" id="infStations" data-i18n-empty="infra.stationsNone"></div>
         <p class="hint" id="infStationsHint"></p>
       </div>
@@ -384,6 +412,7 @@
     <section class="step" data-step="output" hidden>
       <header class="stephd"><span class="num">5</span><div><h2 data-i18n="step.output"></h2><p data-i18n="step.output.sub"></p></div></header>
       <!-- the outputs in the order of use: a first look (PDF, KMZ), then the files for Engineering and GIS -->
+      <div id="outPending"></div>
       <div class="card">
         <div class="cardhd"><b data-i18n="out.lookTitle"></b></div>
         <p class="hint" data-i18n="out.lookHint"></p>

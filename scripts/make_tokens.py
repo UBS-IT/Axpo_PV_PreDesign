@@ -59,8 +59,6 @@ def build(tokens):
     families = tokens.get('type', {}).get('families', {})
     for name, stack in families.items():
         lines.append(f'  --font-{name}: {stack};')
-    if 'sans' in families:
-        lines.append('  --font: var(--font-sans);   /* the name app.css has always used */')
     lines.append('}')
 
     for group in tokens.get('type', {}).get('groups', []):

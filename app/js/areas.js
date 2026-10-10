@@ -1,11 +1,12 @@
 // Step 1 · Site: objects by category (gross, net, exclusions, linear infrastructure, obstacles, access,
 // mitigation, agricultural zones, reference), import, drawing in two steps (what, then with which tool — the
-// Geoportale's Disegna pattern), undo / redo, drag and drop between categories, and the buildable area in the
-// local metric frame.
+// Geoportale's Disegna pattern, in the ribbon since phase 2: a category menu and four tools; «Unclassified» is the
+// default and keeps the objects aside until each one gets its category), undo / redo, drag and drop between
+// categories, and the buildable area in the local metric frame.
 import { getSdk } from './sdk.js';
 import { store, change, on, emit, uid, saveSoon, geomKind } from './state.js';
 import { t, tn, fmt } from './i18n.js';
-import { CATEGORIES, CATEGORY, POWER_TYPES, accepts, classify } from './categories.js';
+import { CATEGORIES, CATEGORY, POWER_TYPES, UNCLASSIFIED, accepts, classify } from './categories.js';
 import { toSdk, toGeoJSON, reprojectToWgs84, projectPointToWgs84, wktName } from './geo/convert.js';
 import { makeLocalFrame } from './geo/localframe.js';
 import { readAnyFile } from './io/importers.js';
@@ -16,11 +17,13 @@ import { stepProvider, refreshRail, showStep } from './ui/tabs.js';
 import { updateCollection, showInCollection } from './ui/layers.js';
 import { onDrawPrefs } from './ui/maptools.js';
 import { icon } from './ui/icons.js';
+import { initCatMenu } from './ui/catmenu.js';
 
 let view, featLayer, sketchLayer, sketchVM;
 let drawing = null;          // { category, tool }
 let editing = null;          // { id }
-let drawCat = 'gross';       // ① the category the next drawings go into
+let drawCat = UNCLASSIFIED; // ① the category the next drawings go into (none by default: sorted later)
+let catMenu = null;          // the category menu of the ribbon (ui/catmenu.js)
 const drawDefaults = {};     // category -> attributes given to the next drawings (type, buffer, height, width)
 let lastId = null;           // the last object drawn (the «Last drawing» box)
 let statusNote = '';         // one-off note shown before the status of the tools (added, undone…)
@@ -37,7 +40,7 @@ export const extraCuts = [];
 // Called after a file was imported: fn(result of readAnyFile, features added). The terrain step adopts the
 // elevation grid of a Geoportale project here (registered there, so that this module does not import it).
 export const importHooks = [];
-const openCats = new Set(['gross', 'net', 'exclusion']);
+const openCats = new Set([UNCLASSIFIED, 'gross', 'net', 'exclusion']);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const DRAG_TYPE = 'application/x-pvp-feature';
@@ -81,17 +84,10 @@ export function initAreas(mapView) {
     if (k === 'z' && !e.shiftKey) { if (undo()) e.preventDefault(); }
     else if (k === 'y' || (k === 'z' && e.shiftKey)) { if (redo()) e.preventDefault(); }
   });
-  // ① what you draw, ② with which tool, undo / redo, the last drawing
-  const dc = $('drawCats');
-  if (dc) {
-    dc.onclick = e => { const b = e.target.closest('[data-dcat]'); if (b) selectDrawCat(b.dataset.dcat); };
-    dc.onkeydown = e => {
-      if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
-      e.preventDefault();
-      const i = CATEGORIES.findIndex(c => c.id === drawCat), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
-      selectDrawCat(CATEGORIES[(i + d + CATEGORIES.length) % CATEGORIES.length].id);
-      dc.querySelector('[aria-checked="true"]')?.focus();
-    };
+  // ① what you draw (the category menu of the ribbon), ② with which tool (the four tools next to it), undo / redo;
+  // in the Properties panel the values of the new objects, the status and the last drawing
+  if ($('drawTools')) {
+    catMenu = initCatMenu({ btn: $('drawCatBtn'), list: $('drawCatList'), items: drawItems, value: () => drawCat, onPick: selectDrawCat });
     $('drawTools').onclick = e => { const b = e.target.closest('[data-dtool]'); if (b && !b.disabled) toggleTool(b.dataset.dtool); };
     $('drawAttrs').onchange = e => {
       const el = e.target.closest('[data-dattr]');
@@ -387,30 +383,41 @@ function defaultAttrs(category) {
   return {};
 }
 
-// the two steps of the drawing block, the status line and the history buttons
+// the two steps of the drawing block, the status line and the history buttons. The tools of the ribbon: the area is
+// the design system's «polygon»; the set has no point, line or rectangle, drawn here on its 24 px grid and stroke
+const SVG24 = body => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`;
+const TOOL_SVG = {
+  polygon: icon('polygon'),
+  rectangle: SVG24('<rect x="4" y="6" width="16" height="12" rx="1.5"/>'),
+  polyline: SVG24('<path d="M4.5 17.5l5-6.5 4.5 3 5.5-7"/><circle cx="4.5" cy="17.5" r="1.6"/><circle cx="9.5" cy="11" r="1.6"/><circle cx="14" cy="14" r="1.6"/><circle cx="19.5" cy="7" r="1.6"/>'),
+  point: SVG24('<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/>'),
+};
+// the icons of the Draw here / Import buttons of the Layers cards
 const TOOL_ICON = {
-  polygon: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5l6-3 5 4-2 7-8 1z"/></svg>',
-  rectangle: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1"/></svg>',
-  polyline: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13l4-6 4 3 4-7"/></svg>',
-  point: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>',
   import: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2M4.5 5.5L8 2l3.5 3.5M2.5 11v3h11v-3"/></svg>',
   draw: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-4 7-7 3 3-7 7z"/><path d="M10 3l3 3"/></svg>',
 };
+// the entries of the category menu: Unclassified first (the default), then the categories of the model
+const drawItems = () => [{ id: UNCLASSIFIED, label: t('cat.' + UNCLASSIFIED), hint: t('cat.' + UNCLASSIFIED + '.hint'), colour: null },
+  ...CATEGORIES.map(c => ({ id: c.id, label: t('cat.' + c.id), hint: t('cat.' + c.id + '.hint'), colour: c.colour }))];
 function renderDraw() {
-  const box = $('drawCats');
-  if (!box) return;
-  box.innerHTML = CATEGORIES.map(c => `<button type="button" class="chip" role="radio" aria-checked="${c.id === drawCat}" tabindex="${c.id === drawCat ? 0 : -1}" data-dcat="${c.id}" style="--c:rgb(${c.colour.join(',')})" title="${esc(t('cat.' + c.id + '.hint'))}">${esc(t('cat.' + c.id))}</button>`).join('');
+  if (!$('drawTools')) return;
+  catMenu?.render();
   const c = CATEGORY[drawCat];
-  $('drawTools').innerHTML = TOOLS.map(tool => {
-    const ok = c.geom.includes(TOOL_KIND[tool]), on = !!drawing && drawing.tool === tool;
+  // the four tools of the ribbon: off when the category does not take that geometry, pressed while armed
+  for (const b of $('drawTools').querySelectorAll('[data-dtool]')) {
+    const tool = b.dataset.dtool, ok = c.geom.includes(TOOL_KIND[tool]);
     const why = ok ? '' : t('areas.wrongGeom', { cat: t('cat.' + c.id), kind: t('geom.' + TOOL_KIND[tool]) });
-    return `<button type="button" class="tcard" data-dtool="${tool}" aria-pressed="${on}"${ok ? '' : ` disabled title="${esc(why)}"`}>${TOOL_ICON[tool]}<b>${esc(t('draw.tool.' + tool))}</b><small>${esc(ok ? t('draw.tool.' + tool + '.sub') : why)}</small></button>`;
-  }).join('');
+    b.innerHTML = `${TOOL_SVG[tool]}<span>${esc(t('draw.tool.' + tool))}</span>`;
+    b.disabled = !ok;
+    b.title = ok ? `${t('draw.tool.' + tool)}: ${t('draw.tool.' + tool + '.sub')}` : why;
+    b.setAttribute('aria-pressed', String(!!drawing && drawing.tool === tool));
+  }
   const d = drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id));
   const parts = [];
   if (c.attrs.includes('type')) parts.push(`<div><label class="lbl" for="dAttr_type">${esc(t('attr.type'))}</label><select id="dAttr_type" data-dattr="type">${c.types.map(ty => `<option value="${ty}" ${d.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select></div>`);
   for (const a of ['buffer', 'height', 'width']) if (c.attrs.includes(a)) parts.push(`<div><label class="lbl" for="dAttr_${a}">${esc(t('attr.' + a))}</label><input id="dAttr_${a}" type="number" min="0" step="0.5" data-dattr="${a}" value="${d[a] ?? ''}"></div>`);
-  $('drawAttrs').innerHTML = parts.join('');
+  $('drawAttrs').innerHTML = parts.length ? `<div class="cap">${esc(t('draw.newValues', { cat: t('cat.' + c.id) }))}</div>${parts.join('')}` : '';
   $('drawAttrs').hidden = !parts.length;
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
   renderStatus();
@@ -576,12 +583,12 @@ function symbolFor(f) {
   const kind = geomKind(f.geometry);
   if (kind === 'polygon') {
     const fillA = { gross: 0.05, net: 0.10, exclusion: 0.30, obstacle: 0.45, mitigation: 0.30, agri: 0.25, reference: 0.03 }[f.category] ?? 0.1;
-    const ref = f.category === 'reference';
+    const ref = f.category === 'reference' || f.category === UNCLASSIFIED;   // dashed: shown, not counted
     return { type: 'simple-fill', color: [...c, fillA], outline: { color: c, width: ref ? 1 : 2, style: ref ? 'dash' : 'solid' } };
   }
   if (kind === 'line') {
     // dashed: underground cables, and connection routes not confirmed yet
-    const dashed = (f.category === 'linear' && f.attrs?.type === 'underground-power') || (f.category === 'connection' && f.attrs?.type !== 'confirmed');
+    const dashed = (f.category === 'linear' && f.attrs?.type === 'underground-power') || (f.category === 'connection' && f.attrs?.type !== 'confirmed') || f.category === UNCLASSIFIED;
     return { type: 'simple-line', color: c, width: f.category === 'reference' ? 1.5 : f.category === 'connection' ? 3 : 2.5, style: dashed ? 'dash' : 'solid' };
   }
   const style = f.category === 'obstacle' ? ({ tree: 'circle', pole: 'x', building: 'square' }[f.attrs?.type] || 'diamond') : f.category === 'access' ? 'triangle' : 'circle';
@@ -594,7 +601,7 @@ const BUFFER_SYMBOL = c => ({ type: 'simple-fill', color: [...c, 0.12], outline:
 export function render() {
   const { Graphic, bufferOperator } = getSdk();
   featLayer.removeAll();
-  const order = { reference: 0, gross: 1, net: 2, agri: 3, mitigation: 4, exclusion: 5, linear: 6, connection: 7, obstacle: 8, access: 9 };
+  const order = { reference: 0, gross: 1, net: 2, agri: 3, mitigation: 4, exclusion: 5, linear: 6, connection: 7, obstacle: 8, access: 9, [UNCLASSIFIED]: 10 };
   const feats = [...store.project.features].sort((a, b) => (order[a.category] ?? 0) - (order[b.category] ?? 0));
   const frame = siteFrame();
   const graphics = [];
@@ -612,9 +619,11 @@ export function render() {
   }
   featLayer.addMany(graphics);
 
-  $('areaCats').innerHTML = CATEGORIES.map(catCard).join('');
+  const pending = pendingCount();
+  $('areaCats').innerHTML = (pending ? catCard(CATEGORY[UNCLASSIFIED]) : '') + CATEGORIES.map(catCard).join('');
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
-  updateCollection(CATEGORIES.map(c => ({ id: c.id, colour: c.colour, label: t('cat.' + c.id), n: store.project.features.filter(f => f.category === c.id).length })));
+  updateCollection([...(pending ? [{ id: UNCLASSIFIED, colour: CATEGORY[UNCLASSIFIED].colour, label: t('cat.' + UNCLASSIFIED), n: pending }] : []),
+    ...CATEGORIES.map(c => ({ id: c.id, colour: c.colour, label: t('cat.' + c.id), n: store.project.features.filter(f => f.category === c.id).length }))]);
   renderLast();
   renderHistory();
   $('boundarySetback').value = store.project.settings.boundarySetback;
@@ -627,6 +636,10 @@ export function render() {
 
 function catCard(c) {
   const items = store.project.features.filter(f => f.category === c.id);
+  if (c.pending) return `<details class="cat pending" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
+    <summary><span class="ttl"><b>${esc(t('cat.' + c.id))}</b><small>${esc(t('cat.' + c.id + '.hint'))}</small></span><span class="cnt">${items.length || ''}</span></summary>
+    <div class="catbody">${items.map(f => row(f, c)).join('')}</div>
+  </details>`;
   const imp = esc(t('areas.importInto', { cat: t('cat.' + c.id) })), here = esc(t('draw.hereTitle', { cat: t('cat.' + c.id) }));
   const draw = `<button type="button" class="drawbtn" data-dsel="${c.id}" title="${here}" aria-label="${here}">${TOOL_ICON.draw}<span>${esc(t('draw.here'))}</span></button>`
     + `<button type="button" class="drawbtn" data-imp="${c.id}" title="${imp}" aria-label="${imp}">${TOOL_ICON.import}<span>${esc(t('tool.import.short'))}</span></button>`;
@@ -651,7 +664,8 @@ function row(f, c) {
   if (c.attrs.includes('buffer')) inputs.push(num(f, 'buffer', a.buffer, t('attr.buffer'), kind !== 'polygon' && !(a.buffer > 0)));
   if (c.attrs.includes('voltage') && POWER_TYPES.includes(a.type)) inputs.push(num(f, 'voltage', a.voltage, t('attr.voltage')));
   if (c.attrs.includes('width') && kind === 'line') inputs.push(num(f, 'width', a.width, t('attr.width'), !(a.width > 0)));
-  const moveOpts = CATEGORIES.filter(x => x.geom.includes(kind)).map(x => `<option value="${x.id}" ${x.id === f.category ? 'selected' : ''}>${esc(t('cat.' + x.id))}</option>`).join('');
+  const moveOpts = (c.pending ? `<option value="${UNCLASSIFIED}" selected>${esc(t('areas.pickCategory'))}</option>` : '')
+    + CATEGORIES.filter(x => x.geom.includes(kind)).map(x => `<option value="${x.id}" ${x.id === f.category ? 'selected' : ''}>${esc(t('cat.' + x.id))}</option>`).join('');
   const sub = [f.sourceCategory, f.category === 'connection' ? `${fmt(lineLengthKm(f.geometry), 2)} km` : ''].filter(Boolean).join(' · ');
   return `<div class="it" data-id="${f.id}">
     <span class="grip" draggable="true" title="${esc(t('areas.dragTitle'))}" aria-hidden="true">${icon('grip', 'sm')}</span>
@@ -701,6 +715,7 @@ function renderSummary() {
     ${routes ? `<div class="hint">${esc(routes)}</div>` : ''}
     ${spread > SPREAD_WARN_KM ? `<div class="notice warn">${esc(t('warn.spread', { km: fmt(spread, 0) }))}</div>` : ''}
     ${r.ignored ? `<div class="notice warn">${esc(tn('warn.lineNoBuffer', r.ignored))}</div>` : ''}
+    ${pendingCount() ? `<div class="notice warn">${esc(tn('areas.pending', pendingCount()))}</div>` : ''}
     ${r.netMode === 'given' && store.project.settings.boundarySetback > 0 ? `<div class="hint">${esc(t('areas.setbackIgnored'))}</div>` : ''}`;
 }
 
@@ -750,6 +765,8 @@ export function zoomToFeatures(ids) {
   if (ext) view.goTo(ext.expand(1.3)).catch(() => {});
 }
 
+// objects drawn without a category, waiting in the Layers panel (counted nowhere, exported nowhere)
+export const pendingCount = () => store.project.features.filter(f => f.category === UNCLASSIFIED).length;
 function sitePolygons() {
   return store.project.features.filter(f => (f.category === 'gross' || f.category === 'net') && geomKind(f.geometry) === 'polygon');
 }

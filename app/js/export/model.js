@@ -7,6 +7,7 @@ import { last } from '../field.js';
 import { siteFrame } from '../areas.js';
 import { layoutInfra } from '../infra.js';
 import { toSdk } from '../geo/convert.js';
+import { classified } from '../categories.js';
 import { allDimensionParts } from '../dims.js';
 
 // DXF layers: the defaults of the app, until Engineering gives its names (plan B3). [name, AutoCAD colour index]
@@ -31,7 +32,7 @@ export function exportModel() {
   const target = new S.SpatialReference({ wkid: P.crs.wkid });
   const local = [], wgs = [];   // [geometry, meta] to project from the local frame / from WGS 84
   // 1 · Areas, as drawn or imported (with their buffers and attributes)
-  for (const f of P.features) {
+  for (const f of classified(P.features)) {   // objects without a category stay in the app
     const g = toSdk(f.geometry);
     if (!g) continue;
     const a = f.attrs || {};

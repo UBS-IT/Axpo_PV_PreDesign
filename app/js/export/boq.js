@@ -8,6 +8,7 @@ import { countryName } from '../catalog.js';
 import { crsLabel } from '../crs.js';
 import { moduleLabel } from '../modules.js';
 import { toSdk } from '../geo/convert.js';
+import { classified } from '../categories.js';
 import { getSdk } from '../sdk.js';
 import { partsOf } from './model.js';
 import { writeWorkbook } from '../io/xlsxwrite.js';
@@ -93,7 +94,7 @@ export function boqSheets(model) {
     sheets.push({ name: t('boq.sheetInfra'), rows, bold: [0], widths: [16, 14, 18, 10, 10, 9, 14, 14], freeze: true });
   }
   // areas of 1 · Areas, measured in the local frame (true metres)
-  const feats = P.features;
+  const feats = classified(P.features);   // objects without a category stay in the app
   if (feats.length && model.frame) {
     const { areaOperator } = getSdk();
     const rows = [['name', 'category', 'type', 'buffer_m', 'area_m2', 'length_m', 'X', 'Y']];

@@ -437,9 +437,12 @@ function render() {
   $('infRoads').innerHTML = auto.length
     ? `<div class="hint">${esc(t('infra.roadsInfo', { n: auto.length, len: fmt(r.roadsLength, 0), w: fmt(P.field.tracks.width, 1) }))}</div>`
     : `<div class="hint">${esc(t('infra.roadsNone'))}</div>`;
-  for (const k of ['heavy', 'light']) {
-    const w = roadWidth(k), o = $('infRoadKind').querySelector(`option[value=${k}]`);
-    if (o) o.textContent = t('infra.roadKind.' + k, { w: w != null ? fmt(w, 1) + ' m' : '—' });
+  // the kind of the next road (ribbon): «Heavy · 4 m», «Light · 3 m» from the toolkit of the country
+  for (const b of document.querySelectorAll('#infRoadKind [data-roadkind]')) {
+    const k = b.dataset.roadkind, w = roadWidth(k);
+    b.innerHTML = icon('road', 'sm') + esc(t('infra.roadKindTool', { kind: t('infra.roadKindShort.' + k), w: w != null ? fmt(w, 1) + ' m' : '—' }));
+    b.title = t('infra.roadKind.' + k, { w: w != null ? fmt(w, 1) + ' m' : '—' });
+    b.setAttribute('aria-checked', String(k === roadKind));
   }
   $('infRoadList').innerHTML = '';
   for (const rd of L.roads) {
@@ -483,12 +486,13 @@ function render() {
 
 // one map mode at a time: placing a station, moving one, drawing or reshaping a road
 let moving = null, sketchVM = null, sketchLayer = null, editingRoad = null;
+let roadKind = 'heavy';   // the kind of the next road drawn (the two small switches of the ribbon)
 function banner(html) { const b = $('banner'); if (b) { if (html) { b.innerHTML = html; b.hidden = false; } else b.hidden = true; } }
 function stopModes() {
   placing = null; moving = null;
   if (sketchVM && (sketchVM.state === 'active')) sketchVM.cancel();
   editingRoad = null;
-  document.querySelectorAll('#side [data-place], #infRoadDraw').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[data-place], #infRoadDraw').forEach(b => b.setAttribute('aria-pressed', 'false'));   // the tools of the ribbon
   banner(null);
 }
 function startPlacing(kind) {
@@ -496,7 +500,7 @@ function startPlacing(kind) {
   stopModes();
   if (again) return;
   placing = kind;
-  document.querySelectorAll('#side [data-place]').forEach(b => b.classList.toggle('active', b.dataset.place === placing));
+  document.querySelectorAll('[data-place]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.place === placing)));
   banner(t('infra.placeBanner', { kind: esc(t('infra.kind.' + kind)), m: SNAP }));
 }
 function startMoving(id) {
@@ -512,11 +516,11 @@ function startRoad() {
   const again = sketchVM && sketchVM.state === 'active' && !editingRoad;
   stopModes();
   if (again || !sketchVM) return;
-  const w = roadWidth($('infRoadKind').value);
+  const w = roadWidth(roadKind);
   if (!(w > 0)) { toast(t('infra.noRoadWidth', { country: countryName(crsState.iso) || '—' }), 'err'); return; }
   sketchVM.polylineSymbol = { type: 'simple-line', color: [90, 90, 90], width: 3 };
   sketchVM.create('polyline', { mode: 'click' });
-  $('infRoadDraw').classList.add('active');
+  $('infRoadDraw').setAttribute('aria-pressed', 'true');
   banner(t('infra.roadBanner'));
 }
 function editRoad(id) {
@@ -546,7 +550,7 @@ export function initInfra(mapView) {
       if (e.state === 'complete') {
         const c = lineCoords(e.graphic.geometry);
         sketchLayer.remove(e.graphic);
-        if (c && c.length > 1) addRoad(c, $('infRoadKind').value);
+        if (c && c.length > 1) addRoad(c, roadKind);
         stopModes();
       } else if (e.state === 'cancel') stopModes();
     });
@@ -569,6 +573,14 @@ export function initInfra(mapView) {
   for (const k of ['CC', 'CU', 'CT']) { $('inf' + k).dataset.place = k; $('inf' + k).onclick = () => startPlacing(k); }
   $('infAtAccess').onclick = () => placeAtAccess();
   $('infRoadDraw').onclick = () => startRoad();
+  $('infRoadKind').onclick = e => { const b = e.target.closest('[data-roadkind]'); if (b) { roadKind = b.dataset.roadkind; renderSoon(); } };
+  $('infRoadKind').onkeydown = e => {   // a radio group: the arrows move between the two kinds
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    roadKind = roadKind === 'heavy' ? 'light' : 'heavy';
+    renderSoon();
+    setTimeout(() => $('infRoadKind').querySelector(`[data-roadkind="${roadKind}"]`)?.focus(), 200);
+  };
   $('infRoadList').onclick = e => {
     const d = e.target.closest('[data-rdel]'), ed = e.target.closest('[data-redit]');
     if (d) removeRoad(d.dataset.rdel);

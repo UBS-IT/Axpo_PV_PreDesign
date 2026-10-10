@@ -44,7 +44,14 @@ export const FROM_SITE_NOTES = {
     'misurazioni': ['reference', 'measurement'], 'dpa': ['exclusion', 'dpa'] },
 };
 const plainKey = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
-export const CATEGORY = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+// Objects drawn without a category (the default of the drawing menu, decision of 2026-10-10): they wait in the Layers
+// panel until the designer gives each one its category. Not a category of the site-features model: it never leaves
+// the app (no export takes it), it cuts nothing and no step counts it; the project file keeps it.
+export const UNCLASSIFIED = 'unclassified';
+const PENDING = { id: UNCLASSIFIED, colour: [150, 160, 172], geom: ['polygon', 'line', 'point'], cuts: false, attrs: [], pending: true };
+export const CATEGORY = Object.fromEntries([...CATEGORIES, PENDING].map(c => [c.id, c]));
+// the objects that count: every object with a category of the model
+export const classified = features => features.filter(f => f.category !== UNCLASSIFIED);
 
 export function accepts(categoryId, geometry) {
   const c = CATEGORY[categoryId];
