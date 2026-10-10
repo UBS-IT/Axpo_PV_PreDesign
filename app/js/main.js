@@ -19,6 +19,7 @@ import { initBasemap } from './ui/basemap.js';
 import { initView3d } from './view3d/scene.js';
 import { initCollection } from './ui/collection.js';
 import { initMapTools } from './ui/maptools.js';
+import { initDims } from './dims.js';
 
 const $ = id => document.getElementById(id);
 
@@ -59,6 +60,7 @@ async function start() {
 
   initCollection();   // the drawer of the objects, before the Site step fills it
   initAreas(view);
+  initDims(view);     // dimensions on the map, after the Site step (they snap to its objects)
   initTerrain(view);
   initModulesUi();
   initField(view);

@@ -7,9 +7,11 @@ import { last } from '../field.js';
 import { siteFrame } from '../areas.js';
 import { layoutInfra } from '../infra.js';
 import { toSdk } from '../geo/convert.js';
+import { allDimensionParts } from '../dims.js';
 
 // DXF layers: the defaults of the app, until Engineering gives its names (plan B3). [name, AutoCAD colour index]
 export const DXF_LAYERS = {
+  dimension: ['PVP_DIM', 2],
   'area-gross': ['PVP_AREA_GROSS', 30], 'area-net': ['PVP_AREA_NET', 3], 'area-connection': ['PVP_AREA_CONNECTION', 200],
   'area-exclusion': ['PVP_AREA_EXCLUSION', 1], 'area-linear': ['PVP_AREA_LINEAR', 6], 'area-obstacle': ['PVP_AREA_OBSTACLE', 34],
   'area-access': ['PVP_AREA_ACCESS', 4], 'area-mitigation': ['PVP_AREA_MITIGATION', 82], 'area-agri': ['PVP_AREA_AGRI', 50],
@@ -68,6 +70,19 @@ export function exportModel() {
       attrs: { kind: s.kind, building: s.building.id, length_m: s.building.length, width_m: s.building.width, rot_deg: round(s.rot || 0, 1), inside: s.inside ? 1 : 0 } }]);
     for (const gt of L.gates) local.push([new Point({ x: gt.point[0], y: gt.point[1], spatialReference: frame.sr }),
       { layer: 'gate', file: 'gates', label: gt.name || null, attrs: { name: gt.name || '', width_m: gt.width ?? null } }]);
+  }
+  // dimensions (dims.js): one item per segment with its length as the label, the ticks as plain lines, in the local
+  // frame of the site (true metres); none without a site frame
+  if (frame) {
+    const { Polyline } = S;
+    for (const dm of allDimensionParts(frame)) {
+      dm.segments.forEach((sg, i) => {
+        local.push([new Polyline({ paths: [[sg.a, sg.b]], spatialReference: frame.sr }),
+          { layer: 'dimension', file: 'dimensions', label: `${round(sg.length, 1)} m`, attrs: { dimension: dm.id, segment: i + 1, length_m: round(sg.length, 2), total_m: round(dm.total, 2) } }]);
+        local.push([new Polyline({ paths: sg.ticks, spatialReference: frame.sr }),
+          { layer: 'dimension', file: 'dimensions', label: null, attrs: { dimension: dm.id, segment: i + 1, length_m: null, total_m: null } }]);
+      });
+    }
   }
   if (!local.length && !wgs.length) return { error: 'nothing' };
   const project = (pairs, from) => {

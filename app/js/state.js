@@ -50,6 +50,8 @@ export function defaultProject() {
     // 4b · 3D: heights (null = the toolkit value of the country), AgriPV category of the trackers (IT axis heights),
     // tracker angle following the sun at the time of the view or set by hand, saved viewpoints { id, name, camera }
     view3d: { lowEdge: null, trackerCategory: 'standard', axisHeight: null, trackerMode: 'sun', trackerAngle: 0, viewpoints: [], ground: 'dtm' },
+    // dimensions drawn on the map (dims.js): { id, points: [[lon, lat], …] }, measured in the local frame when shown
+    dims: [],
   };
 }
 

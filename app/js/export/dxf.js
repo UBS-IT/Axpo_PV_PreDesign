@@ -35,7 +35,7 @@ export function buildDxf(model) {
     if (it.label) {
       const pts = p.parts.flat();
       if (it.layer === 'fence') text(p.parts[0][0], it.label, 3);
-      else { const c = pts.reduce((a, q) => [a[0] + q[0] / pts.length, a[1] + q[1] / pts.length], [0, 0]); text(c, it.label, it.layer === 'station' ? 1.2 : 2); }
+      else { const c = pts.reduce((a, q) => [a[0] + q[0] / pts.length, a[1] + q[1] / pts.length], [0, 0]); text(c, it.label, it.layer === 'station' ? 1.2 : it.layer === 'dimension' ? 1.5 : 2); }
     }
   }
   if (!isFinite(box[0])) box.splice(0, 4, 0, 0, 0, 0);

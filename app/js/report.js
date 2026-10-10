@@ -14,6 +14,7 @@ import { crsLabel } from './crs.js';
 import { toSdk } from './geo/convert.js';
 import { toast } from './ui/toast.js';
 import { loadJsPdf } from './libs.js';
+import { allDimensionParts } from './dims.js';
 
 // jsPDF standard fonts cover Latin-1 only
 export const pdfText = s => String(s ?? '').replace(/[–—]/g, '-').replace(/→/g, '->').replace(/≈/g, '~').replace(/…/g, '...')
@@ -181,6 +182,17 @@ function drawMap(doc, d, x0, y0, w, h) {
   for (const gt of L.gates) { const [gx, gy] = X(gt.point); doc.rect(gx - 0.9, gy - 0.9, 1.8, 1.8, 'F'); }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(20, 30, 40);
   if (L.lots.length > 1) for (const l of L.lots) { const [lx, ly] = X(l.label); doc.text(pdfText(L.fences.some(fc => fc.lots.length > 1 && fc.letter === l.fence) ? `${l.n} ${l.fence}` : String(l.n)), lx, ly, { align: 'center' }); }
+  // dimensions (dims.js): the lines with their ticks, the length of every segment, the total of a chain
+  const dims = allDimensionParts(frame).filter(dm => dm.segments.length);
+  if (dims.length) {
+    doc.setDrawColor(20, 30, 40); doc.setLineWidth(0.25); doc.setLineDashPattern([], 0);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(20, 30, 40);
+    for (const dm of dims) {
+      doc.path(lineOps([dm.segments.map((sg, i) => (i ? [sg.b] : [sg.a, sg.b])).flat(), ...dm.segments.flatMap(sg => sg.ticks)])); doc.stroke();
+      for (const sg of dm.segments) { const [tx, ty] = X(sg.mid); doc.text(`${fmt(sg.length, 1)} m`, tx, ty - 1, { align: 'center' }); }
+      if (dm.segments.length > 1) { const [tx, ty] = X(dm.segments.at(-1).b); doc.setFont('helvetica', 'bold'); doc.text(pdfText(t('dims.total', { m: fmt(dm.total, 1) })), tx, ty - 1, { align: 'center' }); doc.setFont('helvetica', 'normal'); }
+    }
+  }
   // scale bar and north arrow (the local frame is aligned with true north at the site)
   const nice = m => { const p = 10 ** Math.floor(Math.log10(m)); return [1, 2, 5, 10].map(k => k * p).filter(v => v <= m).pop(); };
   const bar = nice((xmax - xmin) / 4), bx = x0 + 2, by = y0 + h + 6;
