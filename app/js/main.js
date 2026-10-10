@@ -20,10 +20,12 @@ import { initView3d } from './view3d/scene.js';
 import { initCollection } from './ui/collection.js';
 import { initMapTools } from './ui/maptools.js';
 import { initDims } from './dims.js';
+import { loadIcons, icon } from './ui/icons.js';
 
 const $ = id => document.getElementById(id);
 
 async function start() {
+  loadIcons();   // the sprite of the design system; the buttons reference it by name before it arrives
   applyI18n();
   initTheme();
   initRail();
@@ -124,7 +126,7 @@ function initTheme() {
     if (mode) document.documentElement.dataset.theme = mode; else delete document.documentElement.dataset.theme;
     const dark = mode ? mode === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     $('esriTheme').href = `https://js.arcgis.com/4.34/esri/themes/${dark ? 'dark' : 'light'}/main.css`;
-    $('btnTheme').textContent = dark ? '☀' : '☾';
+    $('btnTheme').innerHTML = icon(dark ? 'sun' : 'moon');
   };
   apply(saved);
   $('btnTheme').onclick = () => {

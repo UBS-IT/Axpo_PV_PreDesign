@@ -1,5 +1,6 @@
 // Non-blocking messages, bottom right. kind: '' | 'ok' | 'err'. opts.action = { label, fn }: a button in the
 // message (undo, open…); the message then stays until its button, its × or the next one with an action.
+import { icon } from './icons.js';
 let box = null;
 export function toast(text, kind = '', ms = 6000, opts = {}) {
   box = box || document.getElementById('toast');
@@ -20,7 +21,7 @@ export function toast(text, kind = '', ms = 6000, opts = {}) {
     b.onclick = () => { remove(); try { opts.action.fn(); } catch (e) { console.error(e); } };
     el.appendChild(b);
     const x = document.createElement('button');
-    x.type = 'button'; x.className = 'tx'; x.textContent = '×'; x.setAttribute('aria-label', 'Close');
+    x.type = 'button'; x.className = 'tx'; x.innerHTML = icon('close'); x.setAttribute('aria-label', 'Close');
     x.onclick = remove;
     el.appendChild(x);
     ms = Math.max(ms, 12000);

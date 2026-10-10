@@ -15,6 +15,7 @@ import { toast } from './ui/toast.js';
 import { stepProvider, refreshRail, showStep } from './ui/rail.js';
 import { updateCollection, showInCollection } from './ui/collection.js';
 import { onDrawPrefs } from './ui/maptools.js';
+import { icon } from './ui/icons.js';
 
 let view, featLayer, sketchLayer, sketchVM;
 let drawing = null;          // { category, tool }
@@ -430,9 +431,9 @@ function renderLast() {
     <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>
     <a href="#" class="see" data-see="${f.id}">${esc(t('draw.see'))}</a>`;
 }
-const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">✎</button>
-    <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">⬠</button>
-    <button type="button" class="x" data-del="${f.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">×</button>`;
+const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">${icon('pen')}</button>
+    <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">${icon('reshape')}</button>
+    <button type="button" class="x" data-del="${f.id}" title="${esc(t('areas.remove'))}" aria-label="${esc(t('areas.remove'))}">${icon('close')}</button>`;
 
 // ── reshaping an existing object ──
 function startEdit(id) {
@@ -645,7 +646,7 @@ function row(f, c) {
   const moveOpts = CATEGORIES.filter(x => x.geom.includes(kind)).map(x => `<option value="${x.id}" ${x.id === f.category ? 'selected' : ''}>${esc(t('cat.' + x.id))}</option>`).join('');
   const sub = [f.sourceCategory, f.category === 'connection' ? `${fmt(lineLengthKm(f.geometry), 2)} km` : ''].filter(Boolean).join(' · ');
   return `<div class="it" data-id="${f.id}">
-    <span class="grip" draggable="true" title="${esc(t('areas.dragTitle'))}" aria-hidden="true">⠿</span>
+    <span class="grip" draggable="true" title="${esc(t('areas.dragTitle'))}" aria-hidden="true">${icon('grip', 'sm')}</span>
     <span class="nm" data-zoom="${f.id}" draggable="true" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
     <select class="mv" data-id="${f.id}" title="${esc(t('areas.moveTo'))}" aria-label="${esc(t('areas.moveTo'))}">${moveOpts}</select>
     <span class="acts">${rowButtons(f)}</span>

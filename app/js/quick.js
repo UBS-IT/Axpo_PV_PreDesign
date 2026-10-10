@@ -13,6 +13,7 @@ import { suggestedRoad } from './infra.js';
 import { showStep } from './ui/rail.js';
 import { toast } from './ui/toast.js';
 import { whenClosed } from './ui/dialog.js';
+import { icon } from './ui/icons.js';
 
 const TECHS = ['ground-fixed', 'agri-tracker', 'agri-fixed'];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -101,7 +102,7 @@ export function openQuick() {
       : `<label class="chk"><input type="checkbox" name="terrain"> <span>${esc(t('quick.terrain'))}</span></label>`}
     <div class="btns">
       <button type="button" class="btn" data-cancel>${esc(t('crs.dlgCancel'))}</button>
-      <button type="submit" class="btn primary">${esc(t('quick.run'))}</button>
+      <button type="submit" class="btn primary">${icon('bolt')}${esc(t('quick.run'))}</button>
     </div>
   </form>`;
   document.body.appendChild(dlg);

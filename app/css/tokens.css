@@ -1,0 +1,179 @@
+/* PV Predesign — generated from design/tokens.json by scripts/make_tokens.py: do not edit by hand */
+:root {
+  --axpo-water-a: #3945cf;
+  --axpo-water-b: #0ce6cd;
+  --on-brand: #ffffff;
+  --accent: #1f99cc;
+  --accent-strong: #3945cf;
+  --fill: var(--accent-strong);
+  --on-fill: #ffffff;
+  --link: var(--accent-strong);
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --field: #ffffff;
+  --hover: #edf2f6;
+  --line: #e1e6eb;
+  --txt: #0f1720;
+  --mut: #5b6b7b;
+  --ok: #2dbe7e;
+  --on-ok: #0f1720;
+  --warn: #d99a00;
+  --err: #e5484d;
+  --cat-gross: #ff8c1a;
+  --cat-net: #2dbe7e;
+  --cat-connection: #8b5cf6;
+  --cat-exclusion: #e5484d;
+  --cat-linear: #e91e8c;
+  --cat-obstacle: #965a28;
+  --cat-access: #1f99cc;
+  --cat-mitigation: #6eaa3c;
+  --cat-agri: #c8aa28;
+  --cat-reference: #7b8a99;
+  --table: #3945cf;
+  --table-edge: #b8c2ff;
+  --road: #d9d3c0;
+  --fence: #f2f7fb;
+  --slope-1: #267348;
+  --slope-2: #96be5a;
+  --slope-3: #eed678;
+  --slope-4: #b08060;
+  --slope-5: #f5f5f0;
+  --slope-cut: #be1e3c;
+  --slope-cut-soft: #f3d2d8;
+  --map-chrome: #1b2a33;
+  --on-map: #f2f7fb;
+  --focus: var(--link);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --axpo-water-a: #3945cf;
+    --axpo-water-b: #0ce6cd;
+    --on-brand: #ffffff;
+    --accent: #4ebeef;
+    --accent-strong: #3945cf;
+    --fill: var(--accent);
+    --on-fill: #0b1219;
+    --link: var(--accent);
+    --bg: #0b1219;
+    --panel: #18232e;
+    --field: #121b24;
+    --hover: #22303d;
+    --line: #334250;
+    --txt: #f2f7fb;
+    --mut: #99afc2;
+    --ok: #2dbe7e;
+    --on-ok: #0f1720;
+    --warn: #ffc845;
+    --err: #e5484d;
+    --cat-gross: #ff8c1a;
+    --cat-net: #2dbe7e;
+    --cat-connection: #8b5cf6;
+    --cat-exclusion: #e5484d;
+    --cat-linear: #e91e8c;
+    --cat-obstacle: #965a28;
+    --cat-access: #1f99cc;
+    --cat-mitigation: #6eaa3c;
+    --cat-agri: #c8aa28;
+    --cat-reference: #7b8a99;
+    --table: #6f7bff;
+    --table-edge: #b8c2ff;
+    --road: #d9d3c0;
+    --fence: #f2f7fb;
+    --slope-1: #267348;
+    --slope-2: #96be5a;
+    --slope-3: #eed678;
+    --slope-4: #b08060;
+    --slope-5: #f5f5f0;
+    --slope-cut: #be1e3c;
+    --slope-cut-soft: #f3d2d8;
+    --map-chrome: #1b2a33;
+    --on-map: #f2f7fb;
+    --focus: var(--link);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --axpo-water-a: #3945cf;
+  --axpo-water-b: #0ce6cd;
+  --on-brand: #ffffff;
+  --accent: #4ebeef;
+  --accent-strong: #3945cf;
+  --fill: var(--accent);
+  --on-fill: #0b1219;
+  --link: var(--accent);
+  --bg: #0b1219;
+  --panel: #18232e;
+  --field: #121b24;
+  --hover: #22303d;
+  --line: #334250;
+  --txt: #f2f7fb;
+  --mut: #99afc2;
+  --ok: #2dbe7e;
+  --on-ok: #0f1720;
+  --warn: #ffc845;
+  --err: #e5484d;
+  --cat-gross: #ff8c1a;
+  --cat-net: #2dbe7e;
+  --cat-connection: #8b5cf6;
+  --cat-exclusion: #e5484d;
+  --cat-linear: #e91e8c;
+  --cat-obstacle: #965a28;
+  --cat-access: #1f99cc;
+  --cat-mitigation: #6eaa3c;
+  --cat-agri: #c8aa28;
+  --cat-reference: #7b8a99;
+  --table: #6f7bff;
+  --table-edge: #b8c2ff;
+  --road: #d9d3c0;
+  --fence: #f2f7fb;
+  --slope-1: #267348;
+  --slope-2: #96be5a;
+  --slope-3: #eed678;
+  --slope-4: #b08060;
+  --slope-5: #f5f5f0;
+  --slope-cut: #be1e3c;
+  --slope-cut-soft: #f3d2d8;
+  --map-chrome: #1b2a33;
+  --on-map: #f2f7fb;
+  --focus: var(--link);
+  color-scheme: dark;
+}
+:root {
+  --space-05: 2px;
+  --space-1: 4px;
+  --space-15: 6px;
+  --space-2: 8px;
+  --space-25: 10px;
+  --space-3: 12px;
+  --space-35: 14px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 4px 14px rgba(0, 0, 0, 0.18);
+  --shadow-xl: 0 6px 18px rgba(0, 0, 0, 0.2);
+  --shadow-dialog: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --axpo-gradient: linear-gradient(90deg, #3945cf, #0ce6cd);
+  --font-sans: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono: ui-monospace, Consolas, 'Cascadia Mono', Menlo, monospace;
+  --font: var(--font-sans);   /* the name app.css has always used */
+}
+.text-body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 13px; line-height: 19px; font-weight: 400; }
+.text-strong { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 13px; line-height: 19px; font-weight: 600; }
+.text-tab { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 12.5px; line-height: 16px; font-weight: 600; }
+.text-small { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 400; }
+.text-hint { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 11.5px; line-height: 15.5px; font-weight: 400; }
+.text-tool { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 11px; line-height: 13px; font-weight: 400; }
+.text-label { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.4px; }
+.text-overline { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 10.5px; line-height: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.text-title { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 700; }
+.text-kpi { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 17px; line-height: 22px; font-weight: 700; }
+.text-metric { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 700; }
+.text-data { font-family: ui-monospace, Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 11px; line-height: 14px; font-weight: 400; }

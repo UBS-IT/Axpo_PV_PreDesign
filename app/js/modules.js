@@ -9,6 +9,7 @@ import { t, fmt } from './i18n.js';
 import { store, change, emit, on, uid } from './state.js';
 import { catalogModules, standardFor } from './catalog.js';
 import { toast } from './ui/toast.js';
+import { icon } from './ui/icons.js';
 import { readWorkbook } from './io/xlsx.js';
 import { parseCsv } from './io/csv.js';
 
@@ -384,7 +385,7 @@ export function renderModules() {
     const row = document.createElement('div');
     row.className = 'it';
     row.innerHTML = `<input type="checkbox" data-id="${m.id}" ${planned.has(m.id) ? 'checked' : ''} title="${t('mod.planned')}" aria-label="${t('mod.planned')}">
-      <span class="nm"></span><button class="x" data-del="${m.id}" title="${t('mod.remove')}" aria-label="${t('mod.remove')}">×</button>`;
+      <span class="nm"></span><button class="x" data-del="${m.id}" title="${t('mod.remove')}" aria-label="${t('mod.remove')}">${icon('close')}</button>`;
     const nm = row.querySelector('.nm');
     nm.textContent = moduleLabel(m);
     const sm = document.createElement('small');

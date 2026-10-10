@@ -1,4 +1,6 @@
 // All user-visible text. English only for now; other languages can be added as further dictionaries.
+// No emoji or glyph characters in labels: an icon comes from data-icon (ui/icons.js) next to the text.
+import { icon, applyIcons } from './ui/icons.js';
 const EN = {
   'app.subtitle': 'ground-mounted & agrivoltaic',
   'top.new': 'New',
@@ -9,7 +11,7 @@ const EN = {
   'top.saveTitle': 'Save the project file (.pvpd) — Ctrl+S',
   'top.saveAs': 'Save as…',
   'top.saveAsTitle': 'Save the project under another name — Ctrl+Shift+S',
-  'top.import': '⬆ Import…',
+  'top.import': 'Import…',
   'top.importTitle': 'Import areas: GeoJSON, KML, KMZ, Shapefile (.zip), CSV points, Geoportale project (.axpo)',
   'top.crsTitle': 'Coordinate system for exports: click to check or change it',
   'top.crsNone': 'CRS –',
@@ -19,7 +21,7 @@ const EN = {
   'top.projName': 'Project name',
   'rail.label': 'Workflow steps',
 
-  'quick.btn': '⚡ Quick predesign',
+  'quick.btn': 'Quick predesign',
   'quick.btnTitle': 'Layout in one click with the group standards and the toolkit rules; everything stays editable',
   'quick.title': 'Quick predesign',
   'quick.intro': 'Group standards and toolkit rules, then the best grid position. Everything can be changed afterwards in 3 · Layout.',
@@ -32,7 +34,7 @@ const EN = {
   'quick.module': 'Module: {module}.',
   'quick.terrain': 'Sample Esri World Elevation and cut the slopes over the limit of the structure (a few seconds, needs Internet)',
   'quick.terrainLoaded': 'Terrain loaded: slopes over the limit of the structure are cut (2 · Terrain).',
-  'quick.run': '⚡ Run',
+  'quick.run': 'Run',
   'quick.noSite': 'Import or draw the site first (1 · Site): the quick predesign fills it.',
   'quick.noModule': 'No module in the library: add one in 3 · Layout.',
   'quick.noPitch': 'Set the pitch: the toolkit has no minimum for this site.',
@@ -85,7 +87,7 @@ const EN = {
   'terrain.pillMissing': 'not in this browser',
   'terrain.esriBtn': 'Analyse the slopes (Esri World Elevation)',
   'terrain.esriAgain': 'Analyse the slopes again (Esri World Elevation)',
-  'terrain.dtmBtn': '⬆ Use my own model (GeoTIFF DTM / DSM)…',
+  'terrain.dtmBtn': 'Use my own model (GeoTIFF DTM / DSM)…',
   'terrain.adv': 'Advanced: grid cell, small patches',
   'terrain.tech': 'Structure (as in 3 · Layout)',
   'terrain.techHint': 'The slope limit depends on the structure. Changing it here applies the group standard of that technology to the layout as well.',
@@ -151,7 +153,7 @@ const EN = {
   'terrain.noteNoRule': 'The toolkit has no slope limit for {structure}: slopes are not cut (choose a limit by hand in 2 · Terrain).',
   'terrain.noteMissing': 'The terrain of this project is not in this browser: open the project file again, or load the terrain again in 2 · Terrain.',
 
-  'areas.import': '⬆ Import files…',
+  'areas.import': 'Import files…',
   'areas.importHint': 'Import files or draw on the map: objects are sorted into categories automatically.',
   'areas.gloss2': 'Which files, and how the sorting works',
   'areas.importMore1': 'Files: GeoJSON, KML, KMZ, Shapefile (.zip), CSV points (x/y or lon/lat with name, type, height) and Geoportale projects (.axpo). Files dropped on the map are imported too.',
@@ -351,12 +353,12 @@ const EN = {
   'out.kmlMore': 'KMZ (WGS 84): folders by category with their colours and attributes, the buildable area, the tables as one placemark, fences, roads, stations and gates.',
   'out.engShort': 'Files in the national coordinate system chosen above, in metres; lengths and areas measured in true ground metres.',
   'out.gloss': 'What these files hold',
-  'out.geojson': '⬇ GeoJSON (WGS 84)',
-  'out.kml': '⬇ KMZ (Google Earth)',
+  'out.geojson': 'GeoJSON (WGS 84)',
+  'out.kml': 'KMZ (Google Earth)',
   'out.kmlDesc': 'PV Predesign, {date}: areas by category, buildable area, tables, fences, roads, stations and gates (WGS 84).',
-  'out.shp': '⬇ Shapefile (national system)',
-  'out.dxf': '⬇ DXF (national system)',
-  'out.boq': '⬇ Bill of quantities (Excel)',
+  'out.shp': 'Shapefile (national system)',
+  'out.dxf': 'DXF (national system)',
+  'out.boq': 'Bill of quantities (Excel)',
   'out.engTitle': 'For Engineering',
   'out.engHint': 'In the coordinate system above, in metres. Shapefile and GeoPackage: one layer per kind of object with its attributes and coordinate system (ArcGIS Pro opens a GeoPackage directly). DXF (AutoCAD R12): layers PVP_*, polylines and labels. Excel: layout and infrastructure quantities, one row per table and per object with its position. Foundations, cables and earthworks are not estimated.',
   'out.exportHint': 'GeoJSON and KMZ (WGS 84) hold every area with its category and attributes, the buildable area, the tables, fences, roads, stations and gates (GeoJSON can be imported back).',
@@ -364,7 +366,7 @@ const EN = {
   'out.shpDone': 'Saved {file}: {n} shapefiles in EPSG:{wkid}.',
   'out.shpNoPrj': 'Saved {file}: {n} shapefiles in EPSG:{wkid}, without .prj (system not in the app list): set it in the GIS.',
   'out.dxfDone': 'Saved {file} in EPSG:{wkid}, metres.',
-  'out.gpkg': '⬇ GeoPackage (national system)',
+  'out.gpkg': 'GeoPackage (national system)',
   'out.gpkgDone': 'Saved {file}: {n} layers in EPSG:{wkid}.',
   'out.boqDone': 'Saved {file}.',
   'out.fail': 'The export could not be written: {err}',
@@ -385,7 +387,7 @@ const EN = {
   'boq.notEarthworks': 'Earthworks and road build-up: need the topographic survey.',
   'out.report': 'Predesign report',
   'out.reportHint': 'One A4 page for prospection and engineering: the layout to scale, capacity and key figures, the assumptions with their toolkit sources and the checks still to do.',
-  'out.reportBtn': '⬇ PDF report',
+  'out.reportBtn': 'PDF report',
   'rep.sub': '{date} · {country} · {lat} N, {lon} E',
   'rep.figures': 'Key figures',
   'rep.assumptions': 'Assumptions and sources',
@@ -464,7 +466,7 @@ const EN = {
   'infra.apply': 'Apply the suggestion',
   'infra.noRoadValues': 'The toolkit has no perimeter road values for {country}: the road is not drawn.',
   'infra.roads': 'Roads',
-  'infra.drawRoad': '＋ Draw a road',
+  'infra.drawRoad': 'Draw a road',
   'infra.roadKindLabel': 'Kind of road',
   'infra.roadKind.heavy': 'Heavy traffic ({w})',
   'infra.roadKind.light': 'Light traffic ({w})',
@@ -483,9 +485,9 @@ const EN = {
   'infra.gate': 'Gate at «{name}»: {w}, on the fence {d} m from the access point.',
   'infra.gatesNone': 'Draw the site access in 1 · Site (Access & grid connection point): the gate goes on the fence next to it.',
   'infra.stations': 'Stations',
-  'infra.addCC': '＋ Delivery',
-  'infra.addCU': '＋ User',
-  'infra.addCT': '＋ Transformer',
+  'infra.addCC': 'Delivery',
+  'infra.addCU': 'User',
+  'infra.addCT': 'Transformer',
   'infra.atAccess': 'Place the delivery and user stations at the site access',
   'infra.stationsNone': 'No station yet: place them on the map, or at the access.',
   'infra.kind.CC': 'Delivery station',
@@ -553,12 +555,12 @@ const EN = {
   'd3.noViews': 'No saved view yet: frame the site and save the view (it goes into the project and the report).',
   'd3.go': 'Go to this view',
   'd3.del': 'Remove this view',
-  'd3.png': '⬇ Picture (PNG)',
-  'd3.report': '⬇ PDF report with the saved views',
+  'd3.png': 'Picture (PNG)',
+  'd3.report': 'PDF report with the saved views',
   'd3.reportNote': '3D view, sun at {time} UTC. Terrain and heights as in the 3D view; predesign, not for construction.',
   'd3.los': 'Line of sight (from an observer to targets)',
   'd3.glbTitle': '3D model',
-  'd3.glb': '⬇ glTF (.glb) for SketchUp, Blender, renderers',
+  'd3.glb': 'glTF (.glb) for SketchUp, Blender, renderers',
   'd3.glbHint': 'Terrain of 2 · Terrain around the site, modules, stations, fence, gates and obstacles, in metres, Y up; origin and national coordinates in the file.',
   'd3.glbNoTerrain': 'Modules, stations, fence, gates and obstacles in metres, Y up. Load a terrain in 2 · Terrain to include the ground.',
   'd3.glbDone': 'Saved {file}: {parts}.',
@@ -570,8 +572,8 @@ const EN = {
   'mod.title': 'Modules',
   'mod.sub': 'Library and modules planned for the project',
   'mod.empty': 'No modules yet: add one or import a roadmap.',
-  'mod.add': '＋ Add module',
-  'mod.import': '⬆ Import roadmap',
+  'mod.add': 'Add module',
+  'mod.import': 'Import roadmap',
   'mod.importTitle': 'Import the group module roadmap (Excel, by semester) or a supplier list (CSV or Excel)',
   'mod.manufacturer': 'Manufacturer',
   'mod.model': 'Model',
@@ -643,7 +645,7 @@ const EN = {
   'field.position': 'Grid position',
   'field.rowOffset': 'Row offset (m)',
   'field.colOffset': 'Column offset (m)',
-  'field.optimise': '⟳ Optimise position',
+  'field.optimise': 'Optimise position',
   'field.optimised': 'Best position found: {tables} tables ({gain}).',
 
   'res.title': 'Results',
@@ -677,7 +679,7 @@ const EN = {
   'res.gl4': 'Site area under tables: the plan area of the tables divided by the site area (the agrivoltaic rule of the toolkit is checked against it). MWp per hectare: DC capacity divided by the site area. Annual energy: DC capacity × the specific yield typed below.',
   'res.specYield': 'Specific yield (kWh/kWp per year)',
   'res.specYieldHint': 'From the internal yield tool — its API will fill this in.',
-  'res.none': 'Start in 1 · Site: import or draw the site, then ⚡ Quick predesign — or set the parameters here.',
+  'res.none': 'Start in 1 · Site: import or draw the site, then Quick predesign — or set the parameters here.',
 
   'warn.noSite': 'No gross or net area yet: import or draw one in 1 · Site.',
   'warn.noModule': 'No module selected.',
@@ -770,7 +772,9 @@ export function tn(key, n, vars = {}) {
 
 // Fill [data-i18n], [data-i18n-title], [data-i18n-placeholder], [data-i18n-empty] and [data-i18n-aria].
 export function applyI18n(root = document) {
-  root.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+  // a [data-icon] element gets its icon of the design system before the label (ui/icons.js)
+  root.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = (el.dataset.icon ? icon(el.dataset.icon) : '') + t(el.dataset.i18n); });
+  applyIcons(root);
   root.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
   root.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
   root.querySelectorAll('[data-i18n-empty]').forEach(el => { el.dataset.empty = t(el.dataset.i18nEmpty); });
