@@ -7,9 +7,11 @@ user works and what comes next.
 
 ## 1. Where the repository stands
 
-- `main` = `424d513`, merge of [PR #30](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/30) (phase 1A of the
-  ribbon refactor). The branch `ux/statusbar-controls` (`1fdbdb1` + this note) is
-  [PR #31](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/31), phase 1B, **open**: the user merges it on github.com.
+- `main` = `2a08f04`, merge of [PR #32](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/32) (phase 1C of the
+  ribbon refactor), after [PR #31](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/31) (phase 1B, `cc6e612`) and
+  [PR #30](https://github.com/UBS-IT/Axpo_PV_PreDesign/pull/30) (phase 1A, `424d513`). **Phase 1 is closed.** The
+  clone is on `main`, no local branch left; the remote branch `claude/elegant-pascal-pu0yal` of the cloud session
+  (PRs #15 and #16, merged) can be deleted on GitHub.
 - Merged today, in this order (every one a branch and a PR, CI `tests` green):
   - #18 handoff note of 2026-10-09 · #19 `.claude/launch.json` with `scripts/serve.py` by a relative path (the
     preview tool of the desktop app can now start the server from the clone).
@@ -37,25 +39,34 @@ with the app working after each.
 |---|---|---|
 | 0 · Tokens and icons | merged (#29) | `design/tokens.json` and `design/icons/` copied into the repo; `app/css/tokens.css` and `app/icons.svg` generated (never edited by hand); `ui/icons.js` (`icon()`, `data-icon`); no glyphs in labels |
 | 1A · Shell | merged (#30) | top bar with icon buttons, four tabs (`ui/tabs.js`: `TABS`, `TAB_OF`, states and gates of the old rail), the ribbon (`ui/ribbon.js`: static `.rgroup[data-tab]` groups in `index.html`, whose buttons keep the ids the panels wire), the Layers panel (`ui/layers.js`, same exports as the old `collection.js`), the Properties panel (the step sections), `css/shell.css` |
-| 1B · Status bar, panels, map controls | PR #31 open | docked panels that collapse to a 44 px strip; `ui/statusbar.js` (E / N in the export CRS, the CRS select moved from 5 · Report, scale, mode from the `pvp:mode` event, snapping, autosave); `ui/maptools.js` rewritten (controls column: Fit the site, Measure with Distance / Area chips, Dimensions; the drawing-support preferences); the Dimensions row at the foot of Layers; the basemap toggle and opacity as one stack bottom right |
-| 1C · Kit | **next** | the kit `bundle.css` as `app/css/kit.css`; `app.css` keeps only what the kit lacks |
+| 1B · Status bar, panels, map controls | merged (#31) | docked panels that collapse to a 44 px strip; `ui/statusbar.js` (E / N in the export CRS, the CRS select moved from 5 · Report, scale, mode from the `pvp:mode` event, snapping, autosave); `ui/maptools.js` rewritten (controls column: Fit the site, Measure with Distance / Area chips, Dimensions; the drawing-support preferences); the Dimensions row at the foot of Layers; the basemap toggle and opacity as one stack bottom right |
+| 1C · Kit | merged (#32) | `app/css/kit.css`, a byte-for-byte copy of the design system's `bundle.css` (CRLF aside), loaded between `tokens.css` and `app.css`; the markup takes the kit's names (`.lbl`, `.chip`, `.notice warn` / `err`, `dialog.dialog`, `.map-ctl`, `.banner`, `.project-name`, status bar `.it` / `.v`); three app names step aside (`.fold` sections, `.cat.over`, `.ctag`); `app.css` 328 → 252 lines (only what the kit lacks, every override commented with its clash), `shell.css` 142 → 87 (the layout) |
 | 2 · Ribbon tools | to do | the actions of the panels become ribbon tools (D4 hybrid drawing block); one key figure per tab in the ribbon context |
 | 3 · Layers | to do | visibility switches per computed layer (D6), legend of the slope classes |
 | 4 · Status bar, part two | to do | elevation and slope under the pointer from the loaded grid (`terrain/store.js`) |
 | 5 · New functions | to do | only the ones decided in plan §4 (search of project objects first) |
 | 6 · Docs and tests | to do | README screenshots, the shell table of `architecture.md`, the headless suite, a handoff |
 
-**Before phase 1C starts, the user confirms its concrete decisions** (asked at the end of this session, not yet
-answered): copy `bundle.css` into `app/css/kit.css` unchanged (updates stay a copy); `app.css` keeps only what the
-kit lacks; the classes of the panels take the kit's names (buttons, fields, KPIs, ledgers, notices, toasts,
-dialogs). The user wants this for every phase: a short numbered list of the concrete decisions, answered item by
-item (as B1–B7 were for 1B), before any code is written.
+The decisions of 1C (C1–C8, `docs/decisions.md`) were confirmed by the user in one go («sono d'accordo su tutti i
+punti»): the kit copied unchanged, the kit's names in the markup, the primary ribbon tool as the kit draws it
+(link-coloured text, no gradient), one global rule for the panel inputs, the category colour kept on a checked
+chip, the CSS tick kept on the tab number (the kit uses a ✓ glyph: to report to the design session), the kit's
+measures elsewhere. **Phase 2 (ribbon tools) starts the same way**: a short numbered list of the concrete decisions
+(which actions of each panel become ribbon tools, the hybrid drawing block of D4, the key figure of the ribbon
+context per tab, what the Properties panel keeps), answered item by item before any code is written.
 
 The decisions of 1B that changed on the user's say-so, for the record: the basemap stack goes **bottom right**
 (the proposal said bottom left); the panels are **docked**, not floating (two screenshots of a collapsed floating
 panel overlapping the map controls); the Esri attribution is compact, not removed (the terms of use ask for it).
 
 ## 3. Verified today
+
+- Phase 1C in the real page at 1366 × 800: the four tabs, the Quick predesign dialog (class, radius, options,
+  buttons), a checked category chip in its category colour, the bare CRS select of the status bar, the controls
+  column, the primary tool in link colour; mostly by computed styles, since the browser pane stayed hidden for most
+  of the check (screenshots time out then), plus one screenshot of the Layout tab at the end. Browser tests:
+  `ui.html` 19 / 19, `modules.html` 19 / 19, `import.html` 25 / 25. The Site, Terrain and Report tabs were not seen
+  by eye: a look at them is the first thing to do before phase 2.
 
 - Phase 1B in the real page `/app/` at 1366 × 800: the two panels close to their strips and reopen, the map resizes
   between them; the pointer coordinates appear in the status bar in RDN2008 / UTM 32N; the mode follows draw (polygon
@@ -84,6 +95,14 @@ panel overlapping the map controls); the Esri attribution is compact, not remove
 
 ## 5. Traps found today (do not rediscover them)
 
+- **The kit resets every `button`** (no background, border or padding) and **shares names with the app** that mean
+  something else: `.sec` (flat section vs the app's collapsible card, now `.fold`), `.drop` (dashed drop zone vs
+  the drag-over state, now `.cat.over`), `.tag` (top-bar badge vs the category tag, now `.ctag`), `.legend` (a
+  column on the map vs the slope legend in the panel), `.opts` (a column vs the 3D mode radios in a row), `.it` (a
+  status-bar item vs a list row), `.sw` (a bordered swatch vs the filled one), and `.notice` is `display: flex`, so
+  a notice built with `hidden` would show. Each has a one-line override in `app.css` or `shell.css`, commented;
+  read those comments before the next kit copy.
+
 - **`<dialog>` in a hidden browser pane**: Chromium does not deliver the `close` event while the tab is hidden (the
   `toggle` event arrives). `tests/ui.html` fell from the quick predesign onwards for this reason, not for the code;
   `whenClosed(dlg, fn)` in `ui/dialog.js` (PR #25) made the tests deterministic. Synthetic clicks in the pane may
@@ -105,7 +124,7 @@ panel overlapping the map controls); the Esri attribution is compact, not remove
 
 ## 6. Open work, in the order suggested
 
-1. Merge PR #31, cleanup, then phase 1C after the three decisions of §2 are answered.
+1. A look by eye at the Site, Terrain and Report tabs after 1C (§3), then phase 2 after its decisions (§2).
 2. Phases 2 to 6 of the plan, one PR each, each opened with its list of decisions. Phase 4 needs a grid lookup in
    `terrain/store.js` (elevation and slope at a map point).
 3. i18n keys left unused by 1A and 1B (`top.crsNone`, `top.import`, `top.importTitle`; `tools.measureClose` is
