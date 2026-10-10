@@ -1,7 +1,8 @@
 // Dimensions: measured lines kept in the project (project.dims, one polyline each in WGS 84), drawn on the map with
 // the length of every segment in true metres (the local frame of the site, never Web Mercator), ticks at the
-// vertices and the total of a chain; shown or hidden from the Tools menu, removed one by one (click, then Delete)
-// or all at once. They are not objects of 1 · Site: they cut nothing and belong to no category. They go to the PDF
+// vertices and the total of a chain; drawn from the Dimensions button of the map controls column (ui/maptools.js),
+// shown or hidden and removed all at once from the Dimensions row at the foot of the Layers panel, removed one by
+// one (click, then Delete). They are not objects of 1 · Site: they cut nothing and belong to no category. They go to the PDF
 // report and to the DXF (layer PVP_DIM), see report.js and export/model.js.
 import { getSdk } from './sdk.js';
 import { store, change, on, uid } from './state.js';

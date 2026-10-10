@@ -65,7 +65,7 @@ const MODULES_3D = {
   ShadowCast: '@arcgis/core/widgets/ShadowCast.js',
   LineOfSight: '@arcgis/core/widgets/LineOfSight.js',
 };
-// The measurement widgets (Tools menu on the map), loaded the first time a measure starts
+// The measurement widgets (the Measure card of the map controls column), loaded the first time a measure starts
 const MODULES_MEASURE = {
   DistanceMeasurement2D: '@arcgis/core/widgets/DistanceMeasurement2D.js',
   AreaMeasurement2D: '@arcgis/core/widgets/AreaMeasurement2D.js',

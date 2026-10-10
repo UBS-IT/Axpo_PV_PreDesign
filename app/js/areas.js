@@ -49,7 +49,8 @@ export function initAreas(mapView) {
   sketchLayer = new GraphicsLayer({ title: 'Sketch', listMode: 'hide' });
   view.map.addMany([featLayer, sketchLayer]);
   sketchVM = new SketchViewModel({ view, layer: sketchLayer, updateOnGraphicClick: false });
-  // the drawing support (snapping, typed lengths and angles, segment labels): preferences of the Tools menu
+  // the drawing support (snapping, typed lengths and angles, segment labels): the preferences of ui/maptools.js
+  // (the snapping switch of the status bar, the two boxes under the drawing block)
   try {
     sketchVM.snappingOptions = { enabled: true, selfEnabled: true, featureEnabled: true, featureSources: [{ layer: featLayer, enabled: true }] };
     sketchVM.tooltipOptions = { enabled: true, inputEnabled: true };
