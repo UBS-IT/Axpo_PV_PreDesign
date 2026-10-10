@@ -25,10 +25,10 @@ let editing = null;          // { id }
 let drawCat = UNCLASSIFIED; // ① the category the next drawings go into (none by default: sorted later)
 let catMenu = null;          // the category menu of the ribbon (ui/catmenu.js)
 const drawDefaults = {};     // category -> attributes given to the next drawings (type, buffer, height, width)
-let lastId = null;           // the last object drawn (the «Last drawing» box)
-let statusNote = '';         // one-off note shown before the status of the tools (added, undone…)
-const TOOLS = ['point', 'polyline', 'polygon', 'rectangle'];
-const TOOL_KIND = { point: 'point', polyline: 'line', polygon: 'polygon', rectangle: 'polygon' };
+let freehand = false;        // the Freehand box of the ribbon: Area and Line follow the pointer
+const TOOLS = ['point', 'polyline', 'polygon', 'rectangle', 'circle'];
+const TOOL_KIND = { point: 'point', polyline: 'line', polygon: 'polygon', rectangle: 'polygon', circle: 'polygon' };
+const FREEHAND_TOOLS = ['polygon', 'polyline'];
 export const crsState = { alerts: [], suggested: null, iso: null };
 // figures of the step for the rail (buildable area in m², null without a site)
 export const areasState = { buildableArea: null };
@@ -84,22 +84,21 @@ export function initAreas(mapView) {
     if (k === 'z' && !e.shiftKey) { if (undo()) e.preventDefault(); }
     else if (k === 'y' || (k === 'z' && e.shiftKey)) { if (redo()) e.preventDefault(); }
   });
-  // ① what you draw (the category menu of the ribbon), ② with which tool (the four tools next to it), undo / redo;
-  // in the Properties panel the values of the new objects, the status and the last drawing
+  // the ribbon group Site definition: ① the Category and Type menus, ② the five geometries (and Freehand), undo /
+  // redo, the values given to the next drawings (Buffer, and Height or Width when the category has one)
   if ($('drawTools')) {
     catMenu = initCatMenu({ btn: $('drawCatBtn'), list: $('drawCatList'), items: drawItems, value: () => drawCat, onPick: selectDrawCat });
     $('drawTools').onclick = e => { const b = e.target.closest('[data-dtool]'); if (b && !b.disabled) toggleTool(b.dataset.dtool); };
-    $('drawAttrs').onchange = e => {
-      const el = e.target.closest('[data-dattr]');
-      if (!el) return;
-      const d = drawDefaults[drawCat] || (drawDefaults[drawCat] = defaultAttrs(drawCat));
-      const v = el.type === 'number' ? (el.value === '' ? undefined : Math.max(0, Number(el.value))) : el.value;
-      if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete d[el.dataset.dattr]; else d[el.dataset.dattr] = v;
+    const num = el => (el.value === '' ? undefined : Math.max(0, Number(el.value)));
+    $('drawType').onchange = () => setValue('type', $('drawType').value);
+    $('drawBuffer').onchange = () => setValue('buffer', num($('drawBuffer')));
+    $('drawSize').onchange = () => setValue($('drawSize').dataset.dattr, num($('drawSize')));
+    $('drawFreehand').onchange = () => {
+      freehand = $('drawFreehand').checked;
+      if (drawing && FREEHAND_TOOLS.includes(drawing.tool)) startDraw(drawing.category, drawing.tool);   // the armed tool follows
     };
     $('drawUndo').onclick = () => undo();
     $('drawRedo').onclick = () => redo();
-    $('drawLast').addEventListener('click', onCatsClick);
-    $('drawLast').addEventListener('dblclick', onRename);
     renderDraw();
   }
 
@@ -167,7 +166,7 @@ export function initAreas(mapView) {
   on('field', renderSummarySoon);   // the slope limit depends on the structure
   on('settings', () => { $('boundarySetback').value = store.project.settings.boundarySetback; renderSummarySoon(); });
   on('project', () => {
-    history.undo.length = 0; history.redo.length = 0; lastId = null; statusNote = '';
+    history.undo.length = 0; history.redo.length = 0;
     if (drawing) stopDraw();
     render(); updateCrs(false); zoomToFeatures();
   });
@@ -282,8 +281,7 @@ export function undo() {
   if (!history.undo.length) return false;
   history.redo.push(snapshot());
   restoreFeatures(history.undo.pop());
-  statusNote = t('undone');
-  renderStatus();
+  toast(t('undone'), '', 2500);
   return true;
 }
 export function redo() {
@@ -291,8 +289,7 @@ export function redo() {
   if (!history.redo.length) return false;
   history.undo.push(snapshot());
   restoreFeatures(history.redo.pop());
-  statusNote = t('redone');
-  renderStatus();
+  toast(t('redone'), '', 2500);
   return true;
 }
 export const historySize = () => ({ undo: history.undo.length, redo: history.redo.length });
@@ -326,15 +323,18 @@ export function startDraw(category, tool) {
   if (editing) sketchVM.complete();
   if (drawing) sketchVM.cancel();
   document.dispatchEvent(new CustomEvent('pvp:draw'));   // a dimension in progress stops (dims.js)
-  drawing = { category, tool };
+  const free = freehand && FREEHAND_TOOLS.includes(tool);
+  drawing = { category, tool, free };
   drawCat = category;
   const c = CATEGORY[category].colour;
   sketchVM.polygonSymbol = { type: 'simple-fill', color: [...c, 0.12], outline: { color: c, width: 2 } };
   sketchVM.polylineSymbol = { type: 'simple-line', color: c, width: 2.5 };
   sketchVM.pointSymbol = { type: 'simple-marker', color: c, size: 9, outline: { color: [255, 255, 255], width: 1 } };
-  sketchVM.create(tool, tool === 'point' ? undefined : { mode: 'click' });
+  sketchVM.create(tool, tool === 'point' ? undefined : { mode: free ? 'freehand' : 'click' });
   renderDraw();
-  banner(t(tool === 'point' ? 'areas.drawPointBanner' : tool === 'rectangle' ? 'areas.drawRectBanner' : 'areas.drawBanner', { cat: esc(t('cat.' + category)) }));
+  const key = tool === 'point' ? 'areas.drawPointBanner' : tool === 'rectangle' ? 'areas.drawRectBanner' : tool === 'circle' ? 'areas.drawCircleBanner'
+    : free ? 'areas.drawFreeBanner' : 'areas.drawBanner';
+  banner(t(key, { cat: esc(t('cat.' + category)) }));
   setMode('draw', t('sb.draw', { cat: t('cat.' + category) }));
 }
 export function stopDraw() {
@@ -361,19 +361,43 @@ export function banner(html) {
 function finishDraw(graphic) {
   const d = drawing;
   sketchLayer.remove(graphic);
-  const geometry = toGeoJSON(graphic.geometry);
+  const geometry = toGeoJSON(d && d.free ? thinned(graphic.geometry) : graphic.geometry);
   if (geometry && d) {
     const n = store.project.features.filter(f => f.category === d.category).length + 1;
     const name = `${t('cat.' + d.category + '.one')} ${n}`;
     const f = { id: uid(), name, category: d.category, geometry, source: 'drawn', sourceCategory: '', attrs: { ...defaultAttrs(d.category), ...(drawDefaults[d.category] || {}) } };
     openCats.add(d.category);
-    lastId = f.id;
-    statusNote = t('draw.added', { name });
     mutate(p => p.features.push(f));
+    flashRow(f.id);   // the new row lights up in the Layers panel
   }
   // the tool stays armed (points, lines and areas alike): click it again or Esc to stop
   if (d) { drawing = null; startDraw(d.category, d.tool); }
   else endDraw();
+}
+// A freehand line follows the pointer with hundreds of vertices: thinned to 0.5 m in true metres (the frame of the
+// site, or one centred on the drawing when there is no site yet)
+function thinned(g) {
+  const S = getSdk();
+  try {
+    const c = S.projectOperator.execute(g.extent.center, S.SpatialReference.WGS84);
+    const frame = siteFrame() || makeLocalFrame({ lon0: c.x, lat0: c.y });
+    const l = S.generalizeOperator.execute(frame.toLocal(g), 0.5);
+    return l ? frame.toSr(l, g.spatialReference) : g;
+  } catch (e) { console.warn('[areas] freehand', e); return g; }
+}
+function flashRow(id) {
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`#areaCats .it[data-id="${id}"]`);
+    if (!row) return;
+    row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+    row.scrollIntoView({ block: 'nearest' });
+  });
+}
+// a value of the ribbon (Type, Buffer, Height, Width): given to the next drawings of the category
+function setValue(attr, v) {
+  if (!attr) return;
+  const d = drawDefaults[drawCat] || (drawDefaults[drawCat] = defaultAttrs(drawCat));
+  if (v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) delete d[attr]; else d[attr] = v;
 }
 function defaultAttrs(category) {
   if (category === 'obstacle') return { type: 'tree' };
@@ -391,6 +415,7 @@ const TOOL_SVG = {
   rectangle: SVG24('<rect x="4" y="6" width="16" height="12" rx="1.5"/>'),
   polyline: SVG24('<path d="M4.5 17.5l5-6.5 4.5 3 5.5-7"/><circle cx="4.5" cy="17.5" r="1.6"/><circle cx="9.5" cy="11" r="1.6"/><circle cx="14" cy="14" r="1.6"/><circle cx="19.5" cy="7" r="1.6"/>'),
   point: SVG24('<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/>'),
+  circle: SVG24('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
 };
 // the icons of the Draw here / Import buttons of the Layers cards
 const TOOL_ICON = {
@@ -413,36 +438,29 @@ function renderDraw() {
     b.title = ok ? `${t('draw.tool.' + tool)}: ${t('draw.tool.' + tool + '.sub')}` : why;
     b.setAttribute('aria-pressed', String(!!drawing && drawing.tool === tool));
   }
-  const d = drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id));
-  const parts = [];
-  if (c.attrs.includes('type')) parts.push(`<div><label class="lbl" for="dAttr_type">${esc(t('attr.type'))}</label><select id="dAttr_type" data-dattr="type">${c.types.map(ty => `<option value="${ty}" ${d.type === ty ? 'selected' : ''}>${esc(t('type.' + ty))}</option>`).join('')}</select></div>`);
-  for (const a of ['buffer', 'height', 'width']) if (c.attrs.includes(a)) parts.push(`<div><label class="lbl" for="dAttr_${a}">${esc(t('attr.' + a))}</label><input id="dAttr_${a}" type="number" min="0" step="0.5" data-dattr="${a}" value="${d[a] ?? ''}"></div>`);
-  $('drawAttrs').innerHTML = parts.length ? `<div class="cap">${esc(t('draw.newValues', { cat: t('cat.' + c.id) }))}</div>${parts.join('')}` : '';
-  $('drawAttrs').hidden = !parts.length;
+  renderValues(c, drawDefaults[c.id] || (drawDefaults[c.id] = defaultAttrs(c.id)));
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
-  renderStatus();
   renderHistory();
 }
-function renderStatus() {
-  const el = $('drawStatus');
-  if (!el) return;
-  const note = statusNote; statusNote = '';
-  const main = drawing
-    ? t('draw.armed', { cat: t('cat.' + drawing.category), tool: t('draw.tool.' + drawing.tool), how: t('draw.tool.' + drawing.tool + '.sub') })
-    : t('draw.idle');
-  el.textContent = note ? `${note} ${main}` : main;
-  el.className = 'status' + (note ? ' ok' : '');
-}
-function renderLast() {
-  const el = $('drawLast');
-  if (!el) return;
-  const f = lastId && store.project.features.find(x => x.id === lastId);
-  el.hidden = !f;
-  if (!f) return;
-  const c = CATEGORY[f.category] || CATEGORY.reference;
-  el.innerHTML = `<div class="ttl">${esc(t('draw.last'))}</div><div class="row"><span class="ctag" style="--c:rgb(${c.colour.join(',')})">${esc(t('cat.' + f.category))}</span>
-    <span class="nm" data-zoom="${f.id}" title="${esc(t('areas.rowTitle'))}">${esc(f.name)}</span>${rowButtons(f)}</div>
-    <a href="#" class="see" data-see="${f.id}">${esc(t('draw.see'))}</a>`;
+// Type, Buffer and Height / Width of the ribbon for category c with the values v: Type is off for Unclassified and for
+// the categories without types (gross, net), Buffer for those that do not cut with one; Height shows for obstacles,
+// Width for the mitigation and agricultural strips
+function renderValues(c, v) {
+  const ty = $('drawType');
+  if (ty) {
+    const types = c.attrs.includes('type') ? c.types : [];
+    ty.innerHTML = types.length ? types.map(x => `<option value="${x}" ${v.type === x ? 'selected' : ''}>${esc(t('type.' + x))}</option>`).join('')
+      : `<option value="">${esc(t('type.none'))}</option>`;
+    ty.disabled = !types.length;
+  }
+  const bf = $('drawBuffer');
+  if (bf) { const on = c.attrs.includes('buffer'); bf.disabled = !on; bf.value = on ? (v.buffer ?? '') : ''; }
+  const size = c.attrs.includes('height') ? 'height' : c.attrs.includes('width') ? 'width' : null;
+  const cap = $('drawSizeCap'), box = $('drawSizeBox'), inp = $('drawSize');
+  if (cap && box && inp) {
+    cap.hidden = box.hidden = !size;
+    if (size) { cap.textContent = t('draw.' + size); inp.dataset.dattr = size; inp.value = v[size] ?? ''; }
+  }
 }
 const rowButtons = f => `<button type="button" class="x" data-rename="${f.id}" title="${esc(t('areas.rename'))}" aria-label="${esc(t('areas.rename'))}">${icon('pen')}</button>
     <button type="button" class="x ed" data-edit="${f.id}" title="${esc(t('areas.edit'))}" aria-label="${esc(t('areas.edit'))}">${icon('reshape')}</button>
@@ -624,7 +642,6 @@ export function render() {
   document.querySelectorAll('#areaCats .drawbtn[data-dsel]').forEach(b => b.classList.toggle('active', b.dataset.dsel === drawCat));
   updateCollection([...(pending ? [{ id: UNCLASSIFIED, colour: CATEGORY[UNCLASSIFIED].colour, label: t('cat.' + UNCLASSIFIED), n: pending }] : []),
     ...CATEGORIES.map(c => ({ id: c.id, colour: c.colour, label: t('cat.' + c.id), n: store.project.features.filter(f => f.category === c.id).length }))]);
-  renderLast();
   renderHistory();
   $('boundarySetback').value = store.project.settings.boundarySetback;
   const rb = $('railAreas');

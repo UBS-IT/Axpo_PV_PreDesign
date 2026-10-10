@@ -144,7 +144,8 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   const btn = document.getElementById('drawCatBtn'), list = document.getElementById('drawCatList');
   const tool = id => document.querySelector(`#drawTools [data-dtool="${id}"]`);
   const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
-  const all = ['point', 'polyline', 'polygon', 'rectangle'];
+  const all = ['point', 'polyline', 'polygon', 'rectangle', 'circle'];
+  const off = id => document.getElementById(id).disabled;
   // the menu: Unclassified, then the ten categories of the model; Unclassified is the default and takes every tool
   btn.click();
   const opts = list.querySelectorAll('[role=option]');
@@ -152,22 +153,29 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   assert(opts.length === 11 && opts[0].dataset.id === 'unclassified' && opts[0].getAttribute('aria-selected') === 'true', 'Unclassified first and chosen: ' + opts.length);
   assert(opts[1].querySelector('.dot').style.getPropertyValue('--c') && opts[0].querySelector('.dot.none'), 'colour dots, a dashed one for Unclassified');
   assert(all.every(k => !tool(k).disabled), 'without a category every tool is on');
+  assert(off('drawType') && off('drawBuffer'), 'Unclassified: no type and no buffer yet');
   key(list, 'Escape');
   assert(list.hidden && btn.getAttribute('aria-expanded') === 'false', 'Esc closes the menu');
   // a click picks a category: the tools follow it
   btn.click(); list.querySelector('[data-id="gross"]').click();
   assert(list.hidden && /Gross area/.test(btn.textContent), 'gross chosen: ' + btn.textContent);
-  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled, 'a gross area takes polygons only');
+  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled && !tool('circle').disabled, 'a gross area takes polygons only (circle too)');
   assert(/polygons|points/.test(tool('point').title), 'the disabled tool says why: ' + tool('point').title);
-  assert(document.getElementById('drawAttrs').hidden, 'no defaults for the gross area');
+  assert(off('drawType') && off('drawBuffer') && document.getElementById('drawSizeBox').hidden, 'no type, buffer or size for the gross area');
   // the keyboard: Arrow down opens, End goes to the last category, Enter picks it
   key(btn, 'ArrowDown'); key(list, 'End'); key(list, 'Enter');
   assert(list.hidden && /Reference/.test(btn.textContent), 'keyboard pick: ' + btn.textContent);
   selectDrawCat('exclusion');
   assert(all.every(k => !tool(k).disabled), 'exclusions take every geometry');
-  const type = document.querySelector('#drawAttrs [data-dattr="type"]'), buf = document.querySelector('#drawAttrs [data-dattr="buffer"]');
-  assert(type && buf && !document.getElementById('drawAttrs').hidden && /Exclusion zones/.test(text('drawAttrs')), 'type and buffer defaults for exclusions');
-  assert(/Pick a category/.test(text('drawStatus')), 'status at rest: ' + text('drawStatus'));
+  const ty = document.getElementById('drawType'), buf = document.getElementById('drawBuffer');
+  assert(!ty.disabled && ty.options.length === 13 && !buf.disabled && document.getElementById('drawSizeBox').hidden, 'exclusions: type and buffer on, no size');
+  buf.value = '7'; buf.dispatchEvent(new Event('change'));
+  selectDrawCat('obstacle');
+  assert(!document.getElementById('drawSizeBox').hidden && text('drawSizeCap') === 'Height' && ty.value === 'tree', 'obstacles: height next to the buffer, tree by default');
+  selectDrawCat('exclusion');
+  assert(buf.value === '7', 'the buffer given to the next exclusions is remembered');
+  const fh = document.getElementById('drawFreehand');
+  assert(fh && !fh.checked, 'the Freehand box, off');
   assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
   // «Draw here» on a card takes the category
   document.querySelector('#areaCats .drawbtn[data-dsel="obstacle"]').click();
@@ -184,7 +192,7 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   assert(store.project.features.length === 1 && store.project.features[0].id === 'g', 'site back');
   assert(historySize().undo === 2 && !document.getElementById('drawUndo').disabled, 'two steps in the history');
   assert(undo() && store.project.features.length === 0 && redo() && store.project.features.length === 1, 'undo / redo');
-  assert(/Redone/.test(text('drawStatus')), 'status says: ' + text('drawStatus'));
+  assert([...document.querySelectorAll('#toast .toast')].some(x => /Redone/.test(x.textContent)), 'a message says Redone');
   selectDrawCat('gross');
   await wait(300);
   return `${opts.length} entries in the menu · ${historySize().undo} undo steps`;

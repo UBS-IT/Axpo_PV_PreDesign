@@ -34,6 +34,23 @@ body { overflow: hidden; display: block; }
 .tool[role="radio"][aria-checked="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--link); }
 .rfield { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-right: var(--space-2); }
 .rcap { color: var(--mut); font-size: 10.5px; line-height: 13px; }
+/* Site definition (decisions A1-A3): Category and Type in line, label left and menu right; the geometries over the
+   Freehand box; the values of the next drawings and the two drawing-support boxes in a column */
+.rform { display: grid; grid-template-columns: auto auto; align-items: center; align-content: center; column-gap: 8px; row-gap: 6px; padding-right: var(--space-1); }
+.rsel { width: 214px; height: 26px; padding: 0 6px; font-size: 12px; }
+.rsel:disabled { opacity: .5; cursor: not-allowed; }
+.tool-col { display: flex; flex-direction: column; gap: 2px; }
+.tool-col .tool-row { flex: 1; min-height: 0; }
+.tool-col .tool.medium { padding: 2px 4px; min-width: 50px; }
+.tool-col > .chk { padding-left: 4px; }
+.rvals { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-left: var(--space-1); }
+.rline { display: flex; align-items: center; gap: 6px; }
+.rline .rcap[hidden], .rline .unit[hidden] { display: none; }
+.unit.sm { width: 68px; height: 22px; }
+.unit .input { height: 20px; padding: 0 2px 0 6px; font-size: 12px; }
+.unit:has(.input:disabled) { opacity: .5; }
+.chk.mini { margin: 0; gap: 5px; font-size: 11px; line-height: 14px; color: var(--mut); white-space: nowrap; }
+.chk.mini input { width: 12px; height: 12px; }
 /* the category menu (ui/catmenu.js): a field-like button with the colour of the category, a list under it */
 .catsel { display: flex; align-items: center; gap: 8px; width: 214px; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); font-size: 12.5px; text-align: left; }
 .catsel:hover { border-color: var(--accent); }

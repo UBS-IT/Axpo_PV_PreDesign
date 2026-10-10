@@ -94,13 +94,15 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Geoportale's *Pendenze da DTM* come with their grid and limit: see 2 · Terrain. The Geoportale's automatic
   drawings (the buffer strips that follow an object, the automatic net area) are left out, since this app computes
   them from the objects with the same rules; its boundary setback (*rientro dal confine*) is taken when none is set.
-- **Drawing** — the pattern of the Geoportale's *Disegna*, in two steps, in the ribbon group *Site definition*: the
-  **Category** menu (the categories with their colour dots; *Unclassified* first and chosen by default) and the
-  drawing tools **Area, Rectangle, Line, Point** (a tool is off, with the reason as its tooltip, when the category does
-  not take that geometry; a tick marks the armed one), plus **Undo / Redo** (Ctrl+Z / Ctrl+Y, 40 steps) for every
-  change of the objects. The Properties panel keeps the type and buffer / height / width given to the next drawings,
-  the status line and a *Last drawing* box. The armed tool stays armed after each drawing (a second click or Esc
-  stops it). Objects drawn as *Unclassified* wait in the first group of the Layers panel, dashed on the map, counted
+- **Drawing** — the pattern of the Geoportale's *Disegna*, in two steps, all in the ribbon group *Site definition*:
+  the **Category** menu (the categories with their colour dots; *Unclassified* first and chosen by default) with the
+  **Type** menu under it (off until a category with types is chosen), the drawing tools **Area, Rectangle, Circle,
+  Line, Point** (a tool is off, with the reason as its tooltip, when the category does not take that geometry; a tick
+  marks the armed one) with a **Freehand** box (Area and Line follow the pointer, thinned to 0.5 m), **Undo / Redo**
+  (Ctrl+Z / Ctrl+Y, 40 steps) for every change of the objects, then the **Buffer** given to the next drawings (and
+  their Height for obstacles, Width for the strips) and the two drawing-support boxes. The boundary setback is the
+  *Constraints* group next to it. The Site panel on the right only shows the figures. The armed tool stays armed after
+  each drawing (a second click or Esc stops it); the map banner and the status bar say what is going on. Objects drawn as *Unclassified* wait in the first group of the Layers panel, dashed on the map, counted
   nowhere and exported nowhere, until each one gets its category (the menu of its row, or a drag onto a category);
   the area ledger and the Report tab say how many are waiting. Removing one object or all of a category shows a
   message with *Undo* instead of a confirmation. Each row has rename, reshape and remove; *Draw here* on a category
