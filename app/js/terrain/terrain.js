@@ -8,6 +8,7 @@
 import { getSdk } from '../sdk.js';
 import { store, change, on, emit, uid, geomKind } from '../state.js';
 import { t, tn, fmt } from '../i18n.js';
+import { icon } from '../ui/icons.js';
 import { siteFrame, extraCuts, importHooks, removeFeatures } from '../areas.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
@@ -18,7 +19,7 @@ import { projectPointToWgs84 } from '../geo/convert.js';
 import { chooseCrs } from '../ui/crsdialog.js';
 import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/dialog.js';
-import { stepProvider } from '../ui/rail.js';
+import { stepProvider } from '../ui/tabs.js';
 import { applyStandard } from '../field.js';
 import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
@@ -480,7 +481,8 @@ function render() {
   $('terMinPatch').value = P.terrain.minPatch;
   $('terTech').value = P.field.technology;
   $('terClear').hidden = !m;
-  $('terEsri').textContent = t(m ? 'terrain.esriAgain' : 'terrain.esriBtn');
+  const eb = $('terEsri');   // a ribbon tool: a short caption, the full text as its tooltip
+  if (eb) { eb.innerHTML = icon('terrain') + t(m ? 'ribbon.analyseAgain' : 'ribbon.analyse'); eb.title = t(m ? 'terrain.esriAgain' : 'terrain.esriBtn'); }
   $('terPill').textContent = t(stale ? 'terrain.pillStale' : have ? 'terrain.pillOn' : m ? 'terrain.pillMissing' : 'terrain.pillOff');
   $('terPill').className = 'pill' + (have && !stale ? ' ok' : '');
   $('terInfo').innerHTML = m ? `<div class="hint">${esc(t('terrain.info', { name: m.name, date: m.loadedAt.slice(0, 10), cells: fmt(m.nx * m.ny),

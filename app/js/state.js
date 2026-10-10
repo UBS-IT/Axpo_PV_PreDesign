@@ -125,7 +125,7 @@ let saveTimer = 0;
 export function saveSoon() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(PROJECT_KEY, JSON.stringify(store.project)); }
+    try { localStorage.setItem(PROJECT_KEY, JSON.stringify(store.project)); document.dispatchEvent(new CustomEvent('pvp:saved', { detail: new Date() })); }
     catch (e) { console.warn('[state] autosave failed (browser storage full?)', e); }
   }, 400);
 }

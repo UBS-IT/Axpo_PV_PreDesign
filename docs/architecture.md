@@ -37,7 +37,8 @@ the ArcGIS Maps SDK (from `js.arcgis.com`), the background map and Esri World El
  │                                       ▼                                    │
  │                        2D / 3D switch: view3d/scene.js (SceneView, glTF)   │
  │                                                                            │
- │   ui/rail.js (the stepper)   ui/toast.js   ui/dialog.js   ui/basemap.js    │
+ │   ui/tabs.js · ui/ribbon.js · ui/layers.js (the shell, css/shell.css)     │
+ │   ui/toast.js   ui/dialog.js   ui/basemap.js   ui/maptools.js   ui/icons.js │
  │   io/projectfile.js: Save / Open  ◄──► .pvpd (zip: project.json + grid)    │
  │   app/vendor/: JSZip, togeojson, shpjs, geotiff, jsPDF, sql.js (local)     │
  └────────────────────────────────────────────────────────────────────────────┘
@@ -58,7 +59,12 @@ Three ideas explain most of the design:
 
 ## 2. The steps of the rail and the files behind them
 
-The left rail is a stepper (`app/js/ui/rail.js`). Each panel tells the rail how its step stands: locked (a
+Since the ribbon refactor (phase 1A, 2026-10-10) the shell is a top bar, four tabs (`app/js/ui/tabs.js`: Site
+area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab (`ui/ribbon.js`,
+whose tools keep the ids of the buttons they replace), the map filling the row with two floating panels, Layers on
+the left (`ui/layers.js`, the objects by category) and Properties on the right (the sections of the steps of the
+active tab), and a status bar; `css/shell.css` lays it out. The steps below are unchanged: a tab holds one or two of
+them (the third tab holds fields and infra). Each panel tells the tabs how its step stands: locked (a
 prerequisite is missing), ready, optional or done with its key figure. The panels are independent files; they talk
 to each other only through the project and a small publish/subscribe (`change(topic)` / `on(topic)` in `state.js`).
 

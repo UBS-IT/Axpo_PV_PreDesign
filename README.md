@@ -25,12 +25,18 @@ and the total of a chain, ticks at the vertices; shown or hidden from the menu, 
 Delete, or the Remove button of the message) or all at once; they cut nothing and belong to no category. They go to
 the PDF report and to the DXF (layer `PVP_DIM`), not to the KMZ.
 
-The left rail is a **stepper** in the order of the dependencies: every step shows its state — *locked* (a
-prerequisite is missing: the step still opens, with a gate that says why and a link to the step to do first),
-*ready*, *optional*, *done* (a tick and its key figure: buildable hectares, MWp, fence length). Nothing forces the
-order: a designer can work in any sequence. The app reopens on the step last visited, or on the first still to do.
-Clicking the active step again folds the panel away to give the map more room. **2D / 3D** is a switch on the map,
-not a step: the panel keeps its step while the map turns into the scene.
+The shell is the **ribbon workspace** of the design system (`docs/plan-ribbon-refactor.md`): a top bar (project
+name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **four tabs** in the order of
+the dependencies — Site area, Terrain Analysis, Layout & Infrastructure, Report & exports — the **ribbon** of the
+active tab (its tools: Import; Analyse the slopes, Own model; Quick predesign, Optimise, the stations; the exports),
+the map filling the whole row, and a status bar. Two panels float over the map and collapse to a button in their
+corner: **Layers** on the left (the objects by category) and **Properties** on the right (the parameters, figures
+and notices of the steps of the active tab; the third tab stacks Layout and Infrastructure). Every tab shows its
+state — *locked* (a prerequisite is missing: the tab still opens, with a gate that says why and a link to the step to
+do first), *ready*, *optional*, *done* (a tick and its key figure: buildable hectares, the slope limit, MWp).
+Nothing forces the order: a designer can work in any sequence. The app reopens on the step last visited, or on the
+first still to do. **2D / 3D** is a switch on the map, not a tab: the panel keeps its step while the map turns into
+the scene. The app is a desktop tool: under 760 px of window width it shows a message instead.
 
 | Step | Today |
 |---|---|
@@ -354,7 +360,7 @@ app/                  the web app (index.html, css/, js/)
   js/export/          Shapefile, GeoPackage, DXF and bill of quantities for Engineering (national system)
   js/libs.js          loader of the vendored libraries
   vendor/             third-party libraries (built by tools/headless/vendor.mjs; sql.js with its .wasm), versions.json, licenses/
-  js/ui/              stepper rail, the Collection drawer, confirm dialog, coordinate system dialog, background map, toasts (with Undo)
+  js/ui/              tabs and ribbon (the shell), the Layers panel, icons, confirm dialog, coordinate system dialog, background map, Tools menu, toasts (with Undo)
   js/view3d/          2D / 3D switch: sun and shading (pure), geometry, model, scene, glTF writer
 tests/                browser tests and synthetic fixtures
 docs/                 architecture.md (the map of the app for non-developers), plan, decisions, audit/, handoff/ (notes between sessions); toolkit/ = the toolkit archive by country and the toolkit workbook (toolkit.xlsx)

@@ -13,7 +13,7 @@ import { siteFrame, extraCuts, crsState, computeArea } from './areas.js';
 import { last } from './field.js';
 import { toast } from './ui/toast.js';
 import { icon } from './ui/icons.js';
-import { stepProvider } from './ui/rail.js';
+import { stepProvider } from './ui/tabs.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
 const STATION_COLOUR = { CC: [31, 153, 204], CU: [110, 170, 60], CT: [233, 120, 30] };

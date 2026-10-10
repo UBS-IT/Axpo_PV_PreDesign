@@ -7,8 +7,8 @@ import { applyI18n } from '../app/js/i18n.js';
 import { store, defaultProject, replaceProject, change } from '../app/js/state.js';
 import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat } from '../app/js/areas.js';
-import { stepState, refreshRail } from '../app/js/ui/rail.js';
-import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/collection.js';
+import { stepState, refreshRail } from '../app/js/ui/tabs.js';
+import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
 import { initDims, dimensionParts, removeDimension } from '../app/js/dims.js';
 import { structurePresets } from '../app/js/catalog.js';
@@ -54,7 +54,9 @@ const html = await (await fetch('../app/index.html')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const box = document.createElement('div');
 box.style.display = 'none';
-box.append(doc.getElementById('top'), doc.getElementById('side'), doc.getElementById('coll'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
+// the shell: top bar, tabs, ribbon (the tools of the steps keep their ids there), the two floating panels
+box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'),
+  doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
   doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
@@ -80,7 +82,7 @@ await test('panels start: areas, terrain, modules, fields, output', async () => 
   try { initDims(view); } catch (e) { throw new Error('dims: ' + e.message); }
   initTerrain(view); initModulesUi(); initField(view); initInfra(view); initOutput(); initQuick();
   await wait(600);
-  assert(/Italy|RDN2008/.test(document.getElementById('outCrsAlerts').innerText + text('crsBadge')), 'national system proposed');
+  assert(/Italy|RDN2008/.test(document.getElementById('outCrsAlerts').innerText + document.getElementById('outCrs').selectedOptions[0].text), 'national system proposed');
   assert(document.getElementById('fStruct').value === '3V9', 'standard structure');
   assert(/TOPCon/.test(document.getElementById('fModule').selectedOptions[0].text), 'standard module chosen');
   assert(/29° shading angle/.test(text('fPitchHint')), 'Italian minimum pitch: ' + text('fPitchHint'));
@@ -107,19 +109,22 @@ await test('stepper: states from the panels, gate of a locked step with its link
   return `${st.areas.figure} buildable · outputs: ${st.output.reason}`;
 });
 
-await test('collection drawer: the objects by category out of the Site panel, tab with counters, closed by default, opened on one object', async () => {
+await test('Layers panel: the objects by category out of the Site panel, counters, open by default, collapsible, opened on one object', async () => {
   initCollection();
-  const coll = document.getElementById('coll');
-  assert(coll && coll.contains(document.getElementById('areaCats')), 'the category cards live in the drawer');
+  const panel = document.getElementById('leftPanel');
+  assert(panel && panel.contains(document.getElementById('areaCats')), 'the category cards live in the Layers panel');
   assert(!document.querySelector('.step[data-step="areas"] #areaCats'), 'and not in the Site panel any more');
-  assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'closed by default');
+  assert(isOpen() && !panel.hidden && document.getElementById('collTab').hidden, 'open by default, the reopen button hidden');
   const dots = document.querySelectorAll('#collDots .dot');
-  assert(dots.length === 1 && /1/.test(dots[0].textContent) && text('collTot') === '1', `tab: one dot for the gross area, total 1 (${dots.length}, ${text('collTot')})`);
+  assert(dots.length === 1 && /1/.test(dots[0].textContent) && document.getElementById('collTot').textContent === '1', `counters: one dot for the gross area, total 1 (${dots.length})`);
+  toggleCollection(false);
+  assert(!isOpen() && panel.hidden && !document.getElementById('collTab').hidden && document.body.classList.contains('left-closed'), 'collapsed to its button');
   showInCollection('g', 'gross');
   const row = document.querySelector('#areaCats .it[data-id="g"]');
-  assert(isOpen() && document.querySelector('#areaCats .cat[data-cat="gross"]').open && row.classList.contains('flash'), 'opened on the object, its card unfolded, its row highlighted');
+  assert(isOpen() && !panel.hidden && document.querySelector('#areaCats .cat[data-cat="gross"]').open && row.classList.contains('flash'), 'opened on the object, its card unfolded, its row highlighted');
   toggleCollection(false);
-  assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'closed again');
+  assert(!isOpen() && document.getElementById('collTab').getAttribute('aria-expanded') === 'false', 'collapsed again');
+  toggleCollection(true);
   return `${dots.length} dot, total ${text('collTot')}`;
 });
 

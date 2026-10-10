@@ -279,7 +279,7 @@ await test('modules are written into the project and adopted on another computer
 // every module of the app loads (the app page itself needs a map: check it in a browser)
 await test('every app module loads', async () => {
   const names = ['areas', 'field', 'output', 'modules', 'quick', 'infra', 'categories', 'crs', 'catalog', 'state', 'i18n', 'io/importers', 'io/projectfile', 'io/xlsx', 'io/xlsxwrite', 'io/csv', 'libs', 'report', 'export/model', 'export/shp', 'export/gpkg', 'export/dxf', 'export/boq', 'ui/basemap', 'view3d/sun', 'view3d/geometry', 'view3d/model', 'view3d/glb', 'view3d/scene',
-    'geo/convert', 'geo/localframe', 'layout/rows', 'layout/structures', 'ui/rail', 'ui/crsdialog', 'ui/toast', 'terrain/slope', 'terrain/terrain', 'terrain/dtm', 'terrain/store'];
+    'geo/convert', 'geo/localframe', 'layout/rows', 'layout/structures', 'ui/tabs', 'ui/crsdialog', 'ui/toast', 'terrain/slope', 'terrain/terrain', 'terrain/dtm', 'terrain/store'];
   const missing = [];
   for (const n of names) {
     const r = await fetch(`../app/js/${n}.js`);
