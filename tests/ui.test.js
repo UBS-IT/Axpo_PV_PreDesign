@@ -13,7 +13,10 @@ import { layerVisible, setLayerVisible, KIND_3D } from '../app/js/ui/visibility.
 import { initRibbon } from '../app/js/ui/ribbon.js';
 import { stepState, refreshRail, currentTab, showStep } from '../app/js/ui/tabs.js';
 import { initSearch, searchItems, matchItems, highlight, fold } from '../app/js/ui/search.js';
-import { initGeoSearch, parseCoordinates, setGeocoder, run as geoRun, pinCount, clearPin } from '../app/js/ui/geosearch.js';
+import { initGeoSearch, parseCoordinates, setGeocoder, run as geoRun, pinCount, clearPin, goToPlace } from '../app/js/ui/geosearch.js';
+import { initMapNav, projectBox, lockedScale, nearestScale, SCALES } from '../app/js/ui/mapnav.js';
+import { isUntitled, fileBase, fileName as projectFileName } from '../app/js/io/names.js';
+import { saveProject } from '../app/js/io/projectfile.js';
 import { initLayerMenu, rowTarget, targetExtent } from '../app/js/ui/layermenu.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
@@ -835,6 +838,46 @@ await test('search (phase 5): Ctrl K and the objects of the project, addresses a
   assert(rowTarget(objRow).ids[0] === objRow.dataset.id && targetExtent({ key: 'no-such-layer' }) === null, 'the target of a row; nothing to zoom to');
   view.goTo = goTo;
   return `searchable items: ${searchItems().length} · ${c3.lat.toFixed(5)}, ${c3.lon.toFixed(5)}`;
+});
+
+await test('project logic (phase 7): the box of the project and its widest scale, the scale menu and its lock, no save without a name, the names of the files', async () => {
+  const it = id => document.getElementById(id);
+  // the stand-in view gets the constraints of a MapView
+  view.constraints = {}; view.scale = 2500;
+  initMapNav(view);
+  const { Point, SpatialReference, projectOperator } = getSdk();
+  const box = projectBox(store.project.features, SpatialReference.WebMercator);
+  const f = siteFrame(), centre = projectOperator.execute(new Point({ longitude: f.lon0, latitude: f.lat0 }), SpatialReference.WebMercator);
+  assert(box && box.width > 10000 && box.height > 10000 && box.contains(centre), `a box of 5 km around the gross area: ${box && Math.round(box.width)} × ${box && Math.round(box.height)} map units`);
+  assert(view.constraints.geometry && view.constraints.minScale === 50000 && !view.constraints.maxScale, 'the view held in the box, zoomed out to 1:50,000 at most');
+  assert(projectBox([], SpatialReference.WebMercator) === null, 'no gross area: no box');
+  // the scale menu and its lock
+  const sel = it('sbScaleSel'), lock = it('sbScaleLock');
+  assert(SCALES.every(v => [...sel.options].some(o => o.value === String(v))) && sel.options.length >= SCALES.length, 'the scales of the menu, 1:100 to 1:25,000');
+  lock.click();
+  assert(lockedScale() === nearestScale(2500) && view.constraints.minScale === 2500 && view.constraints.maxScale === 2500 && lock.getAttribute('aria-pressed') === 'true', 'locked at the scale of the view');
+  sel.value = '500'; sel.dispatchEvent(new Event('change'));
+  assert(lockedScale() === 500 && view.constraints.minScale === 500 && view.constraints.maxScale === 500, 'the menu moves the lock');
+  lock.click();
+  assert(lockedScale() === null && view.constraints.minScale === 50000 && !view.constraints.maxScale, 'unlocked: free again, inside the box');
+  assert(nearestScale(36112) === 25000 && nearestScale(140) === 100, 'the nearest scale of the list');
+  // a place outside the box: said, not reached
+  const outside = await goToPlace({ lon: 12.5, lat: 41.9, name: 'far' });
+  assert(outside === false && /Outside the area of the project/.test(text('geoRes')), 'an address outside the box: ' + text('geoRes'));
+  // the names of the files and no save without a name
+  assert(isUntitled('') && isUntitled('Untitled project') && !isUntitled('C0000 Prova'), 'what counts as unnamed');
+  const before = store.project.name;
+  change('name', q => { q.name = 'C0000 Prova'; });
+  assert(/^C0000 Prova_\d{4}-\d{2}-\d{2}$/.test(fileBase()) && projectFileName('.kmz') === fileBase() + '.kmz', 'name and day: ' + fileBase());
+  change('name', q => { q.name = 'Untitled project'; });
+  const click = HTMLAnchorElement.prototype.click, pick = window.showSaveFilePicker, got = [];
+  HTMLAnchorElement.prototype.click = function () { got.push(this.download); };
+  window.showSaveFilePicker = async () => { got.push('picker'); throw Object.assign(new Error('test'), { name: 'AbortError' }); };
+  try { await saveProject(false); } finally { HTMLAnchorElement.prototype.click = click; window.showSaveFilePicker = pick; }
+  assert(!got.length && it('projName').classList.contains('need') && [...document.querySelectorAll('#toast .toast')].some(x => /Name the project before saving/.test(x.textContent)), 'unnamed: nothing saved, the name asked');
+  change('name', q => { q.name = before; });
+  view.constraints = undefined;
+  return `${fileBase()} · box ${Math.round(box.width / 1000)} km wide`;
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {

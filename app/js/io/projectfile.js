@@ -5,6 +5,7 @@ import { toast } from '../ui/toast.js';
 import { usedModules } from '../modules.js';
 import { terrainData, setTerrainData, saveLocal } from '../terrain/store.js';
 import { loadJsZip } from '../libs.js';
+import { fileBase, isoDay, isUntitled, NAME_HINT } from './names.js';
 
 export const PROJECT_EXT = '.pvpd';
 let handle = null;   // file handle of the open project (File System Access API), to save in place
@@ -20,7 +21,12 @@ export async function projectBlob() {
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
-const safeName = () => (store.project.name || 'pv-predesign').replace(/[\\/:*?"<>|]+/g, '_');
+// L2: no file for an unnamed project; the name field says it
+function askName() {
+  const pn = document.getElementById('projName');
+  if (pn) { pn.classList.add('need'); pn.focus(); }
+  toast(t('proj.needName', { hint: NAME_HINT }), 'err', 9000);
+}
 
 async function writeTo(h, blob) {
   const w = await h.createWritable();
@@ -29,12 +35,15 @@ async function writeTo(h, blob) {
   toast(t('proj.saved', { file: h.name }), 'ok');
 }
 
-// Save in place when the project came from (or went to) a file; otherwise, on "Save as" or when the file
-// cannot be written, ask where. Browsers without the File System Access API download the file instead.
+// Save in place when the project came from (or went to) a file of today (its name ends with the day, L3); a file of
+// another day, "Save as" or a file that cannot be written: ask where, with the name of today, so that every day
+// of work keeps its own file. Browsers without the File System Access API download the file instead. An unnamed
+// project is not saved (L2).
 export async function saveProject(asNew = false) {
+  if (isUntitled()) { askName(); return; }
   const blob = await projectBlob();
   if (window.showSaveFilePicker) {
-    if (handle && !asNew) {
+    if (handle && !asNew && String(handle.name || '').includes('_' + isoDay())) {
       try { await writeTo(handle, blob); return; }
       catch (e) {
         if (e && e.name === 'AbortError') return;
@@ -42,7 +51,7 @@ export async function saveProject(asNew = false) {
       }
     }
     try {
-      const h = await window.showSaveFilePicker({ suggestedName: safeName() + PROJECT_EXT,
+      const h = await window.showSaveFilePicker({ suggestedName: fileBase() + PROJECT_EXT,
         types: [{ description: 'PV Predesign project', accept: { 'application/zip': [PROJECT_EXT] } }] });
       await writeTo(h, blob);
       handle = h;
@@ -54,7 +63,7 @@ export async function saveProject(asNew = false) {
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = safeName() + PROJECT_EXT;
+  a.download = fileBase() + PROJECT_EXT;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast(t('proj.saved', { file: a.download }), 'ok');

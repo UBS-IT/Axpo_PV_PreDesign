@@ -149,6 +149,13 @@ body { overflow: hidden; display: block; }
 .statusbar #sbZ { min-width: 52px; }
 .statusbar #sbSlope.over { color: var(--err); font-weight: 600; }   /* a cell cut by the slope limit, as the hatching */
 .statusbar select { width: auto; max-width: 260px; }
+/* the scale: a menu and a lock (phase 7, L4) */
+.sb-scale select { font: 400 11px/14px var(--font-mono); }
+.sb-lock { display: inline-grid; place-items: center; width: 20px; height: 18px; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--mut); }
+.sb-lock .icon { width: 13px; height: 13px; margin: 0; }
+.sb-lock[aria-pressed="true"] { color: var(--link); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+/* the project name asked before saving (L2) */
+.project-name.need { outline: 2px solid var(--err); outline-offset: 1px; }
 .sb-crs select.alert { color: var(--warn); font-weight: 600; }
 .sb-toggle { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--mut); font-size: 11px; }
 .sb-toggle .icon { width: 12px; height: 12px; margin: 0; }

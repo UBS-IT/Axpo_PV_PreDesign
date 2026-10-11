@@ -24,3 +24,5 @@ this note asks, it changes nothing there.
    right. A 3D state in the mockup would fix the pattern.
 7. **Messages (Toast)**: the app shows them at the bottom left of the map, each with a ×, because the bottom right
    holds the basemap stack. The Toast card could show the × and the corner.
+8. **A padlock icon**: the scale of the status bar has a lock (phase 7); the app draws a padlock open and closed in
+   the 1.6 stroke (`app/js/ui/mapnav.js`). A lock / unlock pair in the set would replace it.

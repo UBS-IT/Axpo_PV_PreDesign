@@ -81,7 +81,7 @@ export function exportGeoJSON() {
   const fc = buildGeoJSON();
   if (!fc) { toast(t('toast.nothingToExport'), 'err'); return; }
   const r = last.result;
-  const name = (store.project.name || 'pv-predesign').replace(/[\\/:*?"<>|]+/g, '_') + '.geojson';
+  const name = fileName('.geojson');
   const blob = new Blob([JSON.stringify(fc)], { type: 'application/geo+json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
@@ -186,7 +186,7 @@ export async function buildKmz() {
 export async function exportKmz() {
   const out = await buildKmz();
   if (!out) { toast(t('toast.nothingToExport'), 'err'); return; }
-  const name = (store.project.name || 'pv-predesign').replace(/[\\/:*?"<>|]+/g, '_') + '.kmz';
+  const name = fileName('.kmz');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(out.blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);

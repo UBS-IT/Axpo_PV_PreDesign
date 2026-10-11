@@ -17,7 +17,7 @@
 <header id="top" class="topbar">
   <div class="brand"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg></span>PV Predesign<small data-i18n="app.subtitle"></small></div>
   <span class="divider"></span>
-  <input id="projName" class="project-name" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName">
+  <input id="projName" class="project-name" type="text" data-i18n-aria="top.projName" data-i18n-title="top.projName" data-i18n-placeholder="top.projNameHint">
   <span class="divider"></span>
   <div class="grp" role="group" data-i18n-aria="top.fileGroup">
     <button type="button" class="tb icon-only" id="btnNew" data-icon="file-plus" data-i18n-title="top.newTitle" data-i18n-aria="top.new"></button>
@@ -493,7 +493,7 @@
   <span class="it xy"><span class="k">E</span><span class="v" id="sbE">—</span></span>
   <span class="it xy"><span class="k">N</span><span class="v" id="sbN">—</span></span>
   <label class="it sb-crs"><span class="k" data-i18n="sb.crs"></span><select id="outCrs" data-i18n-aria="out.crsTitle" data-i18n-title="top.crsTitle"></select></label>
-  <span class="it"><span class="k" data-i18n="sb.scale"></span><span class="v" id="sbScale">—</span></span>
+  <span class="it sb-scale"><label class="k" for="sbScaleSel" data-i18n="sb.scale"></label><select id="sbScaleSel" data-i18n-title="sb.scaleTitle"></select><button type="button" class="sb-lock" id="sbScaleLock" aria-pressed="false"></button></span>
   <span class="it" id="sbZIt" hidden data-i18n-title="sb.elevTitle"><span class="k" data-i18n="sb.elev"></span><span class="v" id="sbZ">—</span></span>
   <span class="it" id="sbSlopeIt" hidden><span class="k" data-i18n="sb.slope"></span><span class="v" id="sbSlope">—</span></span>
   <span class="spacer"></span>
