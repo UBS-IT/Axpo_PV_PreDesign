@@ -27,6 +27,17 @@ button of the message); they cut nothing and belong to no category. They go to t
 browser: snapping to the objects is the switch of the status bar, typed lengths and angles (Tab) and the segment
 lengths while drawing are two boxes under the drawing block of 1 · Site.
 
+Two searches. **Ctrl K** (and nothing else) opens a box at the top centre of the map that finds the objects of the
+project as you type: the objects of 1 · Site by name, category, type or file of origin, and the stations; every word
+must appear, case and accents ignored, up to eight results with the category and the area or length. Enter or a
+click picks one as a click on its row of the Layers panel does: selected, Site area opened, the map zoomed, the row
+shown. An object of a hidden category is marked *hidden* and stays hidden. While a tool is armed, and in 3D, Ctrl K
+does nothing. Top right, left of 2D / 3D, a **magnifier** opens a box for an **address or coordinates**:
+coordinates are read in the browser and nothing is sent (latitude, longitude in decimals or degrees-minutes-seconds,
+with N / S / E / W in any order, or E N in metres in the coordinate system of the status bar); an address is asked
+to Nominatim (OpenStreetMap, free and without a key, so the typed text goes to its servers) when Enter is pressed,
+never while typing, as its rules ask. The place gets a pin; × or Esc clears it.
+
 The shell is the **ribbon workspace** of the design system (`docs/plan-ribbon-refactor.md`): a top bar (project
 name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **four tabs** in the order of
 the dependencies — Site area, Terrain Analysis, Layout & Infrastructure, Report & exports — the **ribbon** of the
@@ -125,7 +136,8 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   (hectares, count, kilometres). Every row has a box that shows or hides it on the map, and in the 3D model for the
   tables, fences, stations and obstacles; *Hide all · Show all* at the top. A hidden category still counts, its objects are
   still selected from their row, and drawing in it shows it again. The boxes are remembered in this browser, not in
-  the project. Nothing is edited there, except *Remove all* on the Dimensions row.
+  the project. Nothing is edited there, except *Remove all* on the Dimensions row. A right click on any row (or the
+  menu key on a focused row) opens *Zoom to*, hidden layers included; a row with nothing on the map says so.
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel

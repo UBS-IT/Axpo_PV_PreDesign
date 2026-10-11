@@ -100,7 +100,7 @@ before the layout. Phase 0 is tokens, variable names and icons only.
 | 5 | Bill of materials | the Excel bill of quantities exists | the same button, renamed consistently |
 | 5 | Map sheet (A1, 1:5,000, visible layers) | not in the app; the PDF report is one A4 landscape page | later: a second PDF page at a chosen scale with the basemap needs the Esri print service or a canvas capture; a day or two; ask Engineering first |
 | 5 | Report contents (checkboxes) | not in the app | later, cheap: sections on / off in the one-page report |
-| — | Search | D8 | |
+| — | Search | D8 | the objects of the project in phase 5 (Ctrl K); addresses through Nominatim and coordinates, asked by the user |
 | — | Elevation / slope under the pointer | D7 | |
 
 ## 5. Phases (each one a branch and a PR into `main`, the app working after each)
@@ -127,8 +127,10 @@ panels and the map controls column in place of the Tools menu (PR 31), 1C the ki
 in line, Circle, Freehand, Buffer, the Site panel with its figures only): PR 34. Phase 2B, selection and editing: PR 35 (the
 3D scene test fixed in PR 36). Phase 3, the Layers panel as the design system's LayerList with a visibility switch
 and a figure per layer (decisions F1–F9): PR 38. Phase 4, the elevation and slope under the pointer in the status
-bar (G1–G7; the CRS select was already wired in 1B): the branch `ux/statusbar-terrain`, PR after 38. Next: phase 5,
-the new functions of §4, each with its decisions.
+bar (G1–G7; the CRS select was already wired in 1B): PR 39. Phase 5 (H1–H8): the search of the objects of the
+project (Ctrl K), and as asked by the user an address / coordinates search and *Zoom to* on a right click in Layers:
+the branch `ux/search`, PR after 39. The other functions of §4 wait, each with its decisions. Next: phase 6, docs
+and tests.
 
 ## 6. Rollback and safety
 

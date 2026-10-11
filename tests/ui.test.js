@@ -9,9 +9,12 @@ import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame, selectFeatures, selectionIds, selectedFeatures,
   selectByGeometry, splitSelection, mergeSelection, copySelection, deleteSelection } from '../app/js/areas.js';
 import { measureFeature } from '../app/js/edit.js';
-import { layerVisible, KIND_3D } from '../app/js/ui/visibility.js';
+import { layerVisible, setLayerVisible, KIND_3D } from '../app/js/ui/visibility.js';
 import { initRibbon } from '../app/js/ui/ribbon.js';
-import { stepState, refreshRail } from '../app/js/ui/tabs.js';
+import { stepState, refreshRail, currentTab, showStep } from '../app/js/ui/tabs.js';
+import { initSearch, searchItems, matchItems, highlight, fold } from '../app/js/ui/search.js';
+import { initGeoSearch, parseCoordinates, setGeocoder, run as geoRun, pinCount, clearPin } from '../app/js/ui/geosearch.js';
+import { initLayerMenu, rowTarget, targetExtent } from '../app/js/ui/layermenu.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
 import { initDims, dimensionParts, removeDimension } from '../app/js/dims.js';
@@ -62,7 +65,7 @@ box.style.display = 'none';
 // the shell: top bar, tabs, ribbon (the tools of the steps keep their ids there), the two docked panels, the status bar
 box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'),
   doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), doc.getElementById('statusbar'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
-  doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'));
+  doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'), doc.getElementById('objSearch'), doc.getElementById('geoSearch'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
 document.body.append(box);
@@ -754,6 +757,84 @@ await test('Layers panel (phase 3): a switch per layer, its figure, Hide all / S
     && store.project.terrain.showSlope && document.getElementById('layTerImage').checked && !document.getElementById('terLegend').hidden, 'all shown, the image and its legend');
   assert(KIND_3D.tables === 'layout:tables' && KIND_3D.fence === 'layout:fences' && KIND_3D.stations === 'layout:stations', 'the 3D model follows the same switches');
   return `${keys.length} computed layers · ${fig('layout:tables')} tables · ${fig('layout:fences')}`;
+});
+
+await test('search (phase 5): Ctrl K and the objects of the project, addresses and coordinates top right, Zoom to on a right click in Layers', async () => {
+  initSearch(view); initGeoSearch(view); initLayerMenu(view);
+  const it = id => document.getElementById(id), input = it('objSearchIn');
+  const key = (k, o = {}) => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...o }));
+  const type = v => { input.value = v; input.dispatchEvent(new Event('input')); };
+  // the matching: every word, case and accents ignored, the words found in bold
+  const sample = [{ name: 'Città di prova', catLabel: 'Exclusion', typeLabel: '', source: '' }, { name: 'Other', catLabel: 'Gross area', typeLabel: '', source: '' }];
+  assert(fold('Città') === 'citta' && matchItems('CITTA', sample).list.length === 1 && matchItems('prova citta', sample).list.length === 1
+    && !matchItems('prova gross', sample).list.length && matchItems('gross', sample).list[0].name === 'Other', 'every word, no case, no accents, the category too');
+  assert(highlight('Città di prova', 'citta') === '<b>Città</b> di prova', highlight('Città di prova', 'citta'));
+  // only Ctrl K opens it; a pick selects, opens Site area, shows the row
+  assert(it('objSearch').hidden, 'closed until Ctrl K');
+  const f0 = store.project.features.find(f => f.category !== 'unclassified');
+  it('banner').hidden = true;   // no tool armed (the banner of the app is hidden then)
+  key('k', { ctrlKey: true });
+  assert(!it('objSearch').hidden, 'Ctrl K opens it');
+  type('zz no such thing');
+  assert(/No object matches/.test(text('objSearchRes')), 'nothing found is said');
+  type(f0.name);
+  const first = matchItems(f0.name, searchItems()).list[0];
+  assert(document.querySelectorAll('#objSearchRes [data-i]').length >= 1 && first, 'found by its name');
+  showStep('terrain');
+  it('objSearch').requestSubmit();
+  await wait(300);
+  assert(it('objSearch').hidden && selectionIds().join() === first.id && currentTab() === 'areas', `picked: ${selectionIds().join()} in ${currentTab()}`);
+  // a hidden category: found, marked, the category stays off
+  setLayerVisible('cat:' + f0.category, false);
+  key('k', { ctrlKey: true }); type(f0.name);
+  assert(document.querySelector('#objSearchRes .hid'), 'marked hidden');
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(it('objSearch').hidden && !layerVisible('cat:' + f0.category), 'Esc closes it, the category stays off');
+  setLayerVisible('cat:' + f0.category, true);
+  // a tool armed: Ctrl K does nothing
+  document.dispatchEvent(new CustomEvent('pvp:mode', { detail: { mode: 'draw', label: 'Draw' } }));
+  key('k', { ctrlKey: true });
+  assert(it('objSearch').hidden, 'not while drawing');
+  document.dispatchEvent(new CustomEvent('pvp:mode', { detail: { mode: 'select' } }));
+  // coordinates read in the browser
+  const c1 = parseCoordinates('45.4642, 9.19'), c2 = parseCoordinates('9.19E 45.4642N'), c3 = parseCoordinates(`45°27'51"N 9°11'24"E`);
+  const c4 = parseCoordinates('45,4642 9,19'), c5 = parseCoordinates('684621.30 4873020.48');
+  assert(c1.lat === 45.4642 && c1.lon === 9.19 && c2.lat === 45.4642 && c2.lon === 9.19 && Math.abs(c3.lat - 45.464167) < 1e-5 && Math.abs(c3.lon - 9.19) < 1e-5
+    && c4.lat === 45.4642 && c5.x === 684621.3 && c5.y === 4873020.48, JSON.stringify({ c1, c2, c3, c4, c5 }));
+  assert(parseCoordinates('Via Roma 10, Milano') === null && parseCoordinates('95, 200') === null && parseCoordinates('45.1') === null, 'an address, out of range, one number: not coordinates');
+  // the address service, stood in: the list, the attribution, a pin on Enter; coordinates go straight to a pin
+  let asked = null;
+  setGeocoder(async (q, box) => { asked = { q, box }; return [{ name: 'Test place', detail: 'Somewhere, Italy', lon: 9.19, lat: 45.46, bbox: null }]; });
+  it('geoBtn').click();
+  assert(!it('geoIn').hidden && it('geoSearch').classList.contains('open'), 'the magnifier opens the box');
+  it('geoIn').value = 'Test place';
+  await geoRun('Test place');
+  assert(asked && asked.q === 'Test place' && /Test place/.test(text('geoRes')) && /OpenStreetMap/.test(text('geoRes')), 'results with the attribution: ' + text('geoRes'));
+  it('geoSearch').requestSubmit();
+  await wait(100);
+  assert(pinCount() === 1 && it('geoRes').hidden, 'Enter on the first result: a pin');
+  clearPin();
+  await geoRun('45.4642, 9.19');
+  assert(pinCount() === 1, 'coordinates: a pin, nothing asked');
+  it('geoClear').click();
+  assert(pinCount() === 0, '× clears the pin');
+  setGeocoder(null);
+  // Zoom to on a right click: an object, a computed layer; nothing to zoom to says so
+  let gone = 0;
+  const goTo = view.goTo;
+  view.goTo = async () => { gone++; };
+  const tablesRow = document.querySelector('#collPanel input[data-lay="layout:tables"]').closest('.layer');
+  tablesRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 60, clientY: 300 }));
+  const menu = document.querySelector('.ctxmenu');
+  assert(menu && !menu.hidden && /Zoom to/.test(menu.textContent) && menu.querySelector('[role="menuitem"]').getAttribute('aria-disabled') === 'false', 'the menu of the Tables row');
+  menu.querySelector('[role="menuitem"]').click();
+  const objRow = document.querySelector('#areaCats .it[data-id]');
+  objRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 60, clientY: 200 }));
+  menu.querySelector('[role="menuitem"]').click();
+  assert(gone === 2 && menu.hidden, `zoomed twice: ${gone}`);
+  assert(rowTarget(objRow).ids[0] === objRow.dataset.id && targetExtent({ key: 'no-such-layer' }) === null, 'the target of a row; nothing to zoom to');
+  view.goTo = goTo;
+  return `searchable items: ${searchItems().length} · ${c3.lat.toFixed(5)}, ${c3.lon.toFixed(5)}`;
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
