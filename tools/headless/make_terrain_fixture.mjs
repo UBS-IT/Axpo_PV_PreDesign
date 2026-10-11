@@ -4,8 +4,9 @@
 // z = 100 + 0.12 · (N − N0), N0 the northing of the south edge. Usage: node make_terrain_fixture.mjs
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const here = path.dirname(new URL(import.meta.url).pathname);
+const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.resolve(here, '../../tests/fixtures/it_dtm_plane.tif');
 const W = 250, H = 250, RES = 4, E0 = 317000, N0 = 5063000, NODATA = -9999;   // west and south edges
 const z = new Float32Array(W * H);

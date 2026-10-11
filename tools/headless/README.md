@@ -17,8 +17,14 @@ npm run build        # bundles into dist/ (rebuild after adding an SDK module to
 npm test             # all pages, or: node run.mjs /tests/terrain.html
 ```
 
-Playwright comes from a global install (`npm i -g playwright`) or a local one. `VERBOSE=1` prints the note of every
-test, not only the failures.
+Playwright comes from a global install (`npm i -g playwright`) or a local one (`npx playwright install chromium` for its
+browser). `VERBOSE=1` prints the note of every test, not only the failures. While a page runs, a line a minute says
+where it is; a page that runs out of time (4 minutes, 10 for the 3D scene) prints the tests it finished and its last
+console messages.
+
+On Windows: run it from a folder outside OneDrive (`node_modules` is about 400 MB), and in Git Bash set
+`MSYS_NO_PATHCONV=1`, otherwise `/tests/…` is turned into a Windows path. On a PC with a graphics card the 3D scene
+takes about a minute; the CI draws it in software and needs several.
 
 Known limit: a MapView does not start with the npm bundle (its 2D workers do not come up), so the page of the app
 itself must be checked in a real browser. `tests/ui.html` mounts the real panels on a stand-in view instead.
