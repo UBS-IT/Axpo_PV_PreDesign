@@ -146,6 +146,7 @@ const viewDate = () => scene?.environment?.lighting?.date || new Date();
 async function enter() {
   active = true;
   document.body.classList.add('in-3d');
+  document.dispatchEvent(new CustomEvent('pvp:view3d', { detail: { on: true } }));
   let S;
   try { S = await loadSdk3d(); }
   catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
@@ -180,6 +181,7 @@ async function enter() {
 function leave() {
   active = false;
   document.body.classList.remove('in-3d');
+  document.dispatchEvent(new CustomEvent('pvp:view3d', { detail: { on: false } }));
   if (layer3d) layer3d.visible = false;
   tablesLayer2d(true);
 }

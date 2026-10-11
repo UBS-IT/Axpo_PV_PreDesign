@@ -8,7 +8,7 @@ import { loadCatalog } from '../app/js/catalog.js';
 import { store, defaultProject, upgrade } from '../app/js/state.js';
 import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, ringArea, gridOver, bilinear } from '../app/js/terrain/slope.js';
 import { openGeoTiff } from '../app/js/terrain/dtm.js';
-import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale, siteStats, siteCoverage, terrainCanvas } from '../app/js/terrain/terrain.js';
+import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale, siteStats, siteCoverage, terrainCanvas, terrainAt, terrainReady } from '../app/js/terrain/terrain.js';
 import { terrainData, setTerrainData } from '../app/js/terrain/store.js';
 import { computeArea, siteFrame, importFiles } from '../app/js/areas.js';
 import { readAnyFile } from '../app/js/io/importers.js';
@@ -301,6 +301,39 @@ await test('slope limit chosen by hand, in every direction or north-south / east
     `transparent outside the site plus its buffer: ${(opaque / (cv.width * cv.height) * 100).toFixed(0)} % painted, corner ${px[3]}`);
   await removeTerrain();
   return `${limitText({ maxAny: 10 })} · ${limitText({ maxNS: 10, maxEW: 12 })} · ${st.cells} cells inside the site`;
+});
+
+await test('under the pointer (status bar, phase 4): elevation and slope of the plane, the figures the limit reads, over it, outside the grid', async () => {
+  useSite(317500, 5063500);
+  const g = gridForSite(10);
+  const r = await sampleDtm(file, g.frame, g.def);
+  assert(!terrainReady(), 'no grid yet');
+  await useGrid({ id: 'plane3', lon0: g.frame.lon0, lat0: g.frame.lat0, ...g.def, source: 'dtm', name: 'plane', loadedAt: '2026-10-11T00:00:00Z', zmin: 0, zmax: 1, missing: 0 }, r.z, { persist: false });
+  assert(terrainReady(), 'grid in memory');
+  const { Point, SpatialReference, projectOperator } = getSdk();
+  const utm = (e, n) => new Point({ x: e, y: n, spatialReference: new SpatialReference({ wkid: 32633 }) });
+  // the 3V9 of the default project: the toolkit rule is 10 % north–south and 10 % east–west
+  let h = terrainAt(utm(317520, 5063530));
+  near(h.z, zAt(317520, 5063530), 0.05, 'elevation');
+  near(h.slope, 12, 0.05, 'slope');
+  assert(h.split && h.ns > 11.9 && h.ew < 0.6 && h.beyond && h.over, 'two components, the plane rising north over the 10 %, cut: ' + JSON.stringify({ ns: h.ns, ew: h.ew, over: h.over }));
+  // the cut switched off: still over the limit, no longer cut (no hatching, no red)
+  store.project.terrain.applySlopeLimit = false;
+  h = terrainAt(utm(317520, 5063530));
+  assert(h.beyond && !h.over, 'cut off: beyond the limit, not cut');
+  store.project.terrain.applySlopeLimit = true;
+  setLimit({ maxAny: 13 });
+  h = terrainAt(utm(317520, 5063530));
+  assert(!h.split && !h.beyond && !h.over, 'a limit in every direction: one figure, 12 % under 13 %');
+  setLimit(null);
+  // a point of the map in Web Mercator, as the status bar gets it from the view
+  const wm = projectOperator.execute(utm(317480, 5063450), SpatialReference.WebMercator);
+  h = terrainAt(wm);
+  near(h.z, zAt(317480, 5063450), 0.05, 'from Web Mercator');
+  assert(terrainAt(utm(318500, 5063500)) === null, 'outside the grid: nothing');
+  await removeTerrain();
+  assert(!terrainReady() && terrainAt(utm(317520, 5063530)) === null, 'no grid: nothing');
+  return `${h.z.toFixed(2)} m, ${h.slope.toFixed(2)} %`;
 });
 
 // ── Geoportale projects with slopes from their DTM («Pendenze da DTM», 2026-10-04) ──

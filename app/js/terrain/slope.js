@@ -38,6 +38,10 @@ export function gradients(grid) {
 // Slope in percent of a cell: magnitude, or its north–south / east–west component
 export const slopeAny = (g, k) => Math.hypot(g.gx[k], g.gy[k]) * 100;
 
+// Over a slope limit { maxAny, maxNS, maxEW } (percent, any subset): the slope components of a cell in percent
+export const exceeds = (ns, ew, limit) => (limit.maxAny != null && Math.hypot(ew, ns) > limit.maxAny + 1e-9)
+  || (limit.maxNS != null && ns > limit.maxNS + 1e-9) || (limit.maxEW != null && ew > limit.maxEW + 1e-9);
+
 // Cells over a slope limit: { maxAny, maxNS, maxEW } in percent (any subset). Unknown cells are never "over".
 // Returns { mask: Uint8Array, over, unknown } (counts of cells).
 export function limitMask(g, limit, n = g.gx.length) {
@@ -47,9 +51,7 @@ export function limitMask(g, limit, n = g.gx.length) {
     const x = g.gx[k], y = g.gy[k];
     if (!Number.isFinite(x) || !Number.isFinite(y)) { unknown++; continue; }
     const ew = Math.abs(x) * 100, ns = Math.abs(y) * 100;
-    const bad = (limit.maxAny != null && Math.hypot(ew, ns) > limit.maxAny + 1e-9)
-      || (limit.maxNS != null && ns > limit.maxNS + 1e-9) || (limit.maxEW != null && ew > limit.maxEW + 1e-9);
-    if (bad) { mask[k] = 1; over++; }
+    if (exceeds(ns, ew, limit)) { mask[k] = 1; over++; }
   }
   return { mask, over, unknown };
 }

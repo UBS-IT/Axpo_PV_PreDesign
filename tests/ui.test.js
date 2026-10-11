@@ -4,7 +4,7 @@
 import { loadSdk, getSdk } from '../app/js/sdk.js';
 import { loadCatalog } from '../app/js/catalog.js';
 import { applyI18n } from '../app/js/i18n.js';
-import { store, defaultProject, replaceProject, change } from '../app/js/state.js';
+import { store, defaultProject, replaceProject, change, emit } from '../app/js/state.js';
 import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame, selectFeatures, selectionIds, selectedFeatures,
   selectByGeometry, splitSelection, mergeSelection, copySelection, deleteSelection } from '../app/js/areas.js';
@@ -16,7 +16,8 @@ import { initCollection, toggleCollection, isOpen, showInCollection } from '../a
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
 import { initDims, dimensionParts, removeDimension } from '../app/js/dims.js';
 import { structurePresets } from '../app/js/catalog.js';
-import { initTerrain, sampleDtm, gridForSite, useGrid } from '../app/js/terrain/terrain.js';
+import { initTerrain, sampleDtm, gridForSite, useGrid, setLimit } from '../app/js/terrain/terrain.js';
+import { initStatusBar, statusAt } from '../app/js/ui/statusbar.js';
 import { initModulesUi, library } from '../app/js/modules.js';
 import { initField, last } from '../app/js/field.js';
 import { initOutput, buildGeoJSON, buildKmz, exportEngineering } from '../app/js/output.js';
@@ -36,7 +37,7 @@ import { initBasemap } from '../app/js/ui/basemap.js';
 import { initView3d } from '../app/js/view3d/scene.js';
 import { model3d } from '../app/js/view3d/model.js';
 import { layoutGlb, readGlb } from '../app/js/view3d/glb.js';
-import { terrainData } from '../app/js/terrain/store.js';
+import { terrainData, setTerrainData } from '../app/js/terrain/store.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
 const results = [];
@@ -400,6 +401,40 @@ await test('terrain: DTM loaded, slope map drawn, 3V cut (10 %), tracker kept (1
   assert(t && t.tables > 20, `trackers ${t && t.tables}`);
   assert(!/over the slope limit/.test(text('warns')), 'nothing cut for trackers');
   return `${t.tables} trackers 1V28 (${(t.geom.tableLength).toFixed(2)} m), ${t.dcMWp.toFixed(2)} MWp`;
+});
+
+await test('status bar (phase 4): elevation and slope under the pointer, as the limit reads them, red over it, «—» outside and in 3D, hidden without a grid', async () => {
+  initStatusBar(view);
+  const it = id => document.getElementById(id);
+  assert(!it('sbZIt').hidden && !it('sbSlopeIt').hidden, 'shown with a terrain grid');
+  const { Point, SpatialReference, projectOperator } = getSdk();
+  const f = siteFrame(), wm = (x, y) => projectOperator.execute(new Point({ x, y, spatialReference: f.sr }), SpatialReference.WebMercator);
+  // the field is a tracker now (15 % in every direction): one figure, under the limit
+  statusAt(wm(10, 20));
+  const z1 = text('sbZ'), s1 = text('sbSlope');
+  assert(/^\d+\.\d m$/.test(z1) && /^12\.0 %$/.test(s1) && !it('sbSlope').classList.contains('over'), `tracker: ${z1} · ${s1}`);
+  assert(/^\d/.test(text('sbE')) && /^\d/.test(text('sbN')), 'the coordinates too');
+  // a limit north–south / east–west of 10 %: the two components, red, the limit in the tooltip
+  const before = store.project.terrain.limit, from = store.project.terrain.limitFrom;
+  setLimit({ maxNS: 10, maxEW: 10 });
+  statusAt(wm(10, 20));
+  const s2 = text('sbSlope');
+  assert(/^N-S 1[12]\.\d · E-W \d\.\d %$/.test(s2) && it('sbSlope').classList.contains('over') && /cut from the buildable area/.test(it('sbSlope').title), `split: ${s2} · ${it('sbSlope').title}`);
+  setLimit(before, from || 'custom');
+  // outside the grid, then the pointer gone, then in 3D
+  statusAt(wm(5000, 5000));
+  assert(text('sbZ') === '—' && text('sbSlope') === '—' && /^\d/.test(text('sbE')), 'outside the grid: «—», the coordinates still shown');
+  statusAt(wm(10, 20));
+  document.dispatchEvent(new CustomEvent('pvp:view3d', { detail: { on: true } }));
+  assert(text('sbZ') === '—' && text('sbE') === '—', 'in 3D: «—»');
+  // without a grid in memory the two items leave the bar, and come back with it
+  const meta = terrainData.meta, z = terrainData.z;
+  setTerrainData(null, null); emit('terrain');
+  assert(it('sbZIt').hidden && it('sbSlopeIt').hidden, 'hidden without a grid');
+  setTerrainData(meta, z); emit('terrain');
+  await wait(300);
+  assert(!it('sbZIt').hidden, 'back with the grid');
+  return `${z1} · ${s1} · ${s2}`;
 });
 
 await test('quick predesign, tracker: the pitch agreed with the farm is asked, then 1V28 fills the site', async () => {

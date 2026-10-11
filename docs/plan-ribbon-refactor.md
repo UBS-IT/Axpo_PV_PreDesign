@@ -126,7 +126,9 @@ panels and the map controls column in place of the Tools menu (PR 31), 1C the ki
 (PR 32). Phase 2, the ribbon tools with the category menu and Unclassified objects, then its part A (Category and Type
 in line, Circle, Freehand, Buffer, the Site panel with its figures only): PR 34. Phase 2B, selection and editing: PR 35 (the
 3D scene test fixed in PR 36). Phase 3, the Layers panel as the design system's LayerList with a visibility switch
-and a figure per layer (decisions F1–F9): the branch `ux/layers`, PR after 36. Next: phase 4, the status bar part two.
+and a figure per layer (decisions F1–F9): PR 38. Phase 4, the elevation and slope under the pointer in the status
+bar (G1–G7; the CRS select was already wired in 1B): the branch `ux/statusbar-terrain`, PR after 38. Next: phase 5,
+the new functions of §4, each with its decisions.
 
 ## 6. Rollback and safety
 
