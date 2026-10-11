@@ -49,15 +49,14 @@
         <select class="rsel" id="drawType" disabled></select>
         <ul class="catlist" id="drawCatList" role="listbox" tabindex="-1" aria-labelledby="drawCatCap" hidden></ul>
       </div>
-      <div class="tool-col">
-        <div class="tool-row" id="drawTools" role="group" data-i18n-aria="draw.how">
-          <button type="button" class="tool medium" data-dtool="polygon" aria-pressed="false"></button>
-          <button type="button" class="tool medium" data-dtool="rectangle" aria-pressed="false"></button>
-          <button type="button" class="tool medium" data-dtool="circle" aria-pressed="false"></button>
-          <button type="button" class="tool medium" data-dtool="polyline" aria-pressed="false"></button>
-          <button type="button" class="tool medium" data-dtool="point" aria-pressed="false"></button>
-        </div>
-        <label class="chk mini" data-i18n-title="draw.freehandTitle"><input type="checkbox" id="drawFreehand"> <span data-i18n="draw.freehand"></span></label>
+      <!-- the six geometries, two rows of three: Area, Line, Point, then Rectangle, Circle, Freehand -->
+      <div class="tool-grid" id="drawTools" role="group" data-i18n-aria="draw.how">
+        <button type="button" class="tool small" data-dtool="polygon" aria-pressed="false"></button>
+        <button type="button" class="tool small" data-dtool="polyline" aria-pressed="false"></button>
+        <button type="button" class="tool small" data-dtool="point" aria-pressed="false"></button>
+        <button type="button" class="tool small" data-dtool="rectangle" aria-pressed="false"></button>
+        <button type="button" class="tool small" data-dtool="circle" aria-pressed="false"></button>
+        <button type="button" class="tool small" data-dtool="freehand" aria-pressed="false"></button>
       </div>
       <div class="tool-stack">
         <button type="button" class="tool small" id="drawUndo" data-icon="undo" data-i18n="draw.undoShort" data-i18n-title="draw.undo" disabled></button>
@@ -179,7 +178,7 @@
 <main id="workspace" class="workspace" data-i18n-aria="workspace.label">
   <!-- Layers: the objects of the site by category, floating over the map on the left (ui/layers.js) -->
   <aside id="leftPanel" class="panel left" aria-labelledby="collTitle">
-    <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
+    <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl" data-i18n-title="coll.searchHint"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
       <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
     <div class="panel-b" id="collPanel">
       <div class="layer-tools"><span data-i18n="lay.visibility"></span><span><button type="button" class="linkbtn" id="layHide" data-i18n="lay.hideAll"></button> · <button type="button" class="linkbtn" id="layShow" data-i18n="lay.showAll"></button></span></div>
@@ -210,6 +209,8 @@
     <!-- 2D / 3D is a view of the map, not a step: the side panel keeps its step -->
     <!-- the scale bar, bottom centre (the SDK has no such corner: its own container) -->
     <div id="scalebar"></div>
+    <!-- the messages (ui/toast.js): bottom left of the map, where nothing else sits -->
+    <div id="toast" aria-live="polite"></div>
     <aside id="measureCard" class="mapcard measure" hidden>
       <div class="mapcard-h"><b data-i18n="tools.measure"></b><div class="chips plain" role="radiogroup" data-i18n-aria="tools.measure"><button type="button" class="chip" role="radio" data-measure="distance" aria-checked="false" data-i18n="tools.distance"></button><button type="button" class="chip" role="radio" data-measure="area" aria-checked="false" data-i18n="tools.area"></button></div><button type="button" class="x" id="measureClose" data-i18n-title="tools.measureClose" data-i18n-aria="tools.measureClose"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button></div>
       <div class="mapcard-b"><div id="measureBox"></div><p class="hint" data-i18n="tools.measureHint"></p></div>
@@ -502,7 +503,6 @@
 </footer>
 </div>
 
-<div id="toast" aria-live="polite"></div>
 <input type="file" id="fileImport" accept=".axpo,.geojson,.json,.kml,.kmz,.zip,.csv,.txt,.dwg,.dxf" multiple hidden>
 <input type="file" id="fileProject" accept=".pvpd" hidden>
 <input type="file" id="fileRoadmap" accept=".xlsx,.xlsm,.xls,.csv" hidden>

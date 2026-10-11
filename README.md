@@ -7,10 +7,25 @@ loading Engineering with embryonic projects, and later gives Engineering a usefu
 rely on the topographic survey).
 
 Status: **internal pilot candidate, not production-ready** (2026-10-02). The implemented workflow includes the site,
-terrain, layout, infrastructure, exports and a working 3D scene; the UX refactor of 2026-10-02 (stepper, drawing in
-two steps, 2D / 3D toggle) is to be checked in a real browser. The 3D browser regression check passed 5/5 after the
+terrain, layout, infrastructure, exports and a working 3D scene; the ribbon workspace of 2026-10-10 and 11 (tabs,
+ribbon, Layers and Properties panels, status bar, searches) replaced the stepper of 2026-10-02 and was checked phase
+by phase in a browser at 1366 × 800; it is still to be tried by its users. The 3D browser regression check passed 5/5 after the
 SceneView sizing fix; this does not establish production readiness or validate estimates against an Engineering design.
 See [Release readiness](#release-readiness) below and `docs/plan.md` for planned work.
+
+## In pictures
+
+The test project of the repository (an invented site, `tests/fixtures/it_slope.axpo`, with a slope limit of 15 % set
+by hand) at 1366 × 800; `tools/headless/shots.mjs` takes the pictures again.
+
+| | |
+|---|---|
+| ![The Site area tab](docs/img/01-site-area.png) | ![The Terrain Analysis tab](docs/img/02-terrain.png) |
+| **Site area**: the ribbon with the six drawing tools and the selection, the Layers panel with a switch per layer, the buildable-area ledger on the right | **Terrain Analysis**: the slope classes on the map, their legend in the Layers panel, the terrain model and the limit in use |
+| ![The Layout & Infrastructure tab](docs/img/03-layout.png) | ![The Report & exports tab](docs/img/04-report.png) |
+| **Layout & Infrastructure**: 560 tables on 6.6 ha, the field in the Properties panel, the figures of every layer in the Layers panel | **Report & exports**: the working files and the PDF report in the ribbon, the coordinate system of the exports in the status bar |
+| ![The search of the objects](docs/img/05-search.png) | |
+| **Ctrl K**: the search of the objects of the project; the magnifier top right looks for an address or coordinates | |
 
 ## The workflow
 
@@ -25,7 +40,8 @@ panel counts them, shows or hides them and removes them all, one is removed with
 button of the message); they cut nothing and belong to no category. They go to the PDF report and to the DXF (layer
 `PVP_DIM`), not to the KMZ. The scale bar sits at the bottom centre. The drawing support is remembered in the
 browser: snapping to the objects is the switch of the status bar, typed lengths and angles (Tab) and the segment
-lengths while drawing are two boxes under the drawing block of 1 · Site.
+lengths while drawing are two boxes under the drawing block of 1 · Site. The messages of the app appear at the
+bottom left of the map, each with a × to close it by hand.
 
 Two searches. **Ctrl K** (and nothing else) opens a box at the top centre of the map that finds the objects of the
 project as you type: the objects of 1 · Site by name, category, type or file of origin, and the stations; every word
@@ -89,12 +105,12 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Reference (parcels and anything shown but not used).
 - **Per-object attributes** — buffer (exclusions, lines, obstacles), type, height, width (strips drawn as lines).
   Buffers are drawn on the map as they are cut.
-- **Collection** — the objects by category live in a drawer on the right of the map, closed by default, reachable
-  from every step: a tab with one dot per category and the number of objects opens it; *See in the collection ›* in
-  the *Last drawing* box opens it on the object just drawn. The side panel of 1 · Site keeps the actions (import,
-  drawing) and the account of the buildable area. On narrow screens the drawer is a sheet over the bottom of the page.
-- **Moving objects** — drag them from one category to another (or use the *Move to* menu); a category refuses
-  geometry it cannot take (a polygon is not a power line).
+- **Moving objects** — select them (on the map, in a box or from their rows in the Layers panel) and pick another
+  category in *Site definition*; a category refuses geometry it cannot take (a polygon is not a power line).
+- **Buffers** — a buffer is a value of its object, not an object of its own: it belongs to the category of the
+  object, is drawn around it in the colour of that category (a light band with a dotted edge), follows its switch
+  in the Layers panel, is cut from the buildable area with it (the row «Exclusions and buffers» of the ledger) and
+  travels in the exports as the attribute `buffer_m` of the object. Only the categories that cut take a buffer.
 - **Import** — GeoJSON, KML, KMZ, Shapefile (.zip, several layers), CSV points (x/y or lon/lat, with name, type,
   height; semicolons and decimal commas accepted) and Geoportale projects (`.axpo`). Files dropped on the map are
   sorted automatically from folder, layer and object names in six languages (e.g. *Superficie bruta*,
@@ -110,9 +126,10 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   them from the objects with the same rules; its boundary setback (*rientro dal confine*) is taken when none is set.
 - **Drawing** — the pattern of the Geoportale's *Disegna*, in two steps, all in the ribbon group *Site definition*:
   the **Category** menu (the categories with their colour dots; *Unclassified* first and chosen by default) with the
-  **Type** menu under it (off until a category with types is chosen), the drawing tools **Area, Rectangle, Circle,
-  Line, Point** (a tool is off, with the reason as its tooltip, when the category does not take that geometry; a tick
-  marks the armed one) with a **Freehand** box (Area and Line follow the pointer, thinned to 0.5 m), **Undo / Redo**
+  **Type** menu under it (off until a category with types is chosen), six drawing tools in two rows, **Area, Line,
+  Point** over **Rectangle, Circle, Freehand** (a tool is off, with the reason as its tooltip, when the category does
+  not take that geometry; the armed one is highlighted; Freehand follows the pointer, an area when the category takes
+  areas, else a line, thinned to 0.5 m), **Undo / Redo**
   (Ctrl+Z / Ctrl+Y, 40 steps) for every change of the objects, then the **Buffer** given to the next drawings (and
   their Height for obstacles, Width for the strips) and the two drawing-support boxes. The boundary setback is the
   *Constraints* group next to it. The Site panel on the right only shows the figures. The armed tool stays armed after
@@ -158,7 +175,7 @@ The **slope limit in use** is chosen the same two ways as the Geoportale's *Pend
 structure (default), one value in every direction, or north–south and east–west apart (a cell is cut when it is over
 either). A status line always says whether the limit in use is the toolkit's and what the toolkit says for the
 structure ("Same as the toolkit for 3V9" / "Different from the toolkit: Fixed 3V is 10 % north-south and 10 %
-east-west"); the layout warnings, the rail figure ("1.2 ha · own limit") and the report repeat it. The limit is kept in
+east-west"); the layout warnings, the figure of the tab ("1.2 ha · own limit") and the report repeat it. The limit is kept in
 the project file. Geoportale and PV Predesign compute slopes the same way (the Geoportale ported this module); the
 toolkit values live only here.
 
@@ -254,8 +271,10 @@ line of explanation and a "what these files hold" glossary; the same pattern (on
 ### 2D / 3D
 
 The 2D / 3D switch on the map turns it into a 3D scene (same background and opacity) with its controls in a card
-over the map; the side panel keeps its step and the editing stays in 2D. Entering 3D closes the Collection drawer
-(its preference is kept). Under 760 px of window width (phones, the narrow layout) the 3D view is not offered: the
+in the top left corner of the map, with the controls of the scene (zoom, pan / rotate, compass) to its right and the
+date and time of the sun inside it; the Properties panel keeps its tab and the editing stays in 2D. Entering 3D
+folds the Layers panel; back in 2D it opens again if it was open.
+Under 760 px of window width (phones, the narrow layout) the 3D view is not offered: the
 3D chip is faded and says why; a scene already open is left when the window narrows.
 
 - **Ground** — a designer-uploaded GeoTIFF grid from 2 · Terrain overlays Esri World Elevation locally; if that
@@ -267,7 +286,7 @@ over the map; the side panel keeps its step and the editing stays in 2D. Enterin
   the IT height of their AgriPV category (standard 1.50, grazing 2.30, advanced 3.10 m), turned towards the sun at
   the time of the view (±55°, no backtracking) or by hand. Missing heights (other countries, AgriPV fixed) are typed
   in, never borrowed. Stations, fence, gates and obstacles with a height come too.
-- **Sun and shadows** — date and time on the map (Daylight) with quick buttons for the solstices in solar time; the
+- **Sun and shadows** — date and time in the card (Daylight) with quick buttons for the solstices in solar time; the
   panel gives the sun position and the row-to-row shading at that moment; ShadowCast shows the hours of shadow over a
   period. Sun position from the NOAA calculator, within 0.01° of NREL SPA (pvlib), tracker angles as pvlib.
 - **Views** — viewpoints saved in the project, PNG pictures, a PDF report with one page per saved view, line of sight.
@@ -352,9 +371,10 @@ Then open `http://localhost:8140/app/`. Tests, all in the browser:
   with slopes from their DTM (grid adopted, partial coverage, grid replaced or kept, automatic drawings left out) (20)
 - `http://localhost:8140/tests/infra.html` — fence, perimeter road, clearances, lots and shared fences, stations
   (snapping, moving, at the access), roads drawn (12)
-- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, stepper states and gates, drawing
-  block (chips, tools by category, undo / redo), structure presets, quick predesign, infrastructure, KMZ and PDF
-  report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on the terrain (16)
+- `http://localhost:8140/tests/ui.html` — the real panels on a stand-in map view, tab states and gates, the drawing
+  tools of the ribbon (category menu, tools by category, undo / redo), structure presets, quick predesign,
+  infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, 3D model on
+  the terrain, the Layers panel, selection and editing, the status bar, the searches (24)
 - `http://localhost:8140/tests/view3d.html` — sun and trackers against pvlib, row shading, heights by country,
   meshes, ground elevations, terrain tiles, glTF (8)
 - `http://localhost:8140/tests/scene3d.html` — the real SceneView (2D / 3D switch) on the synthetic DTM: opens on the site

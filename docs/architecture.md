@@ -15,7 +15,7 @@ the ArcGIS Maps SDK (from `js.arcgis.com`), the background map and Esri World El
 ```
                        the browser of the designer
  ┌────────────────────────────────────────────────────────────────────────────┐
- │  app/index.html  (the page: top bar, left rail, side panel, map)           │
+ │  app/index.html  (top bar, tabs, ribbon, two panels, map, status bar)      │
  │  app/js/main.js  (starts everything, in this order)                        │
  │     │                                                                      │
  │     ├─ sdk.js ──────── ArcGIS Maps SDK 4.34  ◄──── js.arcgis.com (CDN)     │
@@ -57,9 +57,9 @@ Three ideas explain most of the design:
   `app/catalog/toolkit.json`, which is generated from a workbook that people edit in Excel. A value missing for a
   country is reported as missing, never borrowed from another country.
 
-## 2. The steps of the rail and the files behind them
+## 2. The steps (the tabs) and the files behind them
 
-Since the ribbon refactor (phases 1A to 3, 2026-10-10 and 11) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
+Since the ribbon refactor (phases 1A to 6, 2026-10-10 and 11) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
 Site area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab
 (`ui/ribbon.js`: the actions of the panels, whose tools keep the ids of the buttons they replace; the drawing menu
 of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–3 reopens a collapsed Properties panel), the map between two docked panels that
@@ -70,7 +70,8 @@ the pointer coordinates in the export system, the CRS select, the scale, the ele
 from the terrain grid (`terrainAt()` of `terrain/terrain.js`), the mode the modules announce with a `pvp:mode`
 event, the snapping switch, the autosave time; the 3D view announces itself with `pvp:view3d`); the map controls column (`ui/maptools.js`: Fit the
 site, Measure, Dimensions) sits under the zoom and the north arrow, the basemap toggle and the opacity slider
-bottom right; the kit of the design system (`css/kit.css`, phase 1C) draws the pieces and `css/shell.css` lays them
+bottom right, the messages (`ui/toast.js`) bottom left, each with a ×; in 3D the card of `view3d/scene.js` takes the
+top left corner with the Daylight widget inside it and the controls of the scene to its right (`scene.ui.padding`); the kit of the design system (`css/kit.css`, phase 1C) draws the pieces and `css/shell.css` lays them
 out. The steps below are unchanged: a tab holds one or two of
 them (the third tab holds fields and infra). Each panel tells the tabs how its step stands: locked (a
 prerequisite is missing), ready, optional or done with its key figure. The panels are independent files; they talk
@@ -78,7 +79,7 @@ to each other only through the project and a small publish/subscribe (`change(to
 
 | Step | What the designer does | Main file | Helpers | Reads | Writes into the project |
 |---|---|---|---|---|---|
-| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback; draws from the ribbon (Category and Type menus, five geometries; *Unclassified* by default, counted nowhere until classified), selects on the map, in a box or from the Layers rows and edits from the ribbon (Reshape, Move / rotate, Split, Merge, Copy, Delete; the Category, Type and Buffer act on the selection); the objects by category are in the Layers panel on the left, which only lists and zooms | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js`, `ui/layers.js` (the Layers panel: strip with counters, open / collapse, "see in the Layers panel"), `ui/catmenu.js` (the category menu of the ribbon) | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
+| **1 · Site** | Imports or draws the site and its constraints, sorted into categories; sets the boundary setback; draws from the ribbon (Category and Type menus, six geometries in two rows, Freehand among them; *Unclassified* by default, counted nowhere until classified), selects on the map, in a box or from the Layers rows and edits from the ribbon (Reshape, Move / rotate, Split, Merge, Copy, Delete; the Category, Type and Buffer act on the selection); the objects by category are in the Layers panel on the left, which only lists and zooms | `app/js/areas.js` | `categories.js` (the categories and the automatic sorting, shared "site-features" model), `io/importers.js` (file readers), `crs.js` + `ui/crsdialog.js` (which coordinate system a file is in), `geo/convert.js`, `ui/layers.js` (the Layers panel: strip with counters, open / collapse, "see in the Layers panel"), `ui/catmenu.js` (the category menu of the ribbon) | the drawings, the toolkit (nothing else) | `features[]`, `settings.boundarySetback`, `crs` |
 | **2 · Terrain** (optional) | Samples the elevations on a grid, chooses the slope limit, sees the areas too steep | `app/js/terrain/terrain.js` | `terrain/slope.js` (slopes and masks, pure maths), `terrain/dtm.js` (GeoTIFF reading), `terrain/store.js` (the grid in memory, in IndexedDB and in the file) | the site, the structure of step 3 (for the toolkit rule), Esri World Elevation or a GeoTIFF | `terrain` (description of the grid, limit, view); the grid itself goes to IndexedDB |
 | **3 · Layout** | Chooses technology, structure, module, tilt, azimuth, pitch; reads the results | `app/js/field.js` | `layout/structures.js` (the nVm notation and the size of a table), `layout/rows.js` (the row-fill engine), `modules.js` (the module library and the roadmaps), `catalog.js` | the buildable area of step 1, the cuts of steps 2 and 4, the module | `field`, `plannedModules`, `moduleDefs`, `specificYield` |
 | **4 · Infrastructure** | Fences, perimeter road, gates, internal roads, stations | `app/js/infra.js` | `catalog.js` (the country values) | the usable land of step 1, the rows of step 3, the country of the site | `infra` (fence groups, perimeter road, clearance, stations, roads) |
@@ -90,7 +91,7 @@ Shared by every step:
 
 | File | Role |
 |---|---|
-| `app/js/main.js` | Starts the app: texts, theme, rail, SDK and catalog in parallel, the map, then every panel; wires New / Open / Save / Import, keyboard shortcuts and files dropped on the map |
+| `app/js/main.js` | Starts the app: texts, theme, tabs and ribbon, SDK and catalog in parallel, the map, then every panel; wires New / Open / Save / Import, keyboard shortcuts and files dropped on the map |
 | `app/js/state.js` | The project (`store.project`), its default shape, the upgrade of old projects (`upgrade()`), autosave in the browser, the publish/subscribe |
 | `app/js/sdk.js` | The only door to the ArcGIS Maps SDK (`$arcgis.import()`). A new SDK module is declared here and nowhere else |
 | `app/js/libs.js` | The only door to the vendored libraries (`app/vendor/`) |
@@ -175,7 +176,7 @@ The fragile points, in the order a change is most likely to hit them.
 | `app/js/sdk.js` (an SDK module added or renamed) | the app page works, the headless tests fail: the npm bundle does not know the new module | `tools/headless/build.mjs` bundles only the modules listed there | run `npm run build` in `tools/headless` after the change |
 | `app/js/layout/rows.js` or `layout/structures.js` | tables, MWp and the bill of quantities of **every** project change the next time they are opened | results are never stored; the engine is recomputed | `tests/index.html` (the engine against a brute-force oracle on 200 random polygons) and `tests/ui.html` |
 | `app/js/geo/localframe.js` | every area, length, pitch and export is measured wrongly | it is the ruler of the whole app | `tests/sdk.html` (5 000.000 m² for a 100 × 50 m rectangle) and the reference areas of `expected.json` |
-| `areas.js` `computeArea()` or the `extraCuts` list | the layout, the fences and the figures of the rail change together | every step cuts through the same function | `tests/import.html` (net area), `tests/terrain.html` (slope cut), `tests/infra.html` (fence band, stations) |
+| `areas.js` `computeArea()` or the `extraCuts` list | the layout, the fences and the figures of the tabs change together | every step cuts through the same function | `tests/import.html` (net area), `tests/terrain.html` (slope cut), `tests/infra.html` (fence band, stations) |
 | the order of `main.js` (what starts before what) | a panel reads the catalog or the map before they exist: blank panel, errors in the console | SDK, catalog and countries load in parallel, then the panels in order | `tests/ui.html` starts the panels the same way; the app page is checked by hand |
 | `app/js/libs.js` or `app/vendor/` | imports or exports stop on company networks | the libraries are served by the app so that blocked CDNs do not matter | the vendor step of the CI; `tests/modules.html` loads every vendored library |
 | the `.axpo` contract (what the Geoportale writes) | the Geoportale import silently drops the terrain, doubles the strips or freezes the net area | the reader rebuilds the contract from the writer's code (`docs/audit/2026-10-08-geoportale-alignment.md`) | the three `it_slope*.axpo` fixtures and `tests/terrain.html`; a real `.axpo` is still to be tried |
@@ -203,7 +204,7 @@ app.
 | `tests/import.html` | classification, v1 → v2 migration, countries and proposed systems, every national EPSG code, the fixtures against the ArcGIS reference areas, Geoportale projects with the site-features model, net area, grid connection route, project and GeoJSON round trips (25) | `io/importers.js`, `categories.js`, `crs.js`, `areas.js`, `state.js`, `io/projectfile.js` |
 | `tests/terrain.html` | slopes, masks and outlines, GeoTIFF sampling, the slope cut, a limit chosen by hand against the toolkit, figures inside the site and the terrain image, the project file, Geoportale projects with their DTM (grid adopted, partial coverage, replaced or kept, automatic drawings left out), the terrain under the pointer (21) | `terrain/*` |
 | `tests/infra.html` | fence, perimeter road, clearances, lots and shared fences, stations (snapping, moving, at the access), roads drawn (12) | `infra.js` |
-| `tests/ui.html` | the real panels on a stand-in map view: stepper states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain, the Layers panel and its visibility switches, the drawing support, dimensions, selection and editing, the status bar, the searches and Zoom to (24) | `ui/tabs.js`, `ui/layers.js`, `ui/maptools.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
+| `tests/ui.html` | the real panels on a stand-in map view: tab states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain, the Layers panel and its visibility switches, the drawing support, dimensions, selection and editing, the status bar, the searches and Zoom to (24) | `ui/tabs.js`, `ui/layers.js`, `ui/maptools.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
 | `tests/view3d.html` | sun and trackers against pvlib, row shading, heights by country, meshes, ground elevations, terrain tiles, glTF (8) | `view3d/sun.js`, `view3d/geometry.js`, `view3d/model.js`, `view3d/glb.js` |
 | `tests/scene3d.html` | the real SceneView on the synthetic DTM: opens on the site without errors, ground from the terrain, AgriPV heights, sun buttons, views, report, back to 2D (5; minutes long in headless, software WebGL) | `view3d/scene.js` |
 

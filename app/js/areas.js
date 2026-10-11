@@ -33,10 +33,11 @@ let mode = 'select';         // the mode of the map (pvp:mode): objects are pick
 let drawCat = UNCLASSIFIED; // ① the category the next drawings go into (none by default: sorted later)
 let catMenu = null;          // the category menu of the ribbon (ui/catmenu.js)
 const drawDefaults = {};     // category -> attributes given to the next drawings (type, buffer, height, width)
-let freehand = false;        // the Freehand box of the ribbon: Area and Line follow the pointer
-const TOOLS = ['point', 'polyline', 'polygon', 'rectangle', 'circle'];
+const TOOLS = ['point', 'polyline', 'polygon', 'rectangle', 'circle', 'freehand'];
 const TOOL_KIND = { point: 'point', polyline: 'line', polygon: 'polygon', rectangle: 'polygon', circle: 'polygon' };
-const FREEHAND_TOOLS = ['polygon', 'polyline'];
+// Freehand follows the pointer: an area when the category takes areas, else a line (thinned to 0.5 m)
+const kindOf = (tool, c) => (tool === 'freehand' ? (c.geom.includes('polygon') ? 'polygon' : 'line') : TOOL_KIND[tool]);
+const toolOk = (tool, c) => !!c && c.geom.includes(kindOf(tool, c));
 export const crsState = { alerts: [], suggested: null, iso: null };
 // figures of the step for the rail (buildable area in m², null without a site)
 export const areasState = { buildableArea: null };
@@ -113,10 +114,6 @@ export function initAreas(mapView) {
     $('drawType').onchange = () => setValue('type', $('drawType').value);
     $('drawBuffer').onchange = () => setValue('buffer', num($('drawBuffer')));
     $('drawSize').onchange = () => setValue($('drawSize').dataset.dattr, num($('drawSize')));
-    $('drawFreehand').onchange = () => {
-      freehand = $('drawFreehand').checked;
-      if (drawing && FREEHAND_TOOLS.includes(drawing.tool)) startDraw(drawing.category, drawing.tool);   // the armed tool follows
-    };
     $('drawUndo').onclick = () => undo();
     $('drawRedo').onclick = () => redo();
     // the group Selection: Select, Box, and the edits of the selected objects
@@ -338,28 +335,28 @@ export function selectDrawCat(category) {
   if (!CATEGORY[category]) return;
   const tool = drawing && drawing.tool;
   drawCat = category;
-  if (tool) { if (CATEGORY[category].geom.includes(TOOL_KIND[tool])) startDraw(category, tool); else stopDraw(); }
+  if (tool) { if (toolOk(tool, CATEGORY[category])) startDraw(category, tool); else stopDraw(); }
   else renderDraw();
 }
 function toggleTool(tool) {
   if (drawing && drawing.tool === tool) stopDraw(); else startDraw(drawCat, tool);
 }
 export function startDraw(category, tool) {
-  if (!TOOLS.includes(tool) || !CATEGORY[category] || !CATEGORY[category].geom.includes(TOOL_KIND[tool])) return;
+  if (!TOOLS.includes(tool) || !toolOk(tool, CATEGORY[category])) return;
   if (!layerVisible('cat:' + category)) setLayerVisible('cat:' + category, true);   // F8: nothing is drawn unseen
   if (op) cancelOp();
   if (selection.size) clearSelection();   // a drawing tool leaves the selection
   if (editing) sketchVM.complete();
   if (drawing) sketchVM.cancel();
   document.dispatchEvent(new CustomEvent('pvp:draw'));   // a dimension in progress stops (dims.js)
-  const free = freehand && FREEHAND_TOOLS.includes(tool);
+  const free = tool === 'freehand', sketchTool = free ? (kindOf(tool, CATEGORY[category]) === 'polygon' ? 'polygon' : 'polyline') : tool;
   drawing = { category, tool, free };
   drawCat = category;
   const c = CATEGORY[category].colour;
   sketchVM.polygonSymbol = { type: 'simple-fill', color: [...c, 0.12], outline: { color: c, width: 2 } };
   sketchVM.polylineSymbol = { type: 'simple-line', color: c, width: 2.5 };
   sketchVM.pointSymbol = { type: 'simple-marker', color: c, size: 9, outline: { color: [255, 255, 255], width: 1 } };
-  sketchVM.create(tool, tool === 'point' ? undefined : { mode: free ? 'freehand' : 'click' });
+  sketchVM.create(sketchTool, tool === 'point' ? undefined : { mode: free ? 'freehand' : 'click' });
   renderDraw();
   const key = tool === 'point' ? 'areas.drawPointBanner' : tool === 'rectangle' ? 'areas.drawRectBanner' : tool === 'circle' ? 'areas.drawCircleBanner'
     : free ? 'areas.drawFreeBanner' : 'areas.drawBanner';
@@ -447,6 +444,7 @@ const TOOL_SVG = {
   polyline: SVG24('<path d="M4.5 17.5l5-6.5 4.5 3 5.5-7"/><circle cx="4.5" cy="17.5" r="1.6"/><circle cx="9.5" cy="11" r="1.6"/><circle cx="14" cy="14" r="1.6"/><circle cx="19.5" cy="7" r="1.6"/>'),
   point: SVG24('<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/>'),
   circle: SVG24('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+  freehand: SVG24('<path d="M3.5 16.5c1.6-3.6 3.4-6.5 5.4-6.1 2.3.4.9 6.1 3.4 6.3 2.6.2 3.1-7.7 5.6-8.4 1.3-.4 2 .6 2.6 1.6"/>'),
 };
 // the entries of the category menu: Unclassified first (the default), then the categories of the model
 const drawItems = () => [{ id: UNCLASSIFIED, label: t('cat.' + UNCLASSIFIED), hint: t('cat.' + UNCLASSIFIED + '.hint'), colour: null },
@@ -455,10 +453,10 @@ function renderDraw() {
   if (!$('drawTools')) return;
   catMenu?.render();
   const c = CATEGORY[drawCat];
-  // the four tools of the ribbon: off when the category does not take that geometry, pressed while armed
+  // the six tools of the ribbon: off when the category does not take that geometry, pressed while armed
   for (const b of $('drawTools').querySelectorAll('[data-dtool]')) {
-    const tool = b.dataset.dtool, ok = c.geom.includes(TOOL_KIND[tool]);
-    const why = ok ? '' : t('areas.wrongGeom', { cat: t('cat.' + c.id), kind: t('geom.' + TOOL_KIND[tool]) });
+    const tool = b.dataset.dtool, ok = toolOk(tool, c);
+    const why = ok ? '' : t('areas.wrongGeom', { cat: t('cat.' + c.id), kind: t('geom.' + kindOf(tool, c)) });
     b.innerHTML = `${TOOL_SVG[tool]}<span>${esc(t('draw.tool.' + tool))}</span>`;
     b.disabled = !ok;
     b.title = ok ? `${t('draw.tool.' + tool)}: ${t('draw.tool.' + tool + '.sub')}` : why;

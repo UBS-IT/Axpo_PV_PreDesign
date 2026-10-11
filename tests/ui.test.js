@@ -151,7 +151,7 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   const btn = document.getElementById('drawCatBtn'), list = document.getElementById('drawCatList');
   const tool = id => document.querySelector(`#drawTools [data-dtool="${id}"]`);
   const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
-  const all = ['point', 'polyline', 'polygon', 'rectangle', 'circle'];
+  const all = ['point', 'polyline', 'polygon', 'rectangle', 'circle', 'freehand'];
   const off = id => document.getElementById(id).disabled;
   // the menu: Unclassified, then the ten categories of the model; Unclassified is the default and takes every tool
   btn.click();
@@ -166,7 +166,7 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   // a click picks a category: the tools follow it
   btn.click(); list.querySelector('[data-id="gross"]').click();
   assert(list.hidden && /Gross area/.test(btn.textContent), 'gross chosen: ' + btn.textContent);
-  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled && !tool('circle').disabled, 'a gross area takes polygons only (circle too)');
+  assert(tool('point').disabled && tool('polyline').disabled && !tool('polygon').disabled && !tool('rectangle').disabled && !tool('circle').disabled && !tool('freehand').disabled, 'a gross area takes polygons only (circle and freehand too)');
   assert(/polygons|points/.test(tool('point').title), 'the disabled tool says why: ' + tool('point').title);
   assert(off('drawType') && off('drawBuffer') && document.getElementById('drawSizeBox').hidden, 'no type, buffer or size for the gross area');
   // the keyboard: Arrow down opens, End goes to the last category, Enter picks it
@@ -181,8 +181,8 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   assert(!document.getElementById('drawSizeBox').hidden && text('drawSizeCap') === 'Height' && ty.value === 'tree', 'obstacles: height next to the buffer, tree by default');
   selectDrawCat('exclusion');
   assert(buf.value === '7', 'the buffer given to the next exclusions is remembered');
-  const fh = document.getElementById('drawFreehand');
-  assert(fh && !fh.checked, 'the Freehand box, off');
+  assert(!document.getElementById('drawFreehand') && [...document.querySelectorAll('#drawTools [data-dtool]')].map(b => b.dataset.dtool).join() === 'polygon,polyline,point,rectangle,circle,freehand',
+    'six tools in two rows of three, Freehand one of them (no box)');
   assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
   // the Layers panel has nothing to edit any more (B5): the ribbon draws and edits
   assert(!document.querySelector('#areaCats .drawbtn, #areaCats [data-del], #areaCats select, #areaCats input:not([data-lay])'), 'Layers: nothing to edit on the cards (only the visibility switches)');

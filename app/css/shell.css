@@ -39,6 +39,11 @@ body { overflow: hidden; display: block; }
 .rform { display: grid; grid-template-columns: auto auto; align-items: center; align-content: center; column-gap: 8px; row-gap: 6px; padding-right: var(--space-1); }
 .rsel { width: 214px; height: 26px; padding: 0 6px; font-size: 12px; }
 .rsel:disabled { opacity: .5; cursor: not-allowed; }
+/* the six geometries of Site definition: two rows of three small tools */
+.tool-grid { display: grid; grid-template-columns: repeat(3, auto); align-content: center; gap: 3px 2px; }
+.tool-grid .tool.small { height: 26px; padding: 0 8px 0 6px; }
+.tool-grid .tool.small .icon { width: 16px; height: 16px; }
+.tool-grid .tool.small:disabled { opacity: .4; }
 .tool-col { display: flex; flex-direction: column; gap: 2px; }
 .tool-col .tool-row { flex: 1; min-height: 0; }
 .tool-col .tool.medium { padding: 2px 4px; min-width: 50px; }
