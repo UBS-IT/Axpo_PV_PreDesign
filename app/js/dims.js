@@ -10,8 +10,9 @@ import { t, fmt } from './i18n.js';
 import { toast } from './ui/toast.js';
 import { toGeoJSON } from './geo/convert.js';
 import { makeLocalFrame } from './geo/localframe.js';
-import { siteFrame, areasLayer, banner } from './areas.js';
+import { siteFrame, banner } from './areas.js';
 import { onDrawPrefs } from './ui/maptools.js';
+import { registerSketch } from './ui/snapping.js';
 import { confirmDialog } from './ui/dialog.js';
 import { layerVisible, setLayerVisible, onVisibility } from './ui/visibility.js';
 
@@ -29,14 +30,10 @@ export function initDims(mapView) {
   sketchVM = new SketchViewModel({ view, layer: scratch, updateOnGraphicClick: false });
   sketchVM.polylineSymbol = { type: 'simple-line', color: LINE, width: 1.5 };
   try {
-    const src = [{ layer, enabled: true }];
-    const al = areasLayer();
-    if (al) src.unshift({ layer: al, enabled: true });
-    sketchVM.snappingOptions = { enabled: true, selfEnabled: true, featureEnabled: true, featureSources: src };
+    registerSketch(sketchVM, [layer]);   // its own dimensions, then what the menu of the status bar says
     sketchVM.tooltipOptions = { enabled: true, inputEnabled: true };
     sketchVM.labelOptions = { enabled: true };
     onDrawPrefs(p => {
-      sketchVM.snappingOptions.enabled = !!p.snap;
       sketchVM.tooltipOptions.enabled = !!p.typed; sketchVM.tooltipOptions.inputEnabled = !!p.typed;
       sketchVM.labelOptions.enabled = !!p.labels;
     });

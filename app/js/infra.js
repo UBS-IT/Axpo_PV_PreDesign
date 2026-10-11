@@ -16,6 +16,7 @@ import { icon } from './ui/icons.js';
 import { stepProvider } from './ui/tabs.js';
 import { layerVisible, onVisibility } from './ui/visibility.js';
 import { setLayerFigure } from './ui/layers.js';
+import { registerSketch } from './ui/snapping.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
 const STATION_COLOUR = { CC: [31, 153, 204], CU: [110, 170, 60], CT: [233, 120, 30] };
@@ -560,7 +561,7 @@ export function initInfra(mapView) {
   view.map.addMany([layer, sketchLayer]);
   try {
     sketchVM = new SketchViewModel({ view, layer: sketchLayer, updateOnGraphicClick: false });
-    try { sketchVM.snappingOptions = { enabled: true, featureSources: [{ layer, enabled: true }] }; } catch {}
+    registerSketch(sketchVM, [layer]);   // the roads snap to the infrastructure, then to what the menu says
     sketchVM.on('create', e => {
       if (e.state === 'complete') {
         const c = lineCoords(e.graphic.geometry);

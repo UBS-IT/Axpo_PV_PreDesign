@@ -39,8 +39,11 @@ the length of every segment in true metres and the total of a chain, ticks at th
 panel counts them, shows or hides them and removes them all, one is removed with a click, then Delete (or the Remove
 button of the message); they cut nothing and belong to no category. They go to the PDF report and to the DXF (layer
 `PVP_DIM`), not to the KMZ. The scale bar sits at the bottom centre. The drawing support is remembered in the
-browser: snapping to the objects is the switch of the status bar, typed lengths and angles (Tab) and the segment
-lengths while drawing are two boxes under the drawing block of 1 · Site. The messages of the app appear at the
+browser: the *Snapping* button of the status bar opens what the tools snap to (the vertices, edges and ends of the
+objects; the midpoints of their edges and their centres; guides for right angles, parallels and extensions; the
+fence, roads and stations; the buildable area; the tables, off by default because they are many); Ctrl held down
+while drawing turns it off or on, and the circle does not snap (a limit of the SDK). Typed lengths and angles (Tab)
+and the segment lengths while drawing are two boxes of the drawing block of 1 · Site. The messages of the app appear at the
 bottom left of the map, each with a × to close it by hand.
 
 Two searches. **Ctrl K** (and nothing else) opens a box at the top centre of the map that finds the objects of the
@@ -134,9 +137,9 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Point** over **Rectangle, Circle, Freehand** (a tool is off, with the reason as its tooltip, when the category does
   not take that geometry; the armed one is highlighted; Freehand follows the pointer, an area when the category takes
   areas, else a line, thinned to 0.5 m), **Undo / Redo**
-  (Ctrl+Z / Ctrl+Y, 40 steps) for every change of the objects, then the **Buffer** given to the next drawings (and
-  their Height for obstacles, Width for the strips) and the two drawing-support boxes. The boundary setback is the
-  *Constraints* group next to it. The Site panel on the right only shows the figures. The armed tool stays armed after
+  (Ctrl+Z / Ctrl+Y, 40 steps) for every change of the objects, then the Height for obstacles and the Width for the
+  strips and the two drawing-support boxes. *Constraints* next to it holds
+  the **Buffer** of the next objects (or of the selected ones) above the **Boundary setback**. The Site panel on the right only shows the figures. The armed tool stays armed after
   each drawing (a second click or Esc stops it); the map banner and the status bar say what is going on. Objects drawn as *Unclassified* wait in the first group of the Layers panel, dashed on the map, counted
   nowhere and exported nowhere, until each one gets its category (select it, then pick the category in the ribbon);
   the area ledger and the Report tab say how many are waiting.
@@ -157,8 +160,10 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   (hectares, count, kilometres). Every row has a box that shows or hides it on the map, and in the 3D model for the
   tables, fences, stations and obstacles; *Hide all · Show all* at the top. A hidden category still counts, its objects are
   still selected from their row, and drawing in it shows it again. The boxes are remembered in this browser, not in
-  the project. Nothing is edited there, except *Remove all* on the Dimensions row. A right click on any row (or the
-  menu key on a focused row) opens *Zoom to*, hidden layers included; a row with nothing on the map says so.
+  the project. A row, and a group, shows only when it holds something on the map; with nothing at all the panel says
+  how to start. Nothing is edited there, except *Remove all* on the Dimensions row and *Rename*: a right click on any
+  row (or the menu key on a focused row) opens *Zoom to*, hidden layers included, and on an object *Rename*, which
+  turns its name into a field (Enter keeps it, one step of Undo).
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel

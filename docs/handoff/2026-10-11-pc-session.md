@@ -214,4 +214,18 @@ the unnamed save refused with the red field and the message, the name and the da
 
 Traps: with the browser pane hidden, `view.goTo()` does not settle (no animation frames): test the constraints by
 setting `view.scale` or by calling the module. `view.constraints.minScale` is the widest scale (zoomed out).
-To confirm with the user: one file per day of work (Save writes in place only a file of today).
+Confirmed by the user: one file per day of work, the menu moving a locked scale. Merged as #42.
+
+## 12. Phase 8, drawing aids and Layers (added later on 2026-10-11)
+
+On `ux/drawing-aids`: `ui/snapping.js` (the menu of the Snapping button, the sources of every sketch, the hidden
+layer «Snap points» of midpoints and centres), Rename in the right-click menu of an object row (`renameRow()` in
+`ui/layermenu.js`, `renameFeature()` in `areas.js`), rows and groups of the Layers panel only when they hold something
+(`syncGroups()` in `ui/layers.js`; the rows start hidden in the markup and show with their figure), Buffer in
+Constraints. Checked: `ui.html` 26 / 26 with a new test, every other page green but `scene3d.html` (hidden window);
+in the app the menu, the sources (5 points on the test site: its centre and the midpoints of its four sides), the
+tables added and removed, Rename and back, the rows of roads, stations and the cut hidden, Buffer above the setback.
+
+Traps: a failed run of `ui.html` can leave its preferences in this browser under the test key (`pvp.draw.test`), and
+the next run starts with them: clear the key. A module that imports `ui/maptools.js` must not call it while loading
+(an import cycle through `areas.js`): `ui/snapping.js` subscribes at the first sketch.

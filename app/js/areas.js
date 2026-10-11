@@ -21,6 +21,7 @@ import { onDrawPrefs } from './ui/maptools.js';
 import { icon } from './ui/icons.js';
 import { initCatMenu } from './ui/catmenu.js';
 import { layerVisible, setLayerVisible, onVisibility } from './ui/visibility.js';
+import { registerSketch } from './ui/snapping.js';
 import { splitFeature, mergeFeatures, copyFeatures, measureFeature, frameFor } from './edit.js';
 
 let view, featLayer, sketchLayer, sketchVM;
@@ -64,11 +65,10 @@ export function initAreas(mapView) {
   // the drawing support (snapping, typed lengths and angles, segment labels): the preferences of ui/maptools.js
   // (the snapping switch of the status bar, the two boxes under the drawing block)
   try {
-    sketchVM.snappingOptions = { enabled: true, selfEnabled: true, featureEnabled: true, featureSources: [{ layer: featLayer, enabled: true }] };
+    registerSketch(sketchVM);   // the snapping of the menu of the status bar (ui/snapping.js)
     sketchVM.tooltipOptions = { enabled: true, inputEnabled: true };
     sketchVM.labelOptions = { enabled: true };
     onDrawPrefs(p => {
-      sketchVM.snappingOptions.enabled = !!p.snap;
       sketchVM.tooltipOptions.enabled = !!p.typed; sketchVM.tooltipOptions.inputEnabled = !!p.typed;
       sketchVM.labelOptions.enabled = !!p.labels;
     });
@@ -128,7 +128,7 @@ export function initAreas(mapView) {
     on('edDelete', () => deleteSelection());
     // the «Selected object» card of the Properties panel: the name, and the voltage of a power line
     const sn = $('selName'), sv = $('selVolt');
-    if (sn) sn.onchange = () => { const f = singleSelected(), v = sn.value.trim(); if (f && v && v !== f.name) mutate(p => { const g = p.features.find(x => x.id === f.id); if (g) g.name = v; }); };
+    if (sn) sn.onchange = () => { const f = singleSelected(); if (f) renameFeature(f.id, sn.value); };
     if (sv) sv.onchange = () => {
       const f = singleSelected();
       if (!f) return;
@@ -780,6 +780,13 @@ function pickRow(row, e) {
   const add = !!(e.shiftKey || e.ctrlKey || e.metaKey);
   selectFeatures([row.dataset.id], { add, toggle: add });
   if (currentTab() !== 'areas') showStep('areas');
+}
+// a new name for an object (the Rename of the Layers panel, the card of the selected object): one step of Undo
+export function renameFeature(id, name) {
+  const v = String(name ?? '').trim(), f = store.project.features.find(x => x.id === id);
+  if (!f || !v || v === f.name) return false;
+  mutate(p => { const g = p.features.find(x => x.id === id); if (g) g.name = v; });
+  return true;
 }
 export function moveFeature(id, category) {
   const f = store.project.features.find(x => x.id === id);

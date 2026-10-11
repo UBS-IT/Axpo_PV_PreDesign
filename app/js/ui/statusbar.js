@@ -7,7 +7,6 @@
 import { getSdk } from '../sdk.js';
 import { store, on } from '../state.js';
 import { t, fmt } from '../i18n.js';
-import { drawPrefs, setDrawPref, onDrawPrefs } from './maptools.js';
 import { terrainAt, terrainReady, limitText } from '../terrain/terrain.js';
 
 const $ = id => document.getElementById(id);
@@ -36,13 +35,7 @@ export function initStatusBar(mapView) {
   on('crs', () => { targetWkid = null; });
   // mode
   document.addEventListener('pvp:mode', e => { const el = $('sbMode'); if (el) el.textContent = e.detail?.label || t('sb.select'); });
-  // snapping
-  const snap = $('sbSnap');
-  if (snap) {
-    snap.title = t('sb.snapTitle');
-    snap.onclick = () => setDrawPref('snap', !drawPrefs.snap);
-    onDrawPrefs(p => { snap.setAttribute('aria-pressed', String(!!p.snap)); snap.querySelector('span').textContent = t(p.snap ? 'sb.snapOn' : 'sb.snapOff'); });
-  }
+  // snapping: the button opens the menu of ui/snapping.js
   // autosave
   document.addEventListener('pvp:saved', e => {
     const el = $('sbSave'), d = e.detail instanceof Date ? e.detail : new Date();

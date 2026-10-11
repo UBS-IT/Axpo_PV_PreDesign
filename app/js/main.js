@@ -25,6 +25,7 @@ import { initSearch } from './ui/search.js';
 import { initGeoSearch } from './ui/geosearch.js';
 import { initLayerMenu } from './ui/layermenu.js';
 import { initMapNav } from './ui/mapnav.js';
+import { initSnapping } from './ui/snapping.js';
 import { isUntitled } from './io/names.js';
 import { initDims } from './dims.js';
 import { loadIcons, icon } from './ui/icons.js';
@@ -85,6 +86,7 @@ async function start() {
   initGeoSearch(view);   // an address or coordinates, top right
   initLayerMenu(view);   // Zoom to, on a right click in the Layers panel
   initMapNav(view);      // the box of the project, the scale menu and its lock
+  initSnapping(view);    // what the drawing tools snap to (after the layers of every step exist)
   try { initView3d(view); } catch (e) { console.error('[3d]', e); }   // the 3D step must never stop the app from starting
   on('modules', renderModules);
   on('project', renderModules);

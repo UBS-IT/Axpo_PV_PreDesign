@@ -21,7 +21,7 @@ import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { stepProvider } from '../ui/tabs.js';
 import { layerVisible, onVisibility } from '../ui/visibility.js';
-import { setLayerFigure } from '../ui/layers.js';
+import { setLayerFigure, syncGroups } from '../ui/layers.js';
 import { applyStandard } from '../field.js';
 import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear, exceeds } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
@@ -532,7 +532,7 @@ function render() {
   document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.setAttribute('aria-pressed', String(!!P.terrain.showSlope && b.dataset.view === kind)); b.disabled = !have; });
   // the same switch in the Layers panel (phase 3): the image row, what it shows, its legend under it while it is on
   const li = $('layTerImage');
-  if (li) { li.checked = !!P.terrain.showSlope && have; li.disabled = !have; }
+  if (li) { li.checked = !!P.terrain.showSlope && have; li.disabled = !have; const row = li.closest('.layer'); if (row) row.hidden = !have; syncGroups(); }   // L9
   const lf = $('layTerImageFig');
   if (lf) lf.textContent = have ? t(kind === 'z' ? 'lay.terElev' : 'lay.terSlope') : t('lay.terNone');
   $('terLegend').hidden = !(have && P.terrain.showSlope);
