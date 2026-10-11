@@ -41,7 +41,7 @@ export function defaultProject() {
     // null = the toolkit rule of the structure of step 3, else { maxAny } or { maxNS, maxEW } in percent chosen by
     // the designer (limitFrom 'custom') or brought by a Geoportale project ('geoportale')
     // view: the terrain image on the map, 's' slope classes or 'z' hill-shaded elevations (as on the Geoportale)
-    terrain: { source: null, cellSize: 5, applySlopeLimit: true, minPatch: 250, showSlope: true, view: 's', grid: null, limit: null, limitFrom: null },
+    terrain: { source: null, cellSize: 5, applySlopeLimit: true, minPatch: 250, showSlope: true, view: 's', grid: null, limit: null, limitFrom: null, contours: false, contourStep: 1 },
     // step 3: fences around the lots of the usable land (fenceGroups: lots sharing one fence, kept as points
     // [lon, lat] inside them), perimeter road (null = not decided: off, the app shows its suggestion), fence →
     // structures clearance (null = the toolkit value of the country), stations { id, kind CC|CU|CT, lon, lat, rot },

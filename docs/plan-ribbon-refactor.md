@@ -131,7 +131,7 @@ bar (G1–G7; the CRS select was already wired in 1B): PR 39. Phase 5 (H1–H8):
 project (Ctrl K), and as asked by the user an address / coordinates search and *Zoom to* on a right click in Layers:
 PR 40. The other functions of §4 wait, each with its decisions. Phase 6 (I1–I7, with the user's notes on the 3D
 panels, the messages and the drawing tools): PR 41. With it the refactor of this plan is complete. The second
-round is §8: phase 7 (L1–L4) PR 42; phase 8 (L5–L10) on the branch `ux/drawing-aids`, PR after 42.
+round is §8: phase 7 (L1–L4) PR 42; phase 8 (L5–L10) PR 43; phase 9 (L11–L14) on the branch `ux/terrain-ribbon`, PR after 43.
 
 ## 6. Rollback and safety
 

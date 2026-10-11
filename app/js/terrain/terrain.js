@@ -23,7 +23,7 @@ import { stepProvider } from '../ui/tabs.js';
 import { layerVisible, onVisibility } from '../ui/visibility.js';
 import { setLayerFigure, syncGroups } from '../ui/layers.js';
 import { applyStandard } from '../field.js';
-import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear, exceeds } from './slope.js';
+import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear, exceeds, contourLines, mosaic } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
 import { openGeoTiff } from './dtm.js';
 
@@ -31,7 +31,14 @@ const ESRI_ELEVATION = 'https://elevation3d.arcgis.com/arcgis/rest/services/Worl
 const CLASS_COLOURS = [[46, 160, 67], [160, 200, 60], [240, 190, 40], [235, 110, 40], [190, 30, 60]];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let view = null, layer = null, imageLayer = null, busy = false;
+let view = null, layer = null, imageLayer = null, contourLayer = null, busy = false;
+// the images of the terrain, one at a time (phase 9, L12–L13): slope classes, elevation, aspect, hillshade
+export const VIEWS = ['s', 'z', 'a', 'h'];
+const viewOf = P => (VIEWS.includes(P.terrain.view) ? P.terrain.view : 's');
+// the steps of the contours (L14), in metres
+export const CONTOUR_STEPS = [0.5, 1, 2, 5, 10];
+// aspect: the way a slope faces; under 2 % the ground is flat
+const ASPECT = { n: [215, 60, 50], ew: [235, 190, 50], s: [60, 170, 80], flat: [190, 190, 190] };
 
 // ── grid of the site ──
 // Local bounding box of the gross and net areas in the frame of the site
@@ -167,10 +174,25 @@ export async function loadTerrain(kind, file = null) {
       z = await sampleEsri(g.frame, g.def);
       meta = describe(g.frame, g.def, z, { source: 'esri', name: 'Esri World Elevation' });
     } else {
-      const r = await sampleDtm(file, g.frame, g.def);
-      if (!r) { status(''); return false; }
-      z = r.z;
-      meta = describe(g.frame, g.def, z, { source: 'dtm', name: file.name, epsg: r.wkid, resolution: r.res });
+      // one GeoTIFF or several (L11): each sampled on the grid of the site, then every cell from the finest model
+      // that covers it; a model that covers nothing of the site is left out and said
+      const files = Array.isArray(file) ? file : [file];
+      const got = [], skipped = [];
+      for (const f of files) {
+        try { const r = await sampleDtm(f, g.frame, g.def); if (r) got.push({ ...r, name: f.name }); else if (files.length === 1) { status(''); return false; } else skipped.push(f.name); }
+        catch (e) { if (files.length === 1) throw e; console.warn('[terrain] model left out', f.name, e); skipped.push(f.name); }
+      }
+      if (!got.length) throw new Error(t('terrain.mosaicNone'));
+      if (got.length === 1) {
+        z = got[0].z;
+        meta = describe(g.frame, g.def, z, { source: 'dtm', name: got[0].name, epsg: got[0].wkid, resolution: got[0].res });
+      } else {
+        const mz = mosaic(got);
+        z = mz.z;
+        const parts = got.map((r, k) => ({ name: r.name, res: r.res, epsg: r.wkid, cells: mz.counts[k] })).sort((p, q) => p.res - q.res);
+        meta = describe(g.frame, g.def, z, { source: 'dtm', name: t('terrain.mosaicName', { n: got.length }), epsg: parts[0].epsg, resolution: parts[0].res, parts });
+      }
+      if (skipped.length) toast(t('terrain.mosaicSkipped', { files: skipped.join(', ') }), 'warn', 12000);
     }
     if (meta.zmin === null) throw new Error(t('err.tiffOutside'));
     await useGrid(meta, z);
@@ -454,9 +476,12 @@ export function terrainCanvas(m, kind, over) {
     const zc = z[c], gx = g.gx[c], gy = g.gy[c];
     if (!Number.isFinite(zc) || !Number.isFinite(gx) || !Number.isFinite(gy)) continue;
     let rgb;
+    const ax = -gx * EX, ay = -gy * EX, hs = Math.max(0, (ax * LX + ay * LY + LZ) / Math.hypot(ax, ay, 1));
+    let f = Math.min(1.3, Math.max(0.5, hs / LZ));
     if (kind === 'z') rgb = ramp((zc - m.zmin) / zr);
+    else if (kind === 'h') { const v = 35 + 215 * Math.min(1, hs); rgb = [v, v, v]; f = 1; }   // the shaded relief alone
+    else if (kind === 'a') rgb = aspectColour(gx, gy);
     else { const sl = Math.hypot(gx, gy) * 100; let q = SLOPE_CLASSES.findIndex(x => sl >= x[0] && sl < x[1]); if (q < 0) q = SLOPE_CLASSES.length - 1; rgb = CLASS_COLOURS[q]; }
-    const ax = -gx * EX, ay = -gy * EX, hs = Math.max(0, (ax * LX + ay * LY + LZ) / Math.hypot(ax, ay, 1)), f = Math.min(1.3, Math.max(0.5, hs / LZ));
     const bad = !!(over && over[c] === 1), py0 = (m.ny - 1 - j) * k, px0 = i * k;
     for (let b = 0; b < k; b++) for (let a = 0; a < k; a++) {
       const o = 4 * ((py0 + b) * W + px0 + a);
@@ -468,6 +493,35 @@ export function terrainCanvas(m, kind, over) {
   ctx.putImageData(img, 0, 0);
   return cv;
 }
+// the colour of the way a cell faces: downhill to the north red, to the south green, east or west yellow, flat grey
+export function aspectColour(gx, gy) {
+  if (Math.hypot(gx, gy) * 100 < 2) return ASPECT.flat;
+  const az = (Math.atan2(-gx, -gy) * 180 / Math.PI + 360) % 360;   // the direction downhill, from the north clockwise
+  return az >= 315 || az < 45 ? ASPECT.n : az >= 135 && az < 225 ? ASPECT.s : ASPECT.ew;
+}
+// the contours of the grid (L14) as lines in the frame of the grid, while they are switched on
+export function terrainContours() {
+  const P = store.project, m = terrainData.meta;
+  if (!P.terrain.contours || !terrainReady()) return null;
+  const step = P.terrain.contourStep || 1;
+  return { step, sr: gridFrame(m).sr, lines: memo(`ct:${m.id}:${step}`, () => contourLines({ ...m, z: terrainData.z }, step)) };
+}
+function drawContours() {
+  if (!contourLayer) return;
+  contourLayer.removeAll();
+  const c = terrainContours();
+  contourLayer.visible = !!c;
+  if (!c || !c.lines.length) return;
+  const { Graphic, Polyline, projectOperator } = getSdk();
+  // every fifth line is thicker (the index contours)
+  const major = c.step * 5, groups = [[], []];
+  for (const l of c.lines) groups[Math.abs(l.z / major - Math.round(l.z / major)) < 1e-6 ? 1 : 0].push(l.path);
+  groups.forEach((paths, mj) => {
+    if (!paths.length) return;
+    const g = projectOperator.execute(new Polyline({ paths, spatialReference: c.sr }), view.spatialReference);
+    if (g) contourLayer.add(new Graphic({ geometry: g, symbol: { type: 'simple-line', color: [110, 70, 30, mj ? 0.95 : 0.65], width: mj ? 1.3 : 0.6 } }));
+  });
+}
 function drawMap() {
   if (!layer) return;
   const { Graphic, projectOperator, ImageElement, CornersGeoreference, Point } = getSdk();
@@ -478,7 +532,7 @@ function drawMap() {
   if (!m || !g) return;
   const o = P.terrain.applySlopeLimit ? overLimit() : null;
   if (P.terrain.showSlope && imageLayer && typeof document !== 'undefined') {
-    const kind = P.terrain.view === 'z' ? 'z' : 's';
+    const kind = viewOf(P);
     const cv = memo(`img:${m.id}:${kind}:${o ? JSON.stringify(o.limit) + ':' + o.cells : '-'}:${P.terrain.minPatch}:${siteSig()}`, () => terrainCanvas(m, kind, o ? o.mask : null));
     const fr = gridFrame(m), xr = m.x0 + m.nx * m.cell, yt = m.y0 + m.ny * m.cell;
     const pt = (x, y) => projectOperator.execute(new Point({ x, y, spatialReference: fr.sr }), view.spatialReference);
@@ -489,6 +543,7 @@ function drawMap() {
   setLayerFigure('terrain:cut', o && o.cells ? `${fmt(o.cells * m.cell ** 2 / 1e4, 1)} ha` : '');
   if (o && o.polygon) layer.add(new Graphic({ geometry: projectOperator.execute(o.polygon, view.spatialReference),
     symbol: { type: 'simple-fill', style: 'none', outline: { color: [190, 30, 60, 0.9], width: 1.2, style: 'dash' } } }));
+  drawContours();
 }
 
 // The grid no longer matches the site (it grew beyond what the grid was made for) or the grid cell chosen: the
@@ -516,6 +571,7 @@ function render() {
   $('terApply').checked = !!P.terrain.applySlopeLimit;
   $('terMinPatch').value = P.terrain.minPatch;
   $('terTech').value = P.field.technology;
+  if ($('terContourStep')) $('terContourStep').value = String(P.terrain.contourStep || 1);
   $('terClear').disabled = !m;   // a ribbon tool: off rather than gone
   const eb = $('terEsri');   // a ribbon tool: a short caption, the full text as its tooltip
   if (eb) { eb.innerHTML = icon('terrain') + t(m ? 'ribbon.analyseAgain' : 'ribbon.analyse'); eb.title = t(m ? 'terrain.esriAgain' : 'terrain.esriBtn'); }
@@ -525,19 +581,32 @@ function render() {
     cell: fmt(m.cell, 2), zmin: fmt(m.zmin, 1), zmax: fmt(m.zmax, 1) }))}${m.epsg ? esc(' · ' + crsLabel(m.epsg) + ' (EPSG:' + m.epsg + ')') : ''}</div>`
     + (m.missing ? `<div class="notice warn">${esc(tn('terrain.missingCells', m.missing))}</div>` : '')
     + (stale ? `<div class="notice warn">${esc(t('terrain.stale'))}</div>` : '')
-    + (!have ? `<div class="notice warn">${esc(t('terrain.noteMissing'))}</div>` : '') : `<div class="hint">${esc(t('terrain.none'))}</div>`;
+    + (!have ? `<div class="notice warn">${esc(t('terrain.noteMissing'))}</div>` : '')
+    + (m.parts ? `<div class="hint">${esc(t('terrain.mosaicInfo', { list: m.parts.map(q => `${q.name} (${fmt(q.res, 2)} m, ${fmt(q.cells)})`).join(' · ') }))}</div>` : '')
+    // contours from Esri World Elevation (about 10 m): under 2 m they draw the interpolation, not the ground
+    + (have && P.terrain.contours && m.source === 'esri' && (P.terrain.contourStep || 1) < 2 ? `<div class="notice warn">${esc(t('terrain.contourEsri'))}</div>` : '')
+    : `<div class="hint">${esc(t('terrain.none'))}</div>`;
   // the image on the map: view and legend
-  const kind = P.terrain.view === 'z' ? 'z' : 's';
-  // the two views of the ribbon are switches: pressed while their image is on the map, off without a terrain
-  document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.setAttribute('aria-pressed', String(!!P.terrain.showSlope && b.dataset.view === kind)); b.disabled = !have; });
+  const kind = viewOf(P);
+  // the four images of the ribbon are switches, one at a time: pressed while their image is on the map, off without a terrain
+  document.querySelectorAll('[data-view]').forEach(b => { b.setAttribute('aria-pressed', String(!!P.terrain.showSlope && b.dataset.view === kind)); b.disabled = !have; });
+  // the contours: the tool of the ribbon and the row of the Layers panel are one switch, kept in the project
+  const ct = $('terContours'), lc = $('layContours');
+  if (ct) { ct.setAttribute('aria-pressed', String(!!P.terrain.contours && have)); ct.disabled = !have; }
+  if (lc) { lc.checked = !!P.terrain.contours && have; const row = lc.closest('.layer'); if (row) row.hidden = !have; }
+  const lcf = $('layContoursFig');
+  if (lcf) lcf.textContent = have && P.terrain.contours ? t('lay.contoursFig', { step: fmt(P.terrain.contourStep || 1, 1) }) : '';
   // the same switch in the Layers panel (phase 3): the image row, what it shows, its legend under it while it is on
   const li = $('layTerImage');
   if (li) { li.checked = !!P.terrain.showSlope && have; li.disabled = !have; const row = li.closest('.layer'); if (row) row.hidden = !have; syncGroups(); }   // L9
   const lf = $('layTerImageFig');
-  if (lf) lf.textContent = have ? t(kind === 'z' ? 'lay.terElev' : 'lay.terSlope') : t('lay.terNone');
+  if (lf) lf.textContent = have ? t({ s: 'lay.terSlope', z: 'lay.terElev', a: 'lay.terAspect', h: 'lay.terHill' }[kind]) : t('lay.terNone');
   $('terLegend').hidden = !(have && P.terrain.showSlope);
+  const sw = (rgb, key) => `<span class="lg"><i style="background:rgb(${rgb.join(',')})"></i>${esc(t(key))}</span>`;
   $('terLegend').innerHTML = (kind === 's'
     ? SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('')
+    : kind === 'a' ? sw(ASPECT.n, 'terrain.aspectN') + sw(ASPECT.ew, 'terrain.aspectEW') + sw(ASPECT.s, 'terrain.aspectS') + sw(ASPECT.flat, 'terrain.aspectFlat')
+    : kind === 'h' ? `<span class="lg">${esc(t('terrain.hillLegend'))}</span>`
     : (m ? `<span class="lg bar"><i class="ramp"></i>${fmt(m.zmin, 0)} – ${fmt(m.zmax, 0)} m</span>` : ''))
     + (P.terrain.applySlopeLimit ? `<span class="lg"><i class="hatch"></i>${esc(t('terrain.legendOver'))}</span>` : '');
   // the slope limit: what the toolkit says for the structure, the limit in use, and whether they agree
@@ -545,7 +614,7 @@ function render() {
   $('terRule').innerHTML = rule ? `<div class="hint"><b>${esc(S)}</b> (${esc(t('tech.' + P.field.technology))}): ${esc(rule.text)} <small>(${esc(t('terrain.source', { src: rule.source }))})</small></div>`
     : `<div class="notice warn">${esc(t('terrain.noRuleChoose', { structure: S }))}</div>`;
   const mode = !L.custom ? 'toolkit' : L.limit.maxAny != null ? 'any' : 'nsew';
-  document.querySelectorAll('#terLimitMode [data-lmode]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.lmode === mode)); b.tabIndex = b.dataset.lmode === mode ? 0 : -1; });
+  if ($('terLimitSel')) $('terLimitSel').value = mode;
   $('terLimitAny').hidden = mode !== 'any';
   $('terLimitNsew').hidden = mode !== 'nsew';
   if (mode === 'any' && document.activeElement !== $('terMaxAny')) $('terMaxAny').value = L.limit.maxAny;
@@ -576,16 +645,26 @@ export function initTerrain(mapView) {
   try { imageLayer = new MediaLayer({ title: 'Terrain image', listMode: 'hide', opacity: 0.8, source: [] }); view.map.add(imageLayer, 0); }
   catch (e) { console.warn('[terrain] image layer', e); imageLayer = null; }
   layer = new GraphicsLayer({ title: 'Slopes', listMode: 'hide', visible: layerVisible('terrain:cut') });
+  contourLayer = new GraphicsLayer({ title: 'Contours', listMode: 'hide', visible: false });
   onVisibility(keys => { if (keys.includes('terrain:cut')) layer.visible = layerVisible('terrain:cut'); });
   // the image row of the Layers panel and its Hide all / Show all (the state stays the project's, as in the ribbon)
   const li = $('layTerImage');
   if (li) li.onchange = () => change('terrain', p => { p.terrain.showSlope = li.checked; });
-  document.addEventListener('pvp:layers-all', e => { if (!!store.project.terrain.showSlope !== !!e.detail?.on) change('terrain', p => { p.terrain.showSlope = !!e.detail?.on; }); });
+  document.addEventListener('pvp:layers-all', e => {
+    const on = !!e.detail?.on, T = store.project.terrain;
+    if (!!T.showSlope !== on || !!T.contours !== on) change('terrain', p => { p.terrain.showSlope = on; p.terrain.contours = on; });
+  });
   view.map.add(layer, imageLayer ? 1 : 0);
+  view.map.add(contourLayer, imageLayer ? 2 : 1);
+  // the contours: the tool of the ribbon, its step, the row of the Layers panel
+  const ct = $('terContours'), cs = $('terContourStep'), lc = $('layContours');
+  if (ct) ct.onclick = () => change('terrain', p => { p.terrain.contours = !p.terrain.contours; });
+  if (cs) cs.onchange = () => change('terrain', p => { p.terrain.contourStep = Number(cs.value) || 1; p.terrain.contours = true; });
+  if (lc) lc.onchange = () => change('terrain', p => { p.terrain.contours = lc.checked; });
   const input = $('fileDtm');
   $('terEsri').onclick = () => loadTerrain('esri');
   $('terDtm').onclick = () => input.click();
-  input.onchange = () => { const f = input.files && input.files[0]; input.value = ''; if (f) loadTerrain('dtm', f); };
+  input.onchange = () => { const fs = [...(input.files || [])]; input.value = ''; if (fs.length) loadTerrain('dtm', fs.length === 1 ? fs[0] : fs); };
   $('terClear').onclick = async () => {
     if (await confirmDialog({ title: t('terrain.clear'), text: t('terrain.clearConfirm'), ok: t('terrain.clear'), danger: true })) removeTerrain();
   };
@@ -593,30 +672,23 @@ export function initTerrain(mapView) {
   $('terTech').onchange = () => change('field', p => applyStandard(p.field, $('terTech').value));
   // the limit in use: the toolkit rule, or one chosen by hand in the two ways of the Geoportale
   const pct = (id, fallback) => { const v = Number($(id).value); return Number.isFinite(v) && v >= 0 ? v : fallback; };
-  $('terLimitMode').onclick = e => {
-    const b = e.target.closest('[data-lmode]');
-    if (!b) return;
+  // the menu of the ribbon (L12): the toolkit rule, one value in every direction, or north–south and east–west
+  $('terLimitSel').onchange = () => {
+    const mode = $('terLimitSel').value;
     const L = effectiveLimit(), tk = ruleLimit(L.rule), cur = L.limit;
     const any = cur?.maxAny ?? tk?.maxAny ?? (cur ? Math.max(cur.maxNS, cur.maxEW) : null) ?? (tk ? Math.max(tk.maxNS, tk.maxEW) : 10);
     const ns = cur?.maxNS ?? tk?.maxNS ?? any, ew = cur?.maxEW ?? tk?.maxEW ?? any;
-    if (b.dataset.lmode === 'toolkit') setLimit(null);
-    else if (b.dataset.lmode === 'any') setLimit({ maxAny: any });
+    if (mode === 'toolkit') setLimit(null);
+    else if (mode === 'any') setLimit({ maxAny: any });
     else setLimit({ maxNS: ns, maxEW: ew });
-    b.focus();
-  };
-  $('terLimitMode').onkeydown = e => {
-    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
-    e.preventDefault();
-    const all = [...$('terLimitMode').querySelectorAll('[data-lmode]')], i = all.findIndex(b => b.getAttribute('aria-checked') === 'true');
-    all[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length].click();
   };
   $('terMaxAny').onchange = () => setLimit({ maxAny: pct('terMaxAny', 10) });
   $('terMaxNS').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terMaxEW').onchange = () => setLimit({ maxNS: pct('terMaxNS', 10), maxEW: pct('terMaxEW', 10) });
   $('terCell').onchange = () => change('terrain', p => { p.terrain.cellSize = Math.min(50, Math.max(1, Number($('terCell').value) || 5)); });
-  // Slope classes / Elevations in the ribbon: a click shows that image, a second click on the same one hides it
-  document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.onclick = () => change('terrain', p => {
-    const v = b.dataset.view, cur = p.terrain.view === 'z' ? 'z' : 's';
+  // the four images of the ribbon: a click shows that image, a second click on the same one hides it
+  document.querySelectorAll('[data-view]').forEach(b => { b.onclick = () => change('terrain', p => {
+    const v = b.dataset.view, cur = viewOf(p);
     if (p.terrain.showSlope && cur === v) p.terrain.showSlope = false;
     else { p.terrain.showSlope = true; p.terrain.view = v; }
   }); });
