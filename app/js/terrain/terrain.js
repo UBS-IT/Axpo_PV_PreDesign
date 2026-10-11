@@ -20,6 +20,8 @@ import { chooseCrs } from '../ui/crsdialog.js';
 import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { stepProvider } from '../ui/tabs.js';
+import { layerVisible, onVisibility } from '../ui/visibility.js';
+import { setLayerFigure } from '../ui/layers.js';
 import { applyStandard } from '../field.js';
 import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
@@ -439,6 +441,7 @@ function drawMap() {
   const { Graphic, projectOperator, ImageElement, CornersGeoreference, Point } = getSdk();
   layer.removeAll();
   if (imageLayer && imageLayer.source && imageLayer.source.elements) imageLayer.source.elements.removeAll();
+  setLayerFigure('terrain:cut', '');
   const m = terrainData.meta, g = grads(), P = store.project;
   if (!m || !g) return;
   const o = P.terrain.applySlopeLimit ? overLimit() : null;
@@ -450,6 +453,8 @@ function drawMap() {
     const el = new ImageElement({ image: cv, georeference: new CornersGeoreference({ topLeft: pt(m.x0, yt), topRight: pt(xr, yt), bottomRight: pt(xr, m.y0), bottomLeft: pt(m.x0, m.y0) }) });
     if (imageLayer.source && imageLayer.source.elements) imageLayer.source.elements.add(el); else imageLayer.source = { elements: [el] };
   }
+  // the area cut by the slope limit: the key figure of its row in the Layers panel
+  setLayerFigure('terrain:cut', o && o.cells ? `${fmt(o.cells * m.cell ** 2 / 1e4, 1)} ha` : '');
   if (o && o.polygon) layer.add(new Graphic({ geometry: projectOperator.execute(o.polygon, view.spatialReference),
     symbol: { type: 'simple-fill', style: 'none', outline: { color: [190, 30, 60, 0.9], width: 1.2, style: 'dash' } } }));
 }
@@ -493,6 +498,12 @@ function render() {
   const kind = P.terrain.view === 'z' ? 'z' : 's';
   // the two views of the ribbon are switches: pressed while their image is on the map, off without a terrain
   document.querySelectorAll('#terViewS, #terViewZ').forEach(b => { b.setAttribute('aria-pressed', String(!!P.terrain.showSlope && b.dataset.view === kind)); b.disabled = !have; });
+  // the same switch in the Layers panel (phase 3): the image row, what it shows, its legend under it while it is on
+  const li = $('layTerImage');
+  if (li) { li.checked = !!P.terrain.showSlope && have; li.disabled = !have; }
+  const lf = $('layTerImageFig');
+  if (lf) lf.textContent = have ? t(kind === 'z' ? 'lay.terElev' : 'lay.terSlope') : t('lay.terNone');
+  $('terLegend').hidden = !(have && P.terrain.showSlope);
   $('terLegend').innerHTML = (kind === 's'
     ? SLOPE_CLASSES.map(([lo, hi], c) => `<span class="lg"><i style="background:rgb(${CLASS_COLOURS[c].join(',')})"></i>${hi === Infinity ? `> ${lo}` : `${lo}–${hi}`} %</span>`).join('')
     : (m ? `<span class="lg bar"><i class="ramp"></i>${fmt(m.zmin, 0)} – ${fmt(m.zmax, 0)} m</span>` : ''))
@@ -532,7 +543,12 @@ export function initTerrain(mapView) {
   const { GraphicsLayer, MediaLayer } = getSdk();
   try { imageLayer = new MediaLayer({ title: 'Terrain image', listMode: 'hide', opacity: 0.8, source: [] }); view.map.add(imageLayer, 0); }
   catch (e) { console.warn('[terrain] image layer', e); imageLayer = null; }
-  layer = new GraphicsLayer({ title: 'Slopes', listMode: 'hide' });
+  layer = new GraphicsLayer({ title: 'Slopes', listMode: 'hide', visible: layerVisible('terrain:cut') });
+  onVisibility(keys => { if (keys.includes('terrain:cut')) layer.visible = layerVisible('terrain:cut'); });
+  // the image row of the Layers panel and its Hide all / Show all (the state stays the project's, as in the ribbon)
+  const li = $('layTerImage');
+  if (li) li.onchange = () => change('terrain', p => { p.terrain.showSlope = li.checked; });
+  document.addEventListener('pvp:layers-all', e => { if (!!store.project.terrain.showSlope !== !!e.detail?.on) change('terrain', p => { p.terrain.showSlope = !!e.detail?.on; }); });
   view.map.add(layer, imageLayer ? 1 : 0);
   const input = $('fileDtm');
   $('terEsri').onclick = () => loadTerrain('esri');

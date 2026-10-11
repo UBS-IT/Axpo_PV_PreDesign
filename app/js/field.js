@@ -10,6 +10,8 @@ import { siteFrame, computeArea, crsState } from './areas.js';
 import { ringsOf } from './geo/localframe.js';
 import { toast } from './ui/toast.js';
 import { stepProvider } from './ui/tabs.js';
+import { layerVisible, onVisibility } from './ui/visibility.js';
+import { setLayerFigure } from './ui/layers.js';
 
 // Defaults when the technology changes: the group standard of the catalog, else these
 const TECH_FALLBACK = {
@@ -71,6 +73,13 @@ export function initField(mapView) {
   areaLayer = new GraphicsLayer({ title: 'Buildable area' });
   tableLayer = new GraphicsLayer({ title: 'Tables' });
   view.map.addMany([areaLayer, tableLayer]);
+  // the switches of the Layers panel (phase 3); the flat tables also stay hidden while the 3D view shows its own
+  const vis = () => {
+    areaLayer.visible = layerVisible('layout:buildable');
+    tableLayer.visible = layerVisible('layout:tables') && !document.body.classList.contains('in-3d');
+  };
+  onVisibility(keys => { if (keys.some(k => k === 'layout:buildable' || k === 'layout:tables')) vis(); });
+  vis();
 
   const set = (fn) => change('field', p => fn(p.field));
   const num = el => (el.value === '' ? null : Number(el.value));
@@ -268,6 +277,7 @@ function generate() {
   const shade = shadingRule();
   if (!st.geom) {
     renderResults({ area: st.area, warns: st.warns });
+    figures(st.area, null);
     updatePitchHint(st.hintGeom && f.technology === 'ground-fixed' && shade ? minPitch(st.hintGeom, shade.value) : null, st.pre, shade);
     emit('layout');
     return;
@@ -317,8 +327,14 @@ function generate() {
     cover, geom: st.geom, halfGeom: st.halfGeom, module: st.mod, power: st.power, frame: st.frame, tablesLocal: res.tables, ms: { fill: tFill, draw: tDraw } };
   window.__last = last.result;   // debug hook
   renderResults(last.result);
+  figures(st.area, tables);
   updatePitchHint(minP, preset, shade);
   emit('layout');
+}
+// the key figures of the Layers panel: the buildable hectares and the number of tables
+function figures(area, tables) {
+  setLayerFigure('layout:buildable', area && area.buildableArea > 0 ? `${fmt(area.buildableArea / 1e4, 1)} ha` : '');
+  setLayerFigure('layout:tables', tables ? fmt(tables) : '');
 }
 
 function updatePitchHint(minP, preset, shade) {

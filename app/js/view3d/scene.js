@@ -17,6 +17,7 @@ import { makeLocalFrame } from '../geo/localframe.js';
 import { toSdk } from '../geo/convert.js';
 import { toast } from '../ui/toast.js';
 import { toggleCollection, isOpen as isCollectionOpen } from '../ui/layers.js';
+import { layerVisible, onVisibility, KIND_3D } from '../ui/visibility.js';
 import { exportReport } from '../report.js';
 import { fileName } from '../export/model.js';
 import { heights3d, terrainMesh, axisAzimuth } from './geometry.js';
@@ -126,12 +127,18 @@ function draw() {
     graphic(mergeMeshes(m.gates), LOOK.gates, 'gates'),
     graphic(mergeMeshes(m.obstacles.map(o => o.mesh)), LOOK.obstacles, 'obstacles'),
   ].filter(Boolean));
+  visible3d();
+}
+// the switches of the Layers panel reach the 3D model: tables, fences and gates, stations, obstacles (F5)
+function visible3d() {
+  if (!layer3d) return;
+  for (const g of layer3d.graphics) { const k = KIND_3D[g.attributes?.kind]; g.visible = !k || layerVisible(k); }
 }
 function redrawTables() {
   const old = layer3d.graphics.find(g => g.attributes?.kind === 'tables');
   if (old) layer3d.remove(old);
   const g = graphic(current.tables, LOOK.tables, 'tables');
-  if (g) layer3d.add(g);
+  if (g) { g.visible = layerVisible(KIND_3D.tables); layer3d.add(g); }
 }
 const viewDate = () => scene?.environment?.lighting?.date || new Date();
 
@@ -176,10 +183,10 @@ function leave() {
   if (layer3d) layer3d.visible = false;
   tablesLayer2d(true);
 }
-// the flat tables of 2D would show under the 3D ones
+// the flat tables of 2D would show under the 3D ones; back in 2D they show again if their switch is on
 function tablesLayer2d(visible) {
   const l = mapView?.map.layers.find(x => x.title === 'Tables');
-  if (l) l.visible = visible;
+  if (l) l.visible = visible && layerVisible('layout:tables');
 }
 // the site framed from the south, once the scene is ready (a goTo before that is lost)
 async function goToSite() {
@@ -411,6 +418,7 @@ async function exportGlb() {
 // ── start ──
 export function initView3d(view) {
   mapView = view;
+  onVisibility(visible3d);
   initPanel();
   renderPanel();
   // 2D / 3D switch on the map (the chips of both views) and the fold button of the 3D card

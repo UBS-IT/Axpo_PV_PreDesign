@@ -80,8 +80,22 @@ body { overflow: hidden; display: block; }
 .ribbon:has(.rgroup.end:not([hidden])) .ribbon-context { margin-left: 0; }
 /* the values of the new objects under the drawing status (Properties panel) */
 #drawAttrs .cap { grid-column: 1 / -1; color: var(--mut); font-size: 11px; font-weight: 600; }
-/* the Unclassified card of the Layers panel: dashed, first, until its objects get a category */
-.cat.pending { border-style: dashed; border-left-style: dashed; }
+/* the Layers panel as the kit's LayerList (phase 3): the toolbar, the groups by tab, the rows of the computed layers,
+   the legend of the terrain image under its row, the Dimensions row; the kit's .layer is display: flex, so a row
+   built hidden needs [hidden] */
+#collPanel .layer-tools { margin: -2px -2px 4px; }
+#collPanel .lgroup > summary { justify-content: flex-start; }
+#collPanel .lgroup > summary .cnt { margin-left: auto; }
+#collPanel .layer input:disabled + .sw, #collPanel .layer:has(input:disabled) .nm { opacity: .45; }
+#collPanel .layer:has(input:not(:checked)) .sw { opacity: .45; }
+#collPanel .layer[hidden], #terLegend[hidden] { display: none; }
+#terLegend { margin: 0 0 4px 37px; gap: 2px 8px; font-size: 10.5px; }
+#terLegend .lg i { width: 10px; height: 10px; }
+#terLegend .lg i.ramp { width: 56px; }
+.layer.dims { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); border-radius: 0; }
+.layer.dims .zx { margin-left: 2px; }
+/* the Unclassified group of the Layers panel: first, its symbol dashed, until its objects get a category */
+.cat.pending > summary .sw { border-top-style: dashed; }
 
 /* ---- workspace: the panels are docked at the sides, the map takes the rest; a collapsed panel is a strip ---- */
 .workspace { display: flex; min-height: 0; overflow: hidden; }
