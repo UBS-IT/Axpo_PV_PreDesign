@@ -17,7 +17,8 @@ import { initGeoSearch, parseCoordinates, setGeocoder, run as geoRun, pinCount, 
 import { initMapNav, projectBox, lockedScale, nearestScale, SCALES } from '../app/js/ui/mapnav.js';
 import { isUntitled, fileBase, fileName as projectFileName } from '../app/js/io/names.js';
 import { saveProject } from '../app/js/io/projectfile.js';
-import { initLayerMenu, rowTarget, targetExtent } from '../app/js/ui/layermenu.js';
+import { initLayerMenu, rowTarget, targetExtent, renameRow } from '../app/js/ui/layermenu.js';
+import { initSnapping, snapPointsOf, snapPointsLayer } from '../app/js/ui/snapping.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
 import { drawPrefs, setDrawPref } from '../app/js/ui/maptools.js';
 import { initDims, dimensionParts, removeDimension } from '../app/js/dims.js';
@@ -878,6 +879,50 @@ await test('project logic (phase 7): the box of the project and its widest scale
   change('name', q => { q.name = before; });
   view.constraints = undefined;
   return `${fileBase()} · box ${Math.round(box.width / 1000)} km wide`;
+});
+
+await test('drawing aids and Layers (phase 8): the snapping menu and its sources, midpoints and centres, Rename, rows only when they hold something, Buffer in Constraints', async () => {
+  const it = id => document.getElementById(id);
+  initSnapping(view);
+  const sk = window.__sketch, titles = () => sk.snappingOptions.featureSources.map(x => x.layer.title);
+  assert(sk.snappingOptions.enabled && sk.snappingOptions.selfEnabled && ['Areas', 'Snap points', 'Infrastructure', 'Buildable area'].every(x => titles().includes(x)) && !titles().includes('Tables'),
+    'the default sources: ' + titles().join(', '));
+  // a square: its centre and the midpoints of its four sides
+  const sq = { id: 'sq', geometry: { type: 'Polygon', coordinates: [[[9, 45], [9.001, 45], [9.001, 45.001], [9, 45.001], [9, 45]]] } };
+  const pts = snapPointsOf([sq])[0].points;
+  assert(pts.length === 5 && Math.abs(pts[0][0] - 9.0005) < 1e-6 && Math.abs(pts[0][1] - 45.0005) < 1e-6 && pts.some(q => Math.abs(q[0] - 9.0005) < 1e-9 && q[1] === 45), 'centre and midpoints: ' + JSON.stringify(pts));
+  assert(snapPointsLayer().graphics.length === store.project.features.filter(f => f.geometry.type !== 'Point').length, 'one multipoint per line or area of the project');
+  // the menu of the status bar
+  it('sbSnap').click();
+  const menu = it('snapMenu');
+  assert(!menu.hidden && menu.querySelectorAll('input[data-snap]').length === 7, 'the menu opens with its seven rows');
+  const box = key => menu.querySelector(`input[data-snap="${key}"]`);
+  box('snapGuides').click();
+  assert(!sk.snappingOptions.selfEnabled, 'guides off');
+  box('snapTables').click();
+  assert(titles().includes('Tables'), 'the tables added');
+  box('snapGuides').click(); box('snapTables').click();
+  assert(sk.snappingOptions.selfEnabled && !titles().includes('Tables'), 'back as they were');
+  menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(menu.hidden, 'Esc closes it');
+  // Rename in place, one step of Undo
+  const f = store.project.features.find(x => x.category !== 'unclassified'), old = f.name;
+  const row = document.querySelector(`#areaCats .it[data-id="${f.id}"]`);
+  assert(rowTarget(row).rename === f.id, 'an object row can be renamed');
+  const input = renameRow(f.id);
+  input.value = 'Renamed site';
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await wait(200);
+  assert(store.project.features.find(x => x.id === f.id).name === 'Renamed site', 'renamed');
+  assert(undo() && store.project.features.find(x => x.id === f.id).name === old, 'and back with Undo');
+  // rows only when they hold something (L9)
+  const rowOf = key => document.querySelector(`#collPanel input[data-lay="${key}"]`).closest('.layer');
+  const fig = key => (document.querySelector(`#collPanel [data-fig="${key}"]`)?.textContent || '').trim();
+  assert(['layout:roads', 'layout:stations', 'layout:tables', 'terrain:cut'].every(k => rowOf(k).hidden === !fig(k)), 'a row shows with its figure: ' + ['layout:roads', 'layout:stations', 'layout:tables', 'terrain:cut'].map(k => `${k}=${fig(k) || '-'}${rowOf(k).hidden ? ' hidden' : ''}`).join(', '));
+  // Buffer above the boundary setback, in Constraints
+  const group = it('drawBuffer').closest('.rgroup');
+  assert(group && group.contains(it('boundarySetback')) && !it('drawTools').closest('.rgroup').contains(it('drawBuffer')), 'Buffer in Constraints with the setback');
+  return `${titles().length} snapping sources · ${pts.length} points on a square`;
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {

@@ -63,9 +63,27 @@ function markCurrent() {
   });
 }
 // the count or key figure on the right of a row («580», «1.60 km»); '' clears it
+// (L9) a row of a computed layer shows only while it holds something: its figure says so
 export function setLayerFigure(key, text) {
   const el = document.querySelector(`#collPanel [data-fig="${key}"]`);
-  if (el) el.textContent = text || '';
+  if (!el) return;
+  el.textContent = text || '';
+  const row = el.closest('.layer');
+  if (row) row.hidden = !text;
+  syncGroups();
+}
+// (L9) a group shows only while one of its rows does; with nothing at all the panel says how to start
+export function syncGroups() {
+  let any = false;
+  document.querySelectorAll('#collPanel .lgroup').forEach(g => {
+    const on = !!g.querySelector('#areaCats .cat') || [...g.querySelectorAll('.layer')].some(r => !r.hidden);
+    g.hidden = !on;
+    any = any || on;
+  });
+  const empty = $('layEmpty');
+  if (empty) empty.hidden = any || !$('dimsRow')?.hidden;
+  const tools = document.querySelector('#collPanel .layer-tools');
+  if (tools) tools.hidden = !any;
 }
 
 export const isOpen = () => document.body.classList.contains('coll-open');
@@ -94,6 +112,7 @@ export function updateCollection(counts) {
   if (sub) sub.textContent = total ? (total === 1 ? '1 object' : `${total} objects`) : '';
   const grp = $('layCntAreas');
   if (grp) grp.textContent = total || '';
+  syncGroups();
 }
 
 // open the panel on one object: its category card unfolds, its row scrolls into view and flashes

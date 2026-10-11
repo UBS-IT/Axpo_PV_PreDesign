@@ -14,7 +14,8 @@ import { zoomToFeatures } from '../areas.js';
 const $ = id => document.getElementById(id);
 // test pages set __PVP_TEST__ so that they never touch the settings of the app (same origin)
 const KEY = globalThis.__PVP_TEST__ ? 'pvp.draw.test' : 'pvp.draw';
-const DEFAULTS = { snap: true, typed: true, labels: true };
+// snapping (ui/snapping.js, phase 8): everything on but the tables, which are many
+const DEFAULTS = { snap: true, typed: true, labels: true, snapObjects: true, snapPoints: true, snapGuides: true, snapFence: true, snapBuildable: true, snapTables: false };
 
 // ── the drawing support preferences ──
 export const drawPrefs = { ...DEFAULTS, ...read() };

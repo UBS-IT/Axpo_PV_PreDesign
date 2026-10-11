@@ -5,7 +5,7 @@
 import { getSdk } from '../sdk.js';
 import { store } from '../state.js';
 import { t } from '../i18n.js';
-import { zoomToFeatures } from '../areas.js';
+import { zoomToFeatures, renameFeature } from '../areas.js';
 import { terrainData } from '../terrain/store.js';
 import { makeLocalFrame } from '../geo/localframe.js';
 import { icon } from './icons.js';
@@ -30,7 +30,7 @@ const GRAPHICS = {
 export function rowTarget(el) {
   if (!el || !el.closest) return null;
   const it = el.closest('#areaCats .it[data-id]');
-  if (it) return { ids: [it.dataset.id] };
+  if (it) return { ids: [it.dataset.id], rename: it.dataset.id };
   const cat = el.closest('#areaCats details.cat');
   if (cat && el.closest('summary')) return { ids: store.project.features.filter(f => f.category === cat.dataset.cat).map(f => f.id) };
   const row = el.closest('#collPanel .layer');
@@ -97,11 +97,16 @@ export function initLayerMenu(mapView) {
     if (!li || li.getAttribute('aria-disabled') === 'true') return;
     const target = current;
     closeMenu();
-    zoomToTarget(target);
+    if (li.dataset.act === 'rename') renameRow(target.rename); else zoomToTarget(target);
   });
   menu.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); closeMenu(); }
-    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); menu.querySelector('[role="menuitem"]')?.click(); }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (document.activeElement?.closest?.('[role="menuitem"]') || menu.querySelector('[role="menuitem"]'))?.click(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = [...menu.querySelectorAll('[role="menuitem"]')], i = items.indexOf(document.activeElement);
+      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
+    }
   });
   document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target)) closeMenu(); }, true);
   window.addEventListener('blur', closeMenu);
@@ -110,8 +115,10 @@ export function initLayerMenu(mapView) {
 export function openMenu(target, x, y) {
   current = target;
   const can = !!targetExtent(target);
-  menu.innerHTML = `<li role="menuitem" tabindex="-1" aria-disabled="${!can}" title="${esc(can ? '' : t('lay.nothing'))}">${icon('search', 'sm')}<span class="nm">${esc(t('lay.zoomTo'))}</span>`
-    + (can ? '' : `<small>${esc(t('lay.nothing'))}</small>`) + '</li>';
+  menu.innerHTML = `<li role="menuitem" data-act="zoom" tabindex="-1" aria-disabled="${!can}" title="${esc(can ? '' : t('lay.nothing'))}">${icon('search', 'sm')}<span class="nm">${esc(t('lay.zoomTo'))}</span>`
+    + (can ? '' : `<small>${esc(t('lay.nothing'))}</small>`) + '</li>'
+    // the objects of 1 · Site can be renamed (one step of Undo); categories and computed layers cannot
+    + (target.rename ? `<li role="menuitem" data-act="rename" tabindex="-1" aria-disabled="false">${icon('pen', 'sm')}<span class="nm">${esc(t('lay.rename'))}</span></li>` : '');
   menu.hidden = false;
   const r = menu.getBoundingClientRect();
   menu.style.left = `${Math.min(x, innerWidth - r.width - 8)}px`;
@@ -119,3 +126,25 @@ export function openMenu(target, x, y) {
   menu.querySelector('[role="menuitem"]').focus();
 }
 export function closeMenu() { if (menu && !menu.hidden) { menu.hidden = true; current = null; } }
+
+// Rename in place: the name of the row becomes a field; Enter keeps it, Esc or a click elsewhere leaves it
+export function renameRow(id) {
+  const row = document.querySelector(`#areaCats .it[data-id="${id}"]`), nm = row?.querySelector('.nm');
+  const f = store.project.features.find(x => x.id === id);
+  if (!row || !nm || !f) return null;
+  const input = Object.assign(document.createElement('input'), { type: 'text', className: 'input rename', value: f.name });
+  input.setAttribute('aria-label', t('lay.rename'));
+  nm.hidden = true;
+  nm.before(input);
+  let done = false;
+  const finish = keep => {
+    if (done) return;
+    done = true;
+    if (!(keep && renameFeature(id, input.value))) { input.remove(); nm.hidden = false; }   // a new name redraws the row
+  };
+  input.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') { e.preventDefault(); finish(false); } });
+  input.addEventListener('click', e => e.stopPropagation());
+  input.addEventListener('blur', () => finish(false));
+  input.focus(); input.select();
+  return input;
+}

@@ -64,8 +64,6 @@
       </div>
       <div class="rvals">
         <div class="rline">
-          <label class="rcap" for="drawBuffer" data-i18n="draw.buffer"></label>
-          <span class="unit sm"><input class="input" id="drawBuffer" type="number" min="0" step="0.5" disabled><span>m</span></span>
           <label class="rcap" for="drawSize" id="drawSizeCap" hidden></label>
           <span class="unit sm" id="drawSizeBox" hidden><input class="input" id="drawSize" type="number" min="0" step="0.5"><span>m</span></span>
         </div>
@@ -77,9 +75,12 @@
   </div>
   <div class="rgroup" data-tab="areas" role="group" hidden>
     <div class="rgroup-tools">
-      <div class="rfield">
-        <label class="rcap" for="boundarySetback" data-i18n="ribbon.setback"></label>
-        <span class="unit"><input class="input" id="boundarySetback" type="number" min="0" step="0.5" data-i18n-title="areas.setbackHint"><span>m</span></span>
+      <!-- the buffer of the next objects (or of the selected ones) above the setback of the boundary (L10) -->
+      <div class="rform">
+        <label class="rcap" for="drawBuffer" data-i18n="ribbon.buffer" data-i18n-title="ribbon.bufferTitle"></label>
+        <span class="unit sm"><input class="input" id="drawBuffer" type="number" min="0" step="0.5" disabled data-i18n-title="ribbon.bufferTitle"><span>m</span></span>
+        <label class="rcap" for="boundarySetback" data-i18n="ribbon.setback" data-i18n-title="areas.setbackHint"></label>
+        <span class="unit sm"><input class="input" id="boundarySetback" type="number" min="0" step="0.5" data-i18n-title="areas.setbackHint"><span>m</span></span>
       </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.constraints"></div>
@@ -182,20 +183,21 @@
       <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
     <div class="panel-b" id="collPanel">
       <div class="layer-tools"><span data-i18n="lay.visibility"></span><span><button type="button" class="linkbtn" id="layHide" data-i18n="lay.hideAll"></button> · <button type="button" class="linkbtn" id="layShow" data-i18n="lay.showAll"></button></span></div>
+      <p class="hint" id="layEmpty" data-i18n="lay.empty" hidden></p>
       <details class="lgroup" data-tab="areas" open><summary><span data-i18n="tab.areas"></span><span class="cnt" id="layCntAreas"></span></summary>
         <div id="areaCats"></div>
       </details>
       <details class="lgroup" data-tab="terrain" open><summary><span data-i18n="tab.terrain"></span></summary>
-        <label class="layer"><input type="checkbox" id="layTerImage"><span class="sw ramp"></span><span class="nm" data-i18n="lay.terImage"></span><span class="cnt" id="layTerImageFig"></span></label>
+        <label class="layer" hidden><input type="checkbox" id="layTerImage"><span class="sw ramp"></span><span class="nm" data-i18n="lay.terImage"></span><span class="cnt" id="layTerImageFig"></span></label>
         <div class="legend" id="terLegend"></div>
-        <label class="layer"><input type="checkbox" data-lay="terrain:cut" checked><span class="sw hatch" style="--c:var(--slope-cut)"></span><span class="nm" data-i18n="lay.terCut"></span><span class="cnt" data-fig="terrain:cut"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="terrain:cut" checked><span class="sw hatch" style="--c:var(--slope-cut)"></span><span class="nm" data-i18n="lay.terCut"></span><span class="cnt" data-fig="terrain:cut"></span></label>
       </details>
       <details class="lgroup" data-tab="fields" open><summary><span data-i18n="tab.fields"></span></summary>
-        <label class="layer"><input type="checkbox" data-lay="layout:buildable" checked><span class="sw line dash" style="--c:var(--ok)"></span><span class="nm" data-i18n="lay.buildable"></span><span class="cnt" data-fig="layout:buildable"></span></label>
-        <label class="layer"><input type="checkbox" data-lay="layout:tables" checked><span class="sw fill" style="--c:var(--table)"></span><span class="nm" data-i18n="lay.tables"></span><span class="cnt" data-fig="layout:tables"></span></label>
-        <label class="layer"><input type="checkbox" data-lay="layout:fences" checked><span class="sw line dot" style="--c:var(--fence)"></span><span class="nm" data-i18n="lay.fences"></span><span class="cnt" data-fig="layout:fences"></span></label>
-        <label class="layer"><input type="checkbox" data-lay="layout:roads" checked><span class="sw fill" style="--c:var(--road)"></span><span class="nm" data-i18n="lay.roads"></span><span class="cnt" data-fig="layout:roads"></span></label>
-        <label class="layer"><input type="checkbox" data-lay="layout:stations" checked><span class="sw point" style="--c:var(--accent-strong)"></span><span class="nm" data-i18n="lay.stations"></span><span class="cnt" data-fig="layout:stations"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:buildable" checked><span class="sw line dash" style="--c:var(--ok)"></span><span class="nm" data-i18n="lay.buildable"></span><span class="cnt" data-fig="layout:buildable"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:tables" checked><span class="sw fill" style="--c:var(--table)"></span><span class="nm" data-i18n="lay.tables"></span><span class="cnt" data-fig="layout:tables"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:fences" checked><span class="sw line dot" style="--c:var(--fence)"></span><span class="nm" data-i18n="lay.fences"></span><span class="cnt" data-fig="layout:fences"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:roads" checked><span class="sw fill" style="--c:var(--road)"></span><span class="nm" data-i18n="lay.roads"></span><span class="cnt" data-fig="layout:roads"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:stations" checked><span class="sw point" style="--c:var(--accent-strong)"></span><span class="nm" data-i18n="lay.stations"></span><span class="cnt" data-fig="layout:stations"></span></label>
       </details>
       <!-- the dimensions: a switch, the count and «Remove all», the one edit left in this panel (F7 a) -->
       <div class="layer dims" id="dimsRow" hidden><input type="checkbox" id="dimsShow" checked data-i18n-aria="tools.dimShow"><span class="sw line" style="--c:var(--txt)"></span><span class="nm" data-i18n="tools.dims"></span><span class="cnt" id="dimsCount"></span><button type="button" class="zx" id="dimsClear" data-i18n-title="tools.dimClear" data-i18n-aria="tools.dimClear"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg></button></div>

@@ -202,3 +202,13 @@ body.in-3d #geoSearch, body.in-3d #objSearch { display: none; }
 .ctxmenu [role="menuitem"]:hover, .ctxmenu [role="menuitem"]:focus { background: var(--hover); outline: none; }
 .ctxmenu [role="menuitem"][aria-disabled="true"] { color: var(--mut); background: none; cursor: default; }
 .ctxmenu small { flex-basis: 100%; padding-left: 22px; }
+/* the snapping menu of the status bar (phase 8) */
+.snapmenu { width: 300px; padding: 8px 10px; }
+.snapmenu .snaphd { margin-bottom: 4px; color: var(--mut); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.snapmenu .chk { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px; }
+.snapmenu .chk.sub { padding-left: 16px; }
+.snapmenu .chk.off { opacity: .5; }
+.snapmenu .hint { margin: 6px 0 0; font-size: 11px; }
+/* Rename in place in the Layers panel */
+#areaCats .it .input.rename { flex: 1; min-width: 0; height: 24px; font-size: 12px; }
+#collPanel .lgroup[hidden], #layEmpty[hidden], #collPanel .layer-tools[hidden] { display: none; }
