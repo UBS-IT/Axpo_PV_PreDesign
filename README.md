@@ -65,9 +65,13 @@ for Layers, the count of the objects): **Layers** on the left (the layers of eve
 right (the parameters, figures and notices of the steps of the active tab; the third tab stacks Layout and
 Infrastructure). The **status bar** at the foot shows the coordinates of the pointer E / N in the coordinate system
 chosen for the exports, the CRS select itself (coloured when it disagrees with the one proposed from the site
-location), the scale, the elevation and the slope under the pointer when the project has a terrain grid, the mode
+location), the scale as a menu (1:100 to 1:25,000) with a padlock that holds the zoom at that scale while the map
+still pans, the elevation and the slope under the pointer when the project has a terrain grid, the mode
 of the map (Select, Draw · category, Reshape, Measure, Dimension), the snapping switch and the time of the last
-autosave. The slope is read as the limit in use reads it: one figure for a limit in every direction, *N-S · E-W*
+autosave. The app draws one project: once there is a gross area the map stays within 5 km of it and is not zoomed
+out beyond 1:50,000 (the address search says when a place is outside). A project is saved only once it is named
+(site code and place, e.g. *C0000 Prova*), and every file takes the name and the day: *C0000 Prova_2026-10-11.pvpd*,
+*…_report.pdf*, *….kmz*; Save writes in place a file of today and starts a new file on another day. The slope is read as the limit in use reads it: one figure for a limit in every direction, *N-S · E-W*
 for a limit with a north–south and an east–west value; it is red where the cell is cut (the hatched cells), and its
 tooltip says when a cell is over the limit but not cut. Outside the grid and in 3D the two show «—». Every tab shows its
 state — *locked* (a prerequisite is missing: the tab still opens, with a gate that says why and a link to the step to

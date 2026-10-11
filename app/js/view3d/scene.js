@@ -18,6 +18,7 @@ import { toSdk } from '../geo/convert.js';
 import { toast } from '../ui/toast.js';
 import { toggleCollection, isOpen as isCollectionOpen } from '../ui/layers.js';
 import { layerVisible, onVisibility, KIND_3D } from '../ui/visibility.js';
+import { projectBox } from '../ui/mapnav.js';
 import { exportReport } from '../report.js';
 import { fileName } from '../export/model.js';
 import { heights3d, terrainMesh, axisAzimuth } from './geometry.js';
@@ -178,6 +179,9 @@ async function enter() {
   layer3d.visible = true;
   tablesLayer2d(false);
   padScene();
+  // L1: with a project the camera does not rise above 20 km (about the 1:50,000 of the map); in 3D the view is not
+  // held in the box of the project, the SceneView has no such limit
+  try { scene.constraints.altitude.max = projectBox(undefined, mapView.spatialReference) ? 20000 : 4e7; } catch {}
   setGround();
   const first = !current;
   await refresh();
@@ -394,7 +398,7 @@ function download(blob, name) {
 async function savePicture() {
   if (!scene) return;
   const shot = await picture('png');
-  download(await (await fetch(shot.dataUrl)).blob(), fileName(' - 3D.png'));
+  download(await (await fetch(shot.dataUrl)).blob(), fileName('_3D.png'));
 }
 export async function reportWithViews() {
   if (!scene) return null;

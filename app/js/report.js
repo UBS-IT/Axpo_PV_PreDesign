@@ -15,6 +15,7 @@ import { toSdk } from './geo/convert.js';
 import { toast } from './ui/toast.js';
 import { loadJsPdf } from './libs.js';
 import { allDimensionParts } from './dims.js';
+import { fileName } from './io/names.js';
 
 // jsPDF standard fonts cover Latin-1 only
 export const pdfText = s => String(s ?? '').replace(/[–—]/g, '-').replace(/→/g, '->').replace(/≈/g, '~').replace(/…/g, '...')
@@ -132,7 +133,7 @@ export async function buildReport({ views = [] } = {}) {
     txt(t('rep.view3d', { note: v.note || '' }), M, H - 10);
     txt(t('rep.footer', { date: d.date }), M, H - 6);
   }
-  return { doc, blob: doc.output('blob'), name: (d.title.replace(/[\\/:*?"<>|]+/g, '_') || 'pv-predesign') + ' - predesign.pdf', data: d };
+  return { doc, blob: doc.output('blob'), name: fileName('_report.pdf'), data: d };
 }
 
 function drawMap(doc, d, x0, y0, w, h) {

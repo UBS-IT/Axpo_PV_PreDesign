@@ -130,8 +130,8 @@ and a figure per layer (decisions F1–F9): PR 38. Phase 4, the elevation and sl
 bar (G1–G7; the CRS select was already wired in 1B): PR 39. Phase 5 (H1–H8): the search of the objects of the
 project (Ctrl K), and as asked by the user an address / coordinates search and *Zoom to* on a right click in Layers:
 PR 40. The other functions of §4 wait, each with its decisions. Phase 6 (I1–I7, with the user's notes on the 3D
-panels, the messages and the drawing tools): the branch `ux/finish`, PR after 40. With it the refactor of this plan
-is complete; what comes next is in the handoff note of 2026-10-11 (§10).
+panels, the messages and the drawing tools): PR 41. With it the refactor of this plan is complete. The second
+round is §8: phase 7 (L1–L4) on the branch `ux/project-logic`, PR after 41.
 
 ## 6. Rollback and safety
 
@@ -146,3 +146,21 @@ is complete; what comes next is in the handoff note of 2026-10-11 (§10).
 
 The Geoportale (its own shell stays), the electrical design, the yield API, the hosting and the login (the avatar
 of the mockup), phones.
+
+## 8. Second round: «the ribbon sets, the right panel shows» (decisions L1–L22 of 2026-10-11)
+
+After phase 6 the user set the logic of the app and a second round of the workspace. Every decision was accepted
+with its recommendation («ok su tutto»; L19 mitigation inside the fence, L15 two tabs, L14 contours as a computed
+layer, L7 no grid, L6 midpoints and centres). The principle: the ribbon sets everything that can be set, the right
+panel shows the properties, the figures and, in real time, whether they agree with the toolkit.
+
+| Phase | Decisions | What |
+|---|---|---|
+| **7 · Project logic** | L1–L4 | one project per file: with a gross area the map stays in a box of 5 km around it and is not zoomed out beyond 1:50,000 (in 3D only the camera height is limited); no save without a name; files named «<project name>_<YYYY-MM-DD>» + what they are; the scale of the status bar a menu of 1:100 to 1:25,000 with a lock |
+| **8 · Drawing aids and Layers** | L5–L10 | a snapping menu on the status bar (vertices, edges and ends of the objects; guides: right angles, parallels, extensions; the fence, the buildable area and the tables as sources), midpoints and centres through a hidden layer of points, no grid; Zoom to and Rename on a right click in Layers; rows and groups only when they hold something; Buffer in Constraints above the boundary setback |
+| **9 · Terrain** | L11–L14 | Digital elevation models (Esri, several GeoTIFF mosaicked cell by cell, the finest first, Remove on the right); Slope analysis in the ribbon (structure, limit in use, values, the cut); Other analysis: Elevation, Aspect (north red, south green, east and west yellow, flat grey), Hillshade, one image at a time; contours with a chosen step as a computed layer of the Terrain group, exported to the DXF |
+| **10 · Layout and Infrastructure** | L15–L21 | two tabs; Layout: Technology, Structure, Module, Expected build date, Tilt, Azimuth, Pitch, an Advanced… window and a Modules… window; Roads with the perimeter road; Fence: on / off, clearance, mesh, height, gates from the toolkit of the country, a mitigation strip inside the fence; Quick predesign on the right; the right panel shows, and keeps only the lists of what is on the map |
+| **11 · Explanations** | L22 | an ⓘ in every group of the ribbon that says what is done there |
+
+Each phase is one PR; after them come the P0 gates of `CLAUDE.md`, the functions of §4 left for later and the trial
+with the users, each with its own decisions.

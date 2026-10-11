@@ -32,8 +32,7 @@ export function initStatusBar(mapView) {
   on('terrain', groundItems);
   on('project', groundItems);
   groundItems();
-  // scale
-  try { S.reactiveUtils.watch(() => view.scale, s => { const el = $('sbScale'); if (el) el.textContent = s ? `1:${fmt(Math.round(s))}` : '—'; }, { initial: true }); } catch {}
+  // the scale is a menu with a lock: ui/mapnav.js
   on('crs', () => { targetWkid = null; });
   // mode
   document.addEventListener('pvp:mode', e => { const el = $('sbMode'); if (el) el.textContent = e.detail?.label || t('sb.select'); });

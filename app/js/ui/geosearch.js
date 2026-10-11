@@ -186,12 +186,20 @@ export async function goToPlace({ lon, lat, name, bbox }) {
   if (!view || !pinLayer) return;
   const { Graphic, Point, Extent } = getSdk();
   const pt = new Point({ longitude: lon, latitude: lat });
+  // L1: with a project the map stays in its box; a place outside it is said, not reached
+  const box = view.constraints && view.constraints.geometry;
+  if (box) {
+    let inside = true;
+    try { inside = box.contains(getSdk().projectOperator.execute(pt, box.spatialReference)); } catch {}
+    if (!inside) { show([], t('geo.outside')); return false; }
+  }
   pinLayer.removeAll();
   pinLayer.add(new Graphic({ geometry: pt, attributes: { name },
     symbol: { type: 'simple-marker', style: 'circle', size: 13, color: [37, 99, 235, 1], outline: { color: [255, 255, 255, 1], width: 2 } } }));
   const big = bbox && (bbox[2] - bbox[0] > 0.002 || bbox[3] - bbox[1] > 0.002);
   const target = big ? new Extent({ xmin: bbox[0], ymin: bbox[1], xmax: bbox[2], ymax: bbox[3], spatialReference: { wkid: 4326 } }) : { target: pt, scale: 2500 };
   try { await view.goTo(target); } catch {}
+  return true;
 }
 export function clearPin() { if (pinLayer) pinLayer.removeAll(); }
 export const pinCount = () => (pinLayer ? pinLayer.graphics.length : 0);

@@ -105,4 +105,5 @@ export function partsOf(g) {
   return null;
 }
 
-export const fileName = (ext) => (store.project.name || 'pv-predesign').replace(/[\\/:*?"<>|]+/g, '_') + ext;
+// the names of the files: «<project name>_<YYYY-MM-DD>» + what the file is (io/names.js, decision L3)
+export { fileName } from '../io/names.js';

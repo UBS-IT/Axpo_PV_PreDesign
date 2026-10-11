@@ -24,6 +24,8 @@ import { initStatusBar } from './ui/statusbar.js';
 import { initSearch } from './ui/search.js';
 import { initGeoSearch } from './ui/geosearch.js';
 import { initLayerMenu } from './ui/layermenu.js';
+import { initMapNav } from './ui/mapnav.js';
+import { isUntitled } from './io/names.js';
 import { initDims } from './dims.js';
 import { loadIcons, icon } from './ui/icons.js';
 
@@ -82,13 +84,15 @@ async function start() {
   initSearch(view);      // Ctrl K: the objects of the project
   initGeoSearch(view);   // an address or coordinates, top right
   initLayerMenu(view);   // Zoom to, on a right click in the Layers panel
+  initMapNav(view);      // the box of the project, the scale menu and its lock
   try { initView3d(view); } catch (e) { console.error('[3d]', e); }   // the 3D step must never stop the app from starting
   on('modules', renderModules);
   on('project', renderModules);
 
   // project name
   const pn = $('projName');
-  const showName = () => { pn.value = store.project.name; document.title = `${store.project.name} · PV Predesign`; };
+  // the default name stays empty in the field, so that its hint shows (L2: a project is saved once it is named)
+  const showName = () => { pn.value = isUntitled() ? '' : store.project.name; document.title = `${store.project.name} · PV Predesign`; pn.classList.remove('need'); };
   showName();
   pn.onchange = () => change('name', p => { p.name = pn.value.trim() || 'Untitled project'; });
   on('name', showName);

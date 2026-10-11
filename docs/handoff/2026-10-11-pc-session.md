@@ -198,3 +198,20 @@ What comes after the refactor, each with its own list of decisions:
 2. The functions of plan §4 left for later: target capacity in the ribbon, aspect, report sections, contours, the
    map sheet (Engineering first).
 3. The trial with the users (`docs/handoff` notes say what was checked and what was not).
+
+## 11. The second round, phase 7 (added later on 2026-10-11)
+
+Phase 6 merged as #41 (`main` = `4d7e347`); the user confirmed the four decisions taken while building it. Cleanup
+from now on also deletes the branch on GitHub (the user said yes; a push can wait on Git Credential Manager, so it
+runs in the background without a time limit). The user then set the logic of the app and a second round of the
+workspace: decisions L1–L22, all accepted, plan §8, phases 7 to 11.
+
+Phase 7 on `ux/project-logic`: `ui/mapnav.js` (the box of 5 km around the gross areas, 1:50,000, the scale menu and
+the padlock) and `io/names.js` (file names, unnamed project). Checked: `ui.html` 25 / 25 with a new test, every other
+page green but `scene3d.html` (hidden window: the CI runs it); in the browser pane the box (about 14 km of Web
+Mercator around the test site), zoom-out stopping at 1:50,000, the lock at the nearest scale and moved by the menu,
+the unnamed save refused with the red field and the message, the name and the day in the file names.
+
+Traps: with the browser pane hidden, `view.goTo()` does not settle (no animation frames): test the constraints by
+setting `view.scale` or by calling the module. `view.constraints.minScale` is the widest scale (zoomed out).
+To confirm with the user: one file per day of work (Save writes in place only a file of today).
