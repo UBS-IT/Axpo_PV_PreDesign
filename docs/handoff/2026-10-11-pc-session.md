@@ -6,17 +6,17 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 
 ## 1. Where the repository stands
 
-- `main` = `fb8b854`, merge of PR #35. Merged on 2026-10-11, in this order:
-  - **#34 `ux/ribbon-tools`**: phase 2 (the actions of the panels in the ribbon) and its part A;
-  - **#36 `ci/runner-progress`**: the 3D scene test back to its 900 × 560 box, the headless runner that says where a
-    page stopped, the runner scripts working on Windows (§3);
-  - **#35 `ux/select-edit`**: phase 2B, selection and editing.
-- Later the same day: **#37 `docs/handoff-2b`** (this note) merged, `main` = `3e058cc`; then phase 3 on the branch
-  **`ux/layers`** (one commit and a merge of `main`), its PR after #37 (§7).
-- When this note was first written the clone was on `main`, no local branch left. On GitHub only `main` and `claude/elegant-pascal-pu0yal` (the cloud
-  session of 2026-10-09, PRs #15 and #16, merged; left to the user to delete).
-- The CI (`browser-tests`) is expected green on `main`: every page passed headless on this PC on the code of #36 and
-  of #35 (§3). The user merges after a green check.
+Brought up to date at the end of 2026-10-11, after the merge of phase 10A.
+
+- `main` = `f5f4e28`, merge of PR #45 (phase 10A). Merged on 2026-10-11, in this order:
+  - **#34, #36, #35**: phase 2 and its part A, the runner and the 3D test box (§3), phase 2B;
+  - **#37**: the first version of this note;
+  - **#38 to #41**: phases 3 to 6, the end of the first round of the ribbon refactor (§7 to §10);
+  - **#42 to #45**: phases 7, 8, 9 and 10A of the second round (§11 to §14).
+- The clone is on `main`, no local branch of a merged phase left; on GitHub only `main` (the branch of the cloud
+  session of 2026-10-09 is gone too). This update of the note is on `docs/handoff-10a`, its PR after #45.
+- The CI (`browser-tests`) is expected green on `main`: the user merges after a green check, and every phase was
+  checked page by page on this PC before its PR (`scene3d.html` left to the CI when the browser pane is hidden).
 
 ## 2. The ribbon refactor: where it is
 
@@ -26,16 +26,23 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 | 1A · Shell, 1B · Status bar and docked panels, 1C · Kit | merged (#30, #31, #32) | see the note of 2026-10-10 |
 | 2 · Ribbon tools, with part A | merged (#34) | Site area: *Site definition* = **Category** menu (`ui/catmenu.js`, colour dots, Unclassified first and default) and **Type** menu in line, five geometries (Area, Rectangle, Circle, Line, Point) with **Freehand** (`thinned()`, 0.5 m), Undo / Redo, **Buffer** and Height / Width (`renderValues()`), the two drawing-support boxes; *Constraints* = the setback. **Unclassified** objects (`UNCLASSIFIED`, app-only) count nowhere and are exported nowhere (`classified()`). Terrain: Remove, Slope classes / Elevations switches. Layout & Infrastructure: roads with Heavy / Light, At the access, Add module, Import roadmap. Report: the working files, the PDF alone on the right. A tool of tabs 1–3 reopens the Properties panel (`pvp:properties`). The Site panel only shows its figures |
 | 2B · Selection and editing | merged (#35) | Site area, group *Selection*: **Select** (click, Shift+click, Esc, Delete) and **Box**; a click on a Layers row selects. With a selection the Category, Type and Buffer act on it (group tinted, «n selected»). **Reshape, Move / rotate, Split, Merge, Copy, Delete**, each off with its reason; every edit is one step of Undo. The **Selected object** card (name, voltage, size, source). `app/js/edit.js` does the geometry in the local frame. The **Layers panel** only lists the groups that hold objects (Unclassified first) with count and zoom, and the rows with zoom |
-| 3 · Layers | branch `ux/layers`, PR after #37 | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
-| 4 · Status bar, part two | branch `ux/statusbar-terrain`, PR after #38 | Elevation and Slope after the scale, only with a terrain grid in memory; the slope as the limit reads it (one figure, or N-S · E-W), red on the cut cells; `terrainAt()` in `terrain/terrain.js`, `exceeds()` in `terrain/slope.js`, the `pvp:view3d` event. §8 |
+| 3 · Layers | merged (#38) | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
+| 4 · Status bar, part two | merged (#39) | Elevation and Slope after the scale, only with a terrain grid in memory; the slope as the limit reads it (one figure, or N-S · E-W), red on the cut cells; `terrainAt()` in `terrain/terrain.js`, `exceeds()` in `terrain/slope.js`, the `pvp:view3d` event. §8 |
 | 5 · New functions | merged (#40) | the search of the objects (Ctrl K, `ui/search.js`), an address or coordinates top right (`ui/geosearch.js`, Nominatim), Zoom to on a right click in Layers (`ui/layermenu.js`); the rest of plan §4 waits. §9 |
-| 6 · Docs and tests | branch `ux/finish`, PR after #40 | old names out of the docs, CI red on uncaught browser errors, the 3D card without overlaps (Daylight inside it), messages bottom left with ×, the six geometries in a 2 × 3 grid with Freehand as a tool, the Ctrl K hint, `docs/design-feedback.md`, README pictures. §10 |
+| 6 · Docs and tests | merged (#41) | old names out of the docs, CI red on uncaught browser errors, the 3D card without overlaps (Daylight inside it), messages bottom left with ×, the six geometries in a 2 × 3 grid with Freehand as a tool, the Ctrl K hint, `docs/design-feedback.md`, README pictures. §10 |
+| 7 · Project logic (L1–L4) | merged (#42) | `ui/mapnav.js`: the box of 5 km around the gross areas, no zoom out beyond 1:50,000, the scale menu with the padlock; `io/names.js`: no save without a name, files named «<name>_<YYYY-MM-DD>». §11 |
+| 8 · Drawing aids and Layers (L5–L10) | merged (#43) | `ui/snapping.js`: the Snapping menu, the sources of every sketch, midpoints and centres; Rename on a right click in Layers; rows and groups only when they hold something; Buffer in Constraints. §12 |
+| 9 · Terrain (L11–L14) | merged (#44) | the Terrain ribbon (Digital elevation models, Slope analysis, Other analysis), several GeoTIFF mosaicked, Aspect and Hillshade, contours as a computed layer exported to the DXF. §13 |
+| 10A · Layout (L15–L17, L20, L21) | merged (#45) | five tabs; the field set in the ribbon of Layout; *Advanced…* and *Modules…* as windows; Quick predesign on the right; roads and stations in the ribbon of Infrastructure. §14 |
+| 10B · Infrastructure (L18, L19, L21) | to do | §15 |
+| 11 · Explanations (L22) | to do | §15 |
 
 **Decided on 2026-10-11** (rows in `docs/decisions.md`): part A (A1–A4) from the user's layout («category e menu
 devono essere in linea, sotto category c'è type…»); phase 2B (B1–B6) and the behaviour of Unclassified, all accepted
 with the recommendations («ok su tutto»): no Array (no use case yet), a Merge, the Selected-object card as the one input
 left in the Site panel. **Phase 3 starts the same way**: a numbered list of concrete decisions, answered item by item
-before any code.
+before any code. Every phase since has started that way, and the decisions taken while building are listed in the
+PR text and in `docs/decisions.md` until the user confirms them.
 
 ## 3. The red CI of 2026-10-11 and what fixed it
 
@@ -89,16 +96,22 @@ its last console messages.
 
 ## 6. Open work, in the order suggested
 
-1. **Phases 3 to 5** merged (#38, #39, #40). **Phase 6** on `ux/finish` (§10): the user merges after a green check,
-   then the cleanup. With it the ribbon refactor is complete.
-2. Phases 4 to 6 of the plan, one PR each, each opened with its list of decisions.
-3. The notes for the design session are in `docs/design-feedback.md` (icons drawn by the app, the tab tick, the CRS of
-   the StatusBar, the search placeholder, no menu component); to be passed on.
-4. Done in phase 6: the unused key `top.crsNone` and the old names in README and architecture.
+Brought up to date at the end of 2026-10-11 (the list first written here is done: phases 3 to 6, the CI failing on
+uncaught browser errors, the old names out of the docs).
+
+1. **Phase 10B, Infrastructure**, then **phase 11, the ⓘ of the ribbon**: §15.
+2. **The README pictures** (`docs/img/01`–`05`) show the workspace before phases 9 and 10: retake them with
+   `tools/headless/shots.mjs` after phase 11. It needs the Node packages and Playwright's Chromium (about 1 GB, outside
+   OneDrive, §4): only with the user's yes, and deleted after if the user asks.
+3. After the second round, each with its own list of decisions: the P0 release gates of `CLAUDE.md` (validation of
+   `.pvpd` files and IDs, integrity of `terrain/grid.f32`); the functions of plan §4 left for later (report sections,
+   the map sheet; aspect and contours were done in phase 9, the target capacity sits in *Advanced…*); the trial with
+   the users.
+4. The notes for the design session in `docs/design-feedback.md` (eight, the last one the padlock of the scale): to be
+   passed on.
 5. Still open from the earlier notes: two lines in the Registro of `COORDINAMENTO.md` (AGOL Axpo workspace) for PR #15;
-   the workbook trial with a referent of a country without values; the release gates of `CLAUDE.md` (P0 validation of
-   `.pvpd` and IDs, P0 integrity of `terrain/grid.f32`, P1 CI failing on browser errors: the runner still only prints
-   them); lots, roads between rows and fillets, elevation profile.
+   the workbook trial with a referent of a country without values; lots, roads between rows and fillets, elevation
+   profile.
 6. The clone inside OneDrive: moving it to `C:\dev` remains the recommendation; the user decides.
 
 ## 7. Phase 3, the Layers panel (added later on 2026-10-11)
@@ -255,4 +268,29 @@ them as before; a label and its field that hide together are a `.rpair`, `displa
 first), Quick predesign on the right, roads and stations in the ribbon of Infrastructure, the Layers panel with a group
 for each. The test pages mount `body > dialog` with the rest. Checked: `ui.html` 28 / 28 with a new test, every other
 page green but `scene3d.html`; in the app the five tabs, the ribbon of Layout within 1366 px, both windows, the
-Infrastructure tab with its own ribbon, panel and Layers group.
+Infrastructure tab with its own ribbon, panel and Layers group. The user confirmed it and merged it as #45.
+
+## 15. Where the second round stands, what comes next (added at the end of 2026-10-11)
+
+Phase 10A merged as #45 (`main` = `f5f4e28`); the cleanup is done (the branch gone here and on GitHub). The second
+round (plan §8, decisions L1–L22, all accepted) has two phases left, one PR each:
+
+- **10B · Infrastructure** (L18, L19, L21), on a new branch from `main`. The ribbon of Infrastructure already holds
+  roads and stations (10A); it gets the settings still in the panel: the perimeter road (`infRoad`) in the Roads
+  group; a Fence group with on / off (`infFence`), the clearance (`infClear`), the mesh and the height from the
+  toolkit of the country (where the catalog keeps them is to be checked first: the gates come from
+  `countries.<ISO>.gates`, read by `gateWidth()` in `infra.js`), the gates, and the **mitigation strip inside the
+  fence** (L19 a), which widens the clearance and so cuts the buildable area. The panel of Infrastructure keeps only
+  the lists, the figures and the notices (L21). If something is still open (the default width of the strip, whether
+  it is a row of Layers and a layer of the exports), a short list to the user before the code.
+- **11 · Explanations** (L22): an ⓘ in every group of the ribbon, saying what is done there (the texts in
+  `i18n.js`, in English like the rest of the app).
+
+Then §6 from item 2. How the user works in this round: decisions answered by number («ok su tutto», «L19.3a …»);
+after merging the user writes «fuso, fai pulizia» and the session runs the cleanup (`git fetch --prune origin`,
+`git switch main`, `git merge --ff-only origin/main`, `git branch -d <branch>`, and `git push origin --delete
+<branch>` if the branch is still on GitHub), each command explained with what it does and how to undo it.
+
+Traps of 10A: the test pages do not run `initTabs()`, so a test reads the tabs from `TABS` in `ui/tabs.js`; a
+`<dialog>` sits at the end of the body, so a test page that mounts the app's markup must mount `body > dialog` too;
+`shots.mjs` picks the tabs by their index (Report & exports is now the fifth, index 4).
