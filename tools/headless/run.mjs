@@ -3,7 +3,9 @@
 // network policy blocks js.arcgis.com. Usage: node run.mjs [page ...] (default: every page).
 // While a page runs, its progress is printed once a minute (the status line of the page and the tests already done);
 // when a page times out, the tests it finished, the test it was in and its last console messages are printed, so that
-// a red run says where the page stopped instead of only «timed out».
+// a red run says where the page stopped instead of only «timed out». A page also fails on an uncaught error of the
+// browser (release gate P1 of CLAUDE.md, phase 6 of the ribbon plan); console.error messages are printed, not counted
+// (the maps of Esri log network noise on the runners).
 import { openPage, shutdown } from './page.mjs';
 
 const pages = process.argv.slice(2).length ? process.argv.slice(2) : ['/tests/', '/tests/modules.html', '/tests/sdk.html', '/tests/import.html', '/tests/terrain.html', '/tests/infra.html', '/tests/view3d.html', '/tests/ui.html', '/tests/scene3d.html'];
@@ -46,6 +48,8 @@ for (const pg of pages) {
     failed++;
   }
   for (const e of errors) console.log('    page error:', e);
+  const uncaught = errors.filter(e => !e.startsWith('console: '));
+  if (uncaught.length) { console.log(`    ${uncaught.length} uncaught error(s): the page fails`); failed++; }
   await close();
 }
 await shutdown();

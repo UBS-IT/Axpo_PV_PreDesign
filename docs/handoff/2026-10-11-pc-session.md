@@ -28,8 +28,8 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 | 2B · Selection and editing | merged (#35) | Site area, group *Selection*: **Select** (click, Shift+click, Esc, Delete) and **Box**; a click on a Layers row selects. With a selection the Category, Type and Buffer act on it (group tinted, «n selected»). **Reshape, Move / rotate, Split, Merge, Copy, Delete**, each off with its reason; every edit is one step of Undo. The **Selected object** card (name, voltage, size, source). `app/js/edit.js` does the geometry in the local frame. The **Layers panel** only lists the groups that hold objects (Unclassified first) with count and zoom, and the rows with zoom |
 | 3 · Layers | branch `ux/layers`, PR after #37 | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
 | 4 · Status bar, part two | branch `ux/statusbar-terrain`, PR after #38 | Elevation and Slope after the scale, only with a terrain grid in memory; the slope as the limit reads it (one figure, or N-S · E-W), red on the cut cells; `terrainAt()` in `terrain/terrain.js`, `exceeds()` in `terrain/slope.js`, the `pvp:view3d` event. §8 |
-| 5 · New functions | branch `ux/search`, PR after #39 | the search of the objects (Ctrl K, `ui/search.js`), an address or coordinates top right (`ui/geosearch.js`, Nominatim), Zoom to on a right click in Layers (`ui/layermenu.js`); the rest of plan §4 waits. §9 |
-| 6 · Docs and tests | to do | README screenshots, the shell table of `architecture.md`, the headless suite, a handoff |
+| 5 · New functions | merged (#40) | the search of the objects (Ctrl K, `ui/search.js`), an address or coordinates top right (`ui/geosearch.js`, Nominatim), Zoom to on a right click in Layers (`ui/layermenu.js`); the rest of plan §4 waits. §9 |
+| 6 · Docs and tests | branch `ux/finish`, PR after #40 | old names out of the docs, CI red on uncaught browser errors, the 3D card without overlaps (Daylight inside it), messages bottom left with ×, the six geometries in a 2 × 3 grid with Freehand as a tool, the Ctrl K hint, `docs/design-feedback.md`, README pictures. §10 |
 
 **Decided on 2026-10-11** (rows in `docs/decisions.md`): part A (A1–A4) from the user's layout («category e menu
 devono essere in linea, sotto category c'è type…»); phase 2B (B1–B6) and the behaviour of Unclassified, all accepted
@@ -89,13 +89,12 @@ its last console messages.
 
 ## 6. Open work, in the order suggested
 
-1. **Phases 3 and 4** merged (#38, #39). **Phase 5** on `ux/search` (§9): the user confirms the decisions taken while
-   building, merges after a green check, then the cleanup. Phase 6 (docs and tests) opens with its list of decisions.
+1. **Phases 3 to 5** merged (#38, #39, #40). **Phase 6** on `ux/finish` (§10): the user merges after a green check,
+   then the cleanup. With it the ribbon refactor is complete.
 2. Phases 4 to 6 of the plan, one PR each, each opened with its list of decisions.
-3. To report to the design session: the set lacks point, line, rectangle and circle icons; the kit's tab tick is a glyph;
-   the README of the StatusBar says its CRS select changes the display only, here it is the export system (1B).
-4. i18n keys left unused by phase 1 (`top.crsNone`) and any wording «Tools menu» or «Collection» left in the docs: a
-   sweep in phase 6.
+3. The notes for the design session are in `docs/design-feedback.md` (icons drawn by the app, the tab tick, the CRS of
+   the StatusBar, the search placeholder, no menu component); to be passed on.
+4. Done in phase 6: the unused key `top.crsNone` and the old names in README and architecture.
 5. Still open from the earlier notes: two lines in the Registro of `COORDINAMENTO.md` (AGOL Axpo workspace) for PR #15;
    the workbook trial with a referent of a country without values; the release gates of `CLAUDE.md` (P0 validation of
    `.pvpd` and IDs, P0 integrity of `terrain/grid.f32`, P1 CI failing on browser errors: the runner still only prints
@@ -163,3 +162,39 @@ magnifier top right) and «Zoom to» on a right click in Layers. Checked before 
 Traps: the test page mounts only parts of the app's markup (add the new boxes to its list) and its box is hidden (no
 focus there); its banner element starts without `hidden`, which reads as «a tool is armed». Nominatim's policy: no
 search while typing, one request a second, the attribution; a company proxy may block it (the box says so).
+
+## 10. Phase 6, the end of the refactor (added later on 2026-10-11)
+
+Phase 5 merged as #40 (`main` = `814607a`); the user confirmed the seven decisions taken while building it and
+deleted the branch on GitHub. Phase 6 answered «ok per tutto il resto» with three notes of the user, all done:
+
+- **3D panels** (a screenshot of the user: the 3D card covered the controls of the scene, Daylight covered 2D / 3D):
+  the card sits in the top left corner, the scene's controls to its right (`scene.ui.padding`), the Daylight widget
+  inside the card in Sun and shadows (its host survives the redraws: `placeDaylight()`); the widget's own width and
+  title are overridden and its Calcite parts take the app's colours (they were dark on dark). The first section of the
+  card is «Ground and heights» (it repeated «3D view»).
+- **Messages**: bottom left of the map (`#toast` inside `#mapStack`), right of the 3D card in 3D; a × on every one.
+- **Drawing tools**: two rows of three small tools (Area · Line · Point / Rectangle · Circle · Freehand); Freehand is a
+  tool: an area when the category takes areas, else a line. The Freehand box is gone.
+- **Buffers** (a question of the user): a value of the object, drawn in the colour of its category, cut with it, the
+  attribute `buffer_m` in the exports; now said in the README.
+
+- **Checked**: the whole headless suite on this PC (`C:\Users\ddicarlo\pvp-check`, outside OneDrive): every page
+  green, the 3D scene 5 / 5 with the Daylight widget found in the card and the view padded beside it, no page failing
+  on the new rule of uncaught errors; in the browser pane the 3D card, the controls beside it, the messages, the grid
+  of tools, Freehand arming an area for a gross area and a line for the connection route, the Layers panel back after
+  3D.
+- **README pictures**: `tools/headless/shots.mjs` (headless Chromium with the real SDK from the CDN and the Esri
+  imagery: the MapView starts there, unlike with the npm bundle of run.mjs) on the test project `it_slope.axpo`, with a
+  limit of 15 % and a pitch of 10.3 m set by the script. No 3D picture: the invented terrain of that project runs from
+  76 to 124 m at a real place where the Esri ground is at 269 m, so its tables lie under the ground in 3D.
+
+Traps: a widget given a `container` puts its classes on that element (style `.d3-daylight.esri-daylight`, not a
+descendant); Calcite components read `--calcite-color-*` variables, set them on the host for the dark theme;
+`view.padding` and `view.ui.padding` add up (the controls went far right until `ui.padding.left` was set back to 12).
+
+What comes after the refactor, each with its own list of decisions:
+1. The P0 release gates of `CLAUDE.md`: validation of `.pvpd` files and IDs, integrity of `terrain/grid.f32`.
+2. The functions of plan §4 left for later: target capacity in the ribbon, aspect, report sections, contours, the
+   map sheet (Engineering first).
+3. The trial with the users (`docs/handoff` notes say what was checked and what was not).

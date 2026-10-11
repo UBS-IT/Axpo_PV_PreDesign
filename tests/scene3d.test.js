@@ -149,7 +149,10 @@ await test('step 4b opens a SceneView on the site, without errors of the scene',
   const kinds = layer.graphics.map(x => x.attributes.kind).toArray();
   assert(kinds.includes('tables') && kinds.includes('fence'), 'drawn: ' + kinds.join(', '));
   assert(!s.map.layers.find(l => l.title === 'Tables').visible, 'flat 2D tables hidden');
-  assert(document.querySelector('#view3d .esri-daylight, #view3d arcgis-daylight, #view3d .esri-ui-top-right > *'), 'date and time widget on the map: ' + document.querySelector('#view3d .esri-ui-top-right')?.innerHTML.slice(0, 200));
+  // the date and time of the sun (Daylight) inside the 3D card since phase 6: nothing over the 2D / 3D chips
+  assert(document.querySelector('#d3Card .esri-daylight, #d3Card arcgis-daylight') && !document.querySelector('#view3d .esri-ui-top-right .esri-daylight'),
+    'date and time widget in the 3D card: ' + (document.querySelector('#d3Card .d3-daylight')?.className || 'none'));
+  assert(s.padding.left > 280 && s.ui.padding.left === 12, `the view and its controls right of the card: ${JSON.stringify(s.padding)} ${JSON.stringify(s.ui.padding)}`);
   if (window.__snap) await window.__snap('opened');   // screenshots of the scene (tools/headless/snap3d.mjs)
   return `${last.result.tables} tables · ${kinds.join(', ')} · centre ${c.longitude.toFixed(4)}, ${c.latitude.toFixed(4)}`;
 });

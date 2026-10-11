@@ -20,7 +20,8 @@ npm test             # all pages, or: node run.mjs /tests/terrain.html
 Playwright comes from a global install (`npm i -g playwright`) or a local one (`npx playwright install chromium` for its
 browser). `VERBOSE=1` prints the note of every test, not only the failures. While a page runs, a line a minute says
 where it is; a page that runs out of time (4 minutes, 10 for the 3D scene) prints the tests it finished and its last
-console messages.
+console messages. A page also fails on an uncaught error of the browser (release gate P1 of `CLAUDE.md`); its
+`console.error` messages are printed but not counted, because the maps of Esri log network noise on the runners.
 
 On Windows: run it from a folder outside OneDrive (`node_modules` is about 400 MB), and in Git Bash set
 `MSYS_NO_PATHCONV=1`, otherwise `/tests/…` is turned into a Windows path. On a PC with a graphics card the 3D scene
@@ -34,3 +35,7 @@ refuses by default; `openPage(…, { softwareWebGL: true })` lifts that). `node 
 that scene, to look at it without a browser.
 
 `make_terrain_fixture.mjs` writes the synthetic GeoTIFF of the terrain tests (`tests/fixtures/it_dtm_plane.tif`).
+
+`node shots.mjs [app url] [folder]` takes the pictures of the README (`docs/img`): it opens the real app (served by
+`scripts/serve.py`, the SDK from js.arcgis.com and the Esri imagery, so it needs the Internet), imports the invented
+test project `tests/fixtures/it_slope.axpo` and saves one picture per tab at 1366 × 800 in the light theme.

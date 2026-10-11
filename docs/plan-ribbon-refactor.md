@@ -129,8 +129,9 @@ in line, Circle, Freehand, Buffer, the Site panel with its figures only): PR 34.
 and a figure per layer (decisions F1–F9): PR 38. Phase 4, the elevation and slope under the pointer in the status
 bar (G1–G7; the CRS select was already wired in 1B): PR 39. Phase 5 (H1–H8): the search of the objects of the
 project (Ctrl K), and as asked by the user an address / coordinates search and *Zoom to* on a right click in Layers:
-the branch `ux/search`, PR after 39. The other functions of §4 wait, each with its decisions. Next: phase 6, docs
-and tests.
+PR 40. The other functions of §4 wait, each with its decisions. Phase 6 (I1–I7, with the user's notes on the 3D
+panels, the messages and the drawing tools): the branch `ux/finish`, PR after 40. With it the refactor of this plan
+is complete; what comes next is in the handoff note of 2026-10-11 (§10).
 
 ## 6. Rollback and safety
 

@@ -33,6 +33,9 @@ const D = Math.PI / 180;
 
 let mapView = null, scene = null, layer3d = null, current = null, active = false, groundId = undefined, timer = null, building = null;
 const widgets = {};
+// the Daylight widget lives in the Sun and shadows card of the 3D card (phase 6: nothing over the 2D / 3D chips);
+// its host survives the redraws of the card. layersOpen: the Layers panel as it was before 3D folded it
+let daylightHost = null, layersOpen = false;
 // test hook: the elevation service under the terrain model (the test bench has no access to Esri World Elevation)
 export const scene3dConfig = { baseElevation: null };
 export const view3dState = { get scene() { return scene; }, get model() { return current; }, get active() { return active; } };
@@ -167,12 +170,14 @@ async function enter() {
   catch (e) { console.error(e); toast(t('d3.fail', { err: e.message || e }), 'err', 12000); return leave(); }
   if (!active) return;
   if (!widgets.daylight) {
-    widgets.daylight = new S.Daylight({ view: scene });
-    scene.ui.add(widgets.daylight, 'top-right');
+    daylightHost = daylightHost || Object.assign(document.createElement('div'), { className: 'd3-daylight' });
+    widgets.daylight = new S.Daylight({ view: scene, container: daylightHost, visibleElements: { header: false } });   // the card says Sun and shadows
+    placeDaylight();
     S.reactiveUtils.watch(() => scene.environment.lighting.date?.getTime?.(), () => onTime());
   }
   layer3d.visible = true;
   tablesLayer2d(false);
+  padScene();
   setGround();
   const first = !current;
   await refresh();
@@ -184,6 +189,21 @@ function leave() {
   document.dispatchEvent(new CustomEvent('pvp:view3d', { detail: { on: false } }));
   if (layer3d) layer3d.visible = false;
   tablesLayer2d(true);
+  if (layersOpen && !isCollectionOpen()) toggleCollection(true, false);   // the Layers panel as it was before 3D
+}
+// the controls of the scene (zoom, pan / rotate, compass) sit right of the 3D card, never under it, and the view
+// frames the site in the part the card leaves free (Back to the site, the first opening)
+function padScene() {
+  const card = $('d3Card');
+  if (!scene || !card) return;
+  const left = card.offsetWidth ? card.offsetLeft + card.offsetWidth : 0;
+  scene.padding = { left };                                      // the free part of the view, right of the card
+  scene.ui.padding = { top: 12, right: 12, bottom: 15, left: 12 };   // inside that part (the two paddings add up)
+}
+// the Daylight widget in its place in the Sun and shadows card (the card is redrawn often)
+function placeDaylight() {
+  const slot = $('d3DaylightSlot');
+  if (slot && daylightHost) slot.replaceWith(daylightHost);
 }
 // the flat tables of 2D would show under the 3D ones; back in 2D they show again if their switch is on
 function tablesLayer2d(visible) {
@@ -282,12 +302,13 @@ function renderPanel() {
   const dtmOpt = terrainData.meta?.source === 'dtm'
     ? `<label class="chk"><input type="checkbox" id="d3Dtm" ${useDtmGround() ? 'checked' : ''}> <span>${esc(t('d3.useDtm'))}</span></label>` : '';
   const notes = (m?.notes || []).map(k => `<div class="notice warn">${esc(t(k, { country, n: m.gaps }))}</div>`).join('');
-  parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.title'))}</b></div>
+  parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.groundTitle'))}</b></div>
     <p class="hint">${esc(ground)}${r?.tables ? '' : ' ' + esc(t('d3.noLayout'))}</p>${dtmOpt}${notes}${hts}
     <p class="hint">${esc(t('d3.obstacleNote'))}</p>
     <div class="btns"><button type="button" class="btn" id="d3Site">${esc(t('d3.site'))}</button></div></div>`);
   // sun and shadows
   parts.push(`<div class="card"><div class="cardhd"><b>${esc(t('d3.sunTitle'))}</b></div>
+    <div id="d3DaylightSlot"></div>
     <div class="btns wrap">${[['12-21-9', 'd3.decMorning'], ['12-21-12', 'd3.decNoon'], ['12-21-15', 'd3.decAfternoon'], ['6-21-12', 'd3.junNoon']]
       .map(([k, l]) => `<button type="button" class="btn sm" data-sun="${k}">${esc(t(l))}</button>`).join('')}</div>
     <p class="hint" id="d3Sun"></p>
@@ -306,6 +327,7 @@ function renderPanel() {
     <div class="btns col"><button type="button" class="btn" id="d3Glb">${esc(t('d3.glb'))}</button></div>
     <p class="hint">${esc(t(terrainData.meta ? 'd3.glbHint' : 'd3.glbNoTerrain'))}</p></div>`);
   p.innerHTML = parts.join('');
+  placeDaylight();
   renderSun();
 }
 // sun position, tracker angle and row-to-row shading at the time of the view
@@ -447,6 +469,6 @@ const chips = on => document.querySelectorAll('.mapchips [data-mode]').forEach(b
 export function set3d(on) {
   if (on && !active && typeof matchMedia === 'function' && matchMedia(NARROW).matches) { chips(false); toast(t('d3.narrow'), '', 8000); return; }
   chips(on);
-  if (on && !active) { if (isCollectionOpen()) toggleCollection(false, false); enter(); }   // the scene takes the width: the drawer closes, its preference kept
+  if (on && !active) { layersOpen = isCollectionOpen(); if (layersOpen) toggleCollection(false, false); enter(); }   // the scene takes the width: the panel folds, its preference kept, back in 2D it opens again
   else if (!on && active) leave();
 }

@@ -140,7 +140,8 @@ input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); out
 .gloss li { margin-bottom: 4px; }
 
 /* toasts: the kit draws them; the app stacks them bottom right */
-#toast { position: fixed; right: 16px; bottom: 16px; max-width: 380px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+#toast { position: absolute; left: 12px; bottom: 30px; max-width: min(380px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+body.in-3d #toast { left: 364px; }   /* right of the 3D card */
 
 /* the mode banner on the top edge of the map (the kit's .banner, placed by the app); the full text stays in its tooltip */
 #banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 5; }
@@ -192,6 +193,14 @@ body.in-3d #scalebar, body.in-3d #mapCtl, body.in-3d #measureCard { display: non
   .mapcard { width: 300px; }
 }
 body:not(.in-3d) #d3Card { display: none; }
+/* in 3D the card takes the top left corner; the controls of the scene sit right of it (scene.ui.padding) and the
+   Daylight widget is inside it, in Sun and shadows: nothing covers the 2D / 3D chips */
+#d3Card { top: 12px; max-height: calc(100% - 24px); }
+/* the widget puts its own classes (fixed 350 px, padding, shadow) on the host: the card's width instead */
+#d3Card .d3-daylight.esri-daylight { width: auto; max-width: 100%; margin: 0 0 8px; padding: 0; box-shadow: none; background: none; }
+/* its Calcite parts (labels, date field) take the colours of the app's theme, light or dark */
+#d3Card .d3-daylight { --calcite-color-text-1: var(--txt); --calcite-color-text-2: var(--mut); --calcite-color-text-3: var(--mut);
+  --calcite-color-foreground-1: var(--field); --calcite-color-foreground-2: var(--hover); --calcite-color-border-input: var(--line); --calcite-color-border-1: var(--line); }
 /* the 3D controls float over the scene; the side panel keeps the step */
 .mapcard { position: absolute; left: 12px; top: 112px; z-index: 6; width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 130px); display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-xl); }
 .mapcard-h { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
