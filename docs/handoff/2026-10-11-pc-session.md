@@ -28,7 +28,7 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 | 2B · Selection and editing | merged (#35) | Site area, group *Selection*: **Select** (click, Shift+click, Esc, Delete) and **Box**; a click on a Layers row selects. With a selection the Category, Type and Buffer act on it (group tinted, «n selected»). **Reshape, Move / rotate, Split, Merge, Copy, Delete**, each off with its reason; every edit is one step of Undo. The **Selected object** card (name, voltage, size, source). `app/js/edit.js` does the geometry in the local frame. The **Layers panel** only lists the groups that hold objects (Unclassified first) with count and zoom, and the rows with zoom |
 | 3 · Layers | branch `ux/layers`, PR after #37 | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
 | 4 · Status bar, part two | branch `ux/statusbar-terrain`, PR after #38 | Elevation and Slope after the scale, only with a terrain grid in memory; the slope as the limit reads it (one figure, or N-S · E-W), red on the cut cells; `terrainAt()` in `terrain/terrain.js`, `exceeds()` in `terrain/slope.js`, the `pvp:view3d` event. §8 |
-| 5 · New functions | to do | only those decided in plan §4 (search of project objects first) |
+| 5 · New functions | branch `ux/search`, PR after #39 | the search of the objects (Ctrl K, `ui/search.js`), an address or coordinates top right (`ui/geosearch.js`, Nominatim), Zoom to on a right click in Layers (`ui/layermenu.js`); the rest of plan §4 waits. §9 |
 | 6 · Docs and tests | to do | README screenshots, the shell table of `architecture.md`, the headless suite, a handoff |
 
 **Decided on 2026-10-11** (rows in `docs/decisions.md`): part A (A1–A4) from the user's layout («category e menu
@@ -89,8 +89,8 @@ its last console messages.
 
 ## 6. Open work, in the order suggested
 
-1. **Phase 3** merged (#38). **Phase 4** on `ux/statusbar-terrain` (§8): the user merges after a green check, then
-   the cleanup. Phase 5 (the new functions of plan §4) opens with its list of decisions.
+1. **Phases 3 and 4** merged (#38, #39). **Phase 5** on `ux/search` (§9): the user confirms the decisions taken while
+   building, merges after a green check, then the cleanup. Phase 6 (docs and tests) opens with its list of decisions.
 2. Phases 4 to 6 of the plan, one PR each, each opened with its list of decisions.
 3. To report to the design session: the set lacks point, line, rectangle and circle icons; the kit's tab tick is a glyph;
    the README of the StatusBar says its CRS select changes the display only, here it is the export system (1B).
@@ -144,3 +144,22 @@ session). Decisions G1–G7 accepted («ok su tutto»); the row is in `docs/deci
 
 Trap: a first version coloured every cell over the limit. On that test project the bar was red where the map showed
 no hatching, because the cut was off. The red now follows the mask of `overLimit()`, as the hatching and the figures.
+
+## 9. Phase 5, the searches (added later on 2026-10-11)
+
+Phase 4 merged as #39 (`main` = `c7662e8`); cleanup done (the user deleted the branch on GitHub). Decisions H1–H8
+answered with two additions of the user: an address / coordinates search (Nominatim or open source, a compact
+magnifier top right) and «Zoom to» on a right click in Layers. Checked before the PR:
+
+- **Test pages in the browser pane**: engine, modules, SDK, import, terrain, infrastructure, 3D view, `ui.html` (24 / 24,
+  a new test: matching, Ctrl K, a pick, a hidden category, a tool armed, coordinates, the address service stood in,
+  Zoom to). `scene3d.html` not run here (hidden window).
+- **The real app at 1366 × 800**: Ctrl K, «site» finds the gross area with 7.04 ha, Enter selects it in Site area with
+  its row shown; coordinates «45.4642, 9.1900» put a pin on Piazza del Duomo; one real request to Nominatim
+  («Duomo di Milano», a public landmark) answered from the browser (CORS works) with the attribution; E N in metres
+  «684621 4873020» in RDN2008 / UTM 32N landed on the test site; Zoom to on Tables went back to the site; every row
+  checked (the cut switched off, roads, stations and dimensions said «nothing on the map»).
+
+Traps: the test page mounts only parts of the app's markup (add the new boxes to its list) and its box is hidden (no
+focus there); its banner element starts without `hidden`, which reads as «a tool is armed». Nominatim's policy: no
+search while typing, one request a second, the attribution; a company proxy may block it (the box says so).

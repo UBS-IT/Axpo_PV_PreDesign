@@ -21,6 +21,9 @@ import { initView3d } from './view3d/scene.js';
 import { initCollection } from './ui/layers.js';
 import { initMapTools } from './ui/maptools.js';
 import { initStatusBar } from './ui/statusbar.js';
+import { initSearch } from './ui/search.js';
+import { initGeoSearch } from './ui/geosearch.js';
+import { initLayerMenu } from './ui/layermenu.js';
 import { initDims } from './dims.js';
 import { loadIcons, icon } from './ui/icons.js';
 
@@ -76,6 +79,9 @@ async function start() {
   initInfra(view);
   initOutput();
   initQuick();
+  initSearch(view);      // Ctrl K: the objects of the project
+  initGeoSearch(view);   // an address or coordinates, top right
+  initLayerMenu(view);   // Zoom to, on a right click in the Layers panel
   try { initView3d(view); } catch (e) { console.error('[3d]', e); }   // the 3D step must never stop the app from starting
   on('modules', renderModules);
   on('project', renderModules);
