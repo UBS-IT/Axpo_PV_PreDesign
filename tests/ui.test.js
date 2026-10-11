@@ -6,7 +6,9 @@ import { loadCatalog } from '../app/js/catalog.js';
 import { applyI18n } from '../app/js/i18n.js';
 import { store, defaultProject, replaceProject, change } from '../app/js/state.js';
 import { loadCountries } from '../app/js/crs.js';
-import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame } from '../app/js/areas.js';
+import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame, selectFeatures, selectionIds, selectedFeatures,
+  selectByGeometry, splitSelection, mergeSelection, copySelection, deleteSelection } from '../app/js/areas.js';
+import { measureFeature } from '../app/js/edit.js';
 import { initRibbon } from '../app/js/ui/ribbon.js';
 import { stepState, refreshRail } from '../app/js/ui/tabs.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
@@ -168,7 +170,7 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   selectDrawCat('exclusion');
   assert(all.every(k => !tool(k).disabled), 'exclusions take every geometry');
   const ty = document.getElementById('drawType'), buf = document.getElementById('drawBuffer');
-  assert(!ty.disabled && ty.options.length === 13 && !buf.disabled && document.getElementById('drawSizeBox').hidden, 'exclusions: type and buffer on, no size');
+  assert(!ty.disabled && ty.options.length === 14 && ty.value === '' && !buf.disabled && document.getElementById('drawSizeBox').hidden, 'exclusions: type (13 and «— type —») and buffer on, no size');
   buf.value = '7'; buf.dispatchEvent(new Event('change'));
   selectDrawCat('obstacle');
   assert(!document.getElementById('drawSizeBox').hidden && text('drawSizeCap') === 'Height' && ty.value === 'tree', 'obstacles: height next to the buffer, tree by default');
@@ -177,12 +179,11 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   const fh = document.getElementById('drawFreehand');
   assert(fh && !fh.checked, 'the Freehand box, off');
   assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
-  // «Draw here» on a card takes the category
-  document.querySelector('#areaCats .drawbtn[data-dsel="obstacle"]').click();
-  assert(/Obstacles/.test(btn.textContent) && !tool('point').disabled, 'obstacle chosen from its card');
-  assert(!document.querySelector('#areaCats .drawbtn[data-tool]'), 'no drawing buttons left on the cards');
-  // remove the site: a message with Undo instead of a confirmation; Undo brings it back where it was
-  document.querySelector('#areaCats .it[data-id="g"] [data-del]').click();
+  // the Layers panel has nothing to edit any more (B5): the ribbon draws and edits
+  assert(!document.querySelector('#areaCats .drawbtn, #areaCats [data-del], #areaCats select, #areaCats input'), 'Layers: nothing to edit on the cards');
+  // remove the site through the selection: a message with Undo instead of a confirmation; Undo brings it back
+  selectFeatures(['g']);
+  deleteSelection();
   await wait(250);
   assert(store.project.features.length === 0 && stepState('areas').state === 'ready', 'site removed, step back to ready');
   const tb = document.querySelector('#toast .toast.action .tact');
@@ -211,16 +212,88 @@ await test('objects without a category: first card of the Layers panel, counted 
   assert(!buildGeoJSON().features.some(x => x.properties.category === 'unclassified'), 'not in the GeoJSON / KMZ');
   const m = exportModel();
   assert(!m.error && !m.items.some(i => i.fid === 'u1'), 'not in the files for Engineering');
-  // its menu offers «Give a category…» and the categories that take a polygon; picking one classifies it
-  const mv = first.querySelector('select.mv');
-  assert(mv.value === 'unclassified' && [...mv.options].some(o => o.value === 'exclusion') && ![...mv.options].some(o => o.value === 'connection'), 'menu of the row');
-  mv.value = 'exclusion'; mv.dispatchEvent(new Event('change', { bubbles: true }));
+  // a click on its row selects it; the Category menu of the ribbon then gives it a category (one that takes an area)
+  first.querySelector('.it[data-id="u1"]').click();
+  const btn = document.getElementById('drawCatBtn'), list = document.getElementById('drawCatList');
+  assert(selectionIds().join() === 'u1' && /1 selected/.test(text('rgSiteLabel')) && /Unclassified/.test(btn.textContent), 'selected from its row, the menu shows Unclassified');
+  btn.click(); list.querySelector('[data-id="connection"]').click();
+  await wait(200);
+  assert(store.project.features.find(x => x.id === 'u1').category === 'unclassified', 'a line category does not take an area');
+  btn.click(); list.querySelector('[data-id="exclusion"]').click();
   await wait(400);
   assert(pendingCount() === 0 && store.project.features.find(x => x.id === 'u1').category === 'exclusion', 'classified');
   assert(document.querySelector('#areaCats .cat').dataset.cat !== 'unclassified' && computeArea(frame).buildableArea < before - 9000, 'card gone, the exclusion cuts');
   change('site', q => { q.features = q.features.filter(x => x.id !== 'u1'); });
   await wait(300);
+  assert(!selectionIds().length, 'a removed object leaves the selection');
   return 'counted and exported only once classified';
+});
+
+await test('selection and edits (2B): rows and box, values on the selection, the card, split, merge, copy, delete with Undo, Esc', async () => {
+  const { Polygon, Polyline } = getSdk();
+  const sq = (x, y, d) => toGeoJSON(f.toSr(new Polygon({ rings: [[[x, y], [x, y + d], [x + d, y + d], [x + d, y], [x, y]]], spatialReference: f.sr }), SpatialReference.WGS84));
+  change('site', q => { q.features.push(
+    { id: 'e1', name: 'Excl A', category: 'exclusion', geometry: sq(-150, -150, 100), attrs: { type: 'woodland' }, source: 'drawn', sourceCategory: '' },
+    { id: 'e2', name: 'Excl B', category: 'exclusion', geometry: sq(50, 50, 60), attrs: { type: 'flood' }, source: 'drawn', sourceCategory: '' }); });
+  await wait(300);
+  const rowOf = id => document.querySelector(`#areaCats .it[data-id="${id}"]`);
+  const on = id => !document.getElementById(id).disabled;
+  assert(rowOf('e1') && !rowOf('e1').querySelector('select, input, [data-del]') && rowOf('e1').querySelector('[data-zoom]'), 'a row: its name and a magnifier only');
+  assert(!on('edReshape') && !on('edDelete'), 'the edits are off without a selection');
+  // a click selects, Shift+click adds
+  rowOf('e1').click();
+  rowOf('e2').dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+  assert(selectionIds().sort().join() === 'e1,e2' && rowOf('e1').classList.contains('sel') && rowOf('e2').getAttribute('aria-selected') === 'true', 'two selected');
+  // the ribbon shows what they share: the category, no common type, the buffer on; reshape needs one, merge is on
+  assert(/Exclusion zones/.test(text('drawCatBtn')) && document.getElementById('drawType').value === '' && on('drawBuffer'), 'shared values');
+  assert(/2 selected/.test(text('rgSiteLabel')) && !on('edReshape') && on('edMerge') && on('edMove') && !on('edSplit'), 'the edit tools follow the selection');
+  const bf = document.getElementById('drawBuffer');
+  bf.value = '4'; bf.dispatchEvent(new Event('change'));
+  assert(['e1', 'e2'].every(id => store.project.features.find(x => x.id === id).attrs.buffer === 4), 'the buffer goes to both');
+  // a box around the first square: it and the site under it, not the second square
+  const box = f.toSr(new Polygon({ rings: [[[-160, -160], [-160, -40], [-40, -40], [-40, -160], [-160, -160]]], spatialReference: f.sr }), SpatialReference.WGS84);
+  const boxed = selectByGeometry(box);
+  assert(boxed.includes('e1') && boxed.includes('g') && !boxed.includes('e2'), 'box selection: ' + boxed.join());
+  // the card of one object: its name (renamed there), its area, its source
+  selectFeatures(['e1']);
+  assert(!document.getElementById('selCard').hidden && document.getElementById('selName').value === 'Excl A' && /1\.00 ha/.test(text('selInfo')), 'card: ' + text('selInfo'));
+  const sn = document.getElementById('selName');
+  sn.value = 'Wood'; sn.dispatchEvent(new Event('change'));
+  assert(store.project.features.find(x => x.id === 'e1').name === 'Wood' && on('edReshape') && on('edSplit'), 'renamed from the card, reshape and split on');
+  // split with a line across the square: two pieces with the name, category and values, the area kept
+  const area = x => measureFeature(x, siteFrame()).area;
+  const cutter = f.toSr(new Polyline({ paths: [[[-100, -170], [-100, -30]]], spatialReference: f.sr }), SpatialReference.WGS84);
+  assert(splitSelection(cutter) === 2, 'two pieces');
+  const pieces = selectedFeatures();
+  assert(pieces.length === 2 && pieces.every(x => /^Wood \(\d\)$/.test(x.name) && x.attrs.buffer === 4 && x.category === 'exclusion'), 'pieces keep name, category, values');
+  assert(Math.abs(pieces.reduce((a, x) => a + area(x), 0) - 10000) < 1, 'area kept: ' + pieces.map(area).join(' + '));
+  const missed = f.toSr(new Polyline({ paths: [[[300, 300], [320, 320]]], spatialReference: f.sr }), SpatialReference.WGS84);
+  selectFeatures([pieces[0].id]);
+  assert(splitSelection(missed) === 0 && store.project.features.some(x => x.id === pieces[0].id), 'a line that does not cross: nothing split');
+  // merge them back into one
+  selectFeatures(pieces.map(x => x.id));
+  const m = mergeSelection();
+  assert(m && Math.abs(area(m) - 10000) < 1 && selectionIds().join() === m.id, 'merged into one');
+  selectFeatures([m.id, 'e2', 'g']);
+  assert(!on('edMerge') && /one category/.test(document.getElementById('edMerge').title), 'no merge across categories: ' + document.getElementById('edMerge').title);
+  // copy (the app then moves it; not here), delete the copy, Undo brings it back
+  selectFeatures([m.id]);
+  const n0 = store.project.features.length;
+  const copies = copySelection({ move: false });
+  assert(copies.length === 1 && store.project.features.length === n0 + 1 && /\(copy\)$/.test(copies[0].name) && selectionIds().join() === copies[0].id, 'a copy, selected');
+  deleteSelection();
+  await wait(200);
+  assert(store.project.features.length === n0 && !selectionIds().length, 'deleted');
+  document.querySelector('#toast .toast.action .tact').click();
+  await wait(200);
+  assert(store.project.features.length === n0 + 1, 'Undo brings it back');
+  // Esc clears the selection and its card
+  selectFeatures([m.id]);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+  assert(!selectionIds().length && document.getElementById('selCard').hidden && /Site definition/.test(text('rgSiteLabel')), 'Esc clears');
+  change('site', q => { q.features = q.features.filter(x => x.id === 'g'); });
+  await wait(300);
+  return 'rows, box, values, card, split, merge, copy, delete, undo, Esc';
 });
 
 await test('layout: structure chosen from the toolkit presets, custom notation on request', async () => {

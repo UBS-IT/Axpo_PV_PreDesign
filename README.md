@@ -103,10 +103,19 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   their Height for obstacles, Width for the strips) and the two drawing-support boxes. The boundary setback is the
   *Constraints* group next to it. The Site panel on the right only shows the figures. The armed tool stays armed after
   each drawing (a second click or Esc stops it); the map banner and the status bar say what is going on. Objects drawn as *Unclassified* wait in the first group of the Layers panel, dashed on the map, counted
-  nowhere and exported nowhere, until each one gets its category (the menu of its row, or a drag onto a category);
-  the area ledger and the Report tab say how many are waiting. Removing one object or all of a category shows a
-  message with *Undo* instead of a confirmation. Each row has rename, reshape and remove; *Draw here* on a category
-  card picks it in the menu.
+  nowhere and exported nowhere, until each one gets its category (select it, then pick the category in the ribbon);
+  the area ledger and the Report tab say how many are waiting.
+- **Selection and edits** — the ribbon group *Selection* of Site area: **Select** (click an object on the map,
+  Shift+click to add or remove, Esc to clear) and **Box** (every object a box touches); a click on a row of the
+  Layers panel selects too. With a selection, the Category, Type and Buffer of *Site definition* show and change the
+  selected objects (a tint and «n selected» say so), and the edits switch on, each with its reason when it cannot
+  apply: **Reshape** (the vertices of one object), **Move / rotate**, **Split** (draw a line across one area or line),
+  **Merge** (two or more areas of one category), **Copy** (duplicated, then moved), **Delete** (or the Delete key).
+  Every edit goes through Undo / Redo; a removal shows a message with *Undo*. One selected object shows a *Selected
+  object* card above the figures of the Site panel: its name, the voltage of a power line, its area or length in true
+  metres and its source. The geometry is done in `app/js/edit.js`, in the local metric frame.
+- **Layers panel** — only the groups that hold objects (Unclassified first), each with its count and a magnifier
+  that zooms to it, and the rows with their name and a magnifier; nothing is edited there.
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel

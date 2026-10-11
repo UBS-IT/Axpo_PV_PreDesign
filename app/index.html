@@ -74,7 +74,7 @@
         <label class="chk mini" data-i18n-title="tools.labels"><input type="checkbox" id="drawLabels"> <span data-i18n="tools.labelsShort"></span></label>
       </div>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.site"></div>
+    <div class="rgroup-label" id="rgSiteLabel" data-i18n="ribbon.g.site"></div>
   </div>
   <div class="rgroup" data-tab="areas" role="group" hidden>
     <div class="rgroup-tools">
@@ -84,6 +84,23 @@
       </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.constraints"></div>
+  </div>
+  <div class="rgroup" data-tab="areas" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool medium" id="selTool" aria-pressed="true" data-tip="sel.selectTitle"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-cursor"/></svg><span data-i18n="sel.select"></span></button>
+      <button type="button" class="tool medium" id="selBox" aria-pressed="false" data-tip="sel.boxTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="14" height="11" rx="1" stroke-dasharray="2.6 2.2"/><path d="M13 13l7 3.2-3 .9-1 3z"/></svg><span data-i18n="sel.box"></span></button>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="edReshape" data-tip="edit.reshapeTitle" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-reshape"/></svg><span data-i18n="edit.reshape"></span></button>
+        <button type="button" class="tool small" id="edMove" data-tip="edit.moveTitle" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg><span data-i18n="edit.move"></span></button>
+        <button type="button" class="tool small" id="edSplit" aria-pressed="false" data-tip="edit.splitTitle" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5h14v14H5z"/><path d="M16 3L8 21" stroke-dasharray="2.4 2"/></svg><span data-i18n="edit.split"></span></button>
+      </div>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="edMerge" data-tip="edit.mergeTitle" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h9v5h7v8H4z"/><path d="M13 6v5" stroke-dasharray="1.6 1.8"/></svg><span data-i18n="edit.merge"></span></button>
+        <button type="button" class="tool small" id="edCopy" data-tip="edit.copyTitle" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span data-i18n="edit.copy"></span></button>
+        <button type="button" class="tool small" id="edDelete" data-tip="edit.deleteTitle" disabled><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg><span data-i18n="edit.delete"></span></button>
+      </div>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.selection"></div>
   </div>
   <div class="rgroup" data-tab="terrain" role="group" hidden>
     <div class="rgroup-tools">
@@ -201,6 +218,14 @@
     <!-- 1 · site -->
     <section class="step" data-step="areas" hidden>
       <header class="stephd"><span class="num">1</span><div><h2 data-i18n="step.areas"></h2><p data-i18n="step.areas.sub"></p></div></header>
+      <!-- one selected object (B4): its name, the voltage of a power line, its size and source -->
+      <div class="card selcard" id="selCard" hidden>
+        <div class="cardhd"><b data-i18n="sel.card"></b><span id="selCat"></span></div>
+        <label class="lbl" for="selName" data-i18n="sel.name"></label>
+        <input id="selName" type="text">
+        <div id="selVoltBox" hidden><label class="lbl" for="selVolt" data-i18n="sel.voltage"></label><input id="selVolt" type="number" min="0" step="1"></div>
+        <div class="ledger" id="selInfo"></div>
+      </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="areas.netTitle"></b></div>
         <div id="areaSummary"></div>
