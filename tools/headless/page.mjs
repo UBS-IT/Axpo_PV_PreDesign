@@ -65,10 +65,17 @@ export async function openPage(pagePath, { localStorage: ls = null, softwareWebG
   if (ls) await ctx.addInitScript(items => { if (location.pathname.startsWith('/app')) for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v); }, ls);
   const page = await ctx.newPage();
   const errors = [];
+  // the last console messages of any kind, with the seconds since the page opened: printed by run.mjs when a page
+  // times out, to show what the page was doing when it stopped
+  const log = [], t0 = Date.now();
   page.on('pageerror', e => errors.push(e.message));
-  page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|basemap|tile/i.test(m.text())) errors.push('console: ' + m.text()); });
+  page.on('console', m => {
+    if (m.type() === 'error' && !/Failed to load resource|net::ERR|basemap|tile/i.test(m.text())) errors.push('console: ' + m.text());
+    log.push(`${Math.round((Date.now() - t0) / 1000)} s ${m.type()}: ${m.text().slice(0, 300)}`);
+    if (log.length > 40) log.shift();
+  });
   await page.goto(base + pagePath);
-  return { page, errors, close: async () => { await ctx.close(); } };
+  return { page, errors, log, close: async () => { await ctx.close(); } };
 }
 export async function shutdown() { if (browser) await browser.close(); if (server) server.close(); }
 process.on('exit', () => { try { server && server.close(); } catch {} });
