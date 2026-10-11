@@ -140,6 +140,9 @@ body { overflow: hidden; display: block; }
 .statusbar .it { padding: 0; border: 0; }   /* app.css .it is a list row */
 .statusbar .k { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
 .statusbar .it.xy .v { min-width: 92px; }
+.statusbar .it[hidden] { display: none; }
+.statusbar #sbZ { min-width: 52px; }
+.statusbar #sbSlope.over { color: var(--err); font-weight: 600; }   /* a cell cut by the slope limit, as the hatching */
 .statusbar select { width: auto; max-width: 260px; }
 .sb-crs select.alert { color: var(--warn); font-weight: 600; }
 .sb-toggle { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--mut); font-size: 11px; }

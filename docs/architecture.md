@@ -66,8 +66,9 @@ of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–3 reopens a collapsed Proper
 collapse to a strip, Layers on the left (`ui/layers.js`: one group per tab, a visibility switch and a figure per layer, the
 objects by category in the first group, the Dimensions row at the end; the switches are `ui/visibility.js`)
 and Properties on the right (the sections of the steps of the active tab), and a status bar (`ui/statusbar.js`:
-the pointer coordinates in the export system, the CRS select, the scale, the mode the modules announce with a
-`pvp:mode` event, the snapping switch, the autosave time); the map controls column (`ui/maptools.js`: Fit the
+the pointer coordinates in the export system, the CRS select, the scale, the elevation and slope under the pointer
+from the terrain grid (`terrainAt()` of `terrain/terrain.js`), the mode the modules announce with a `pvp:mode`
+event, the snapping switch, the autosave time; the 3D view announces itself with `pvp:view3d`); the map controls column (`ui/maptools.js`: Fit the
 site, Measure, Dimensions) sits under the zoom and the north arrow, the basemap toggle and the opacity slider
 bottom right; the kit of the design system (`css/kit.css`, phase 1C) draws the pieces and `css/shell.css` lays them
 out. The steps below are unchanged: a tab holds one or two of
@@ -114,7 +115,8 @@ Shared by every step:
    (the slope cut of step 2, the fence band, stations and roads of step 4). The result is kept in `areasState`.
 3. **The terrain cuts what is too steep** (optional). `terrain/terrain.js` samples a grid over the site plus a
    margin; `terrain/slope.js` computes the slopes; the limit in use (toolkit rule of the structure, or chosen by
-   hand, or brought by the Geoportale) gives a mask; the cells over the limit become an extra cut of step 2.
+   hand, or brought by the Geoportale) gives a mask; the cells over the limit become an extra cut of step 2. The
+   same grid answers the status bar: the elevation (bilinear) and the slope of the cell under the pointer.
 4. **The layout is generated.** Every change of `site`, `settings`, `field`, `modules`, `terrain`, `infra`, `crs` or
    `project` makes `field.js` regenerate: it takes the buildable area, the structure (`layout/structures.js` gives the
    size of a table from the module), the pitch and azimuth, and calls the pure engine `layout/rows.js`, which fills
@@ -199,9 +201,9 @@ app.
 | `tests/modules.html` | roadmaps by semester, power periods, the six-month warning, the country catalog, slope limits, trackers, modules carried by projects, Excel and CSV readers and writers, GeoPackage geometry, every vendored library (19) | `modules.js`, `catalog.js`, `io/xlsx.js`, `io/csv.js`, `io/xlsxwrite.js`, `libs.js` |
 | `tests/sdk.html` | the SDK loads, the local frame measures true metres (5) | `sdk.js`, `geo/localframe.js` |
 | `tests/import.html` | classification, v1 → v2 migration, countries and proposed systems, every national EPSG code, the fixtures against the ArcGIS reference areas, Geoportale projects with the site-features model, net area, grid connection route, project and GeoJSON round trips (25) | `io/importers.js`, `categories.js`, `crs.js`, `areas.js`, `state.js`, `io/projectfile.js` |
-| `tests/terrain.html` | slopes, masks and outlines, GeoTIFF sampling, the slope cut, a limit chosen by hand against the toolkit, figures inside the site and the terrain image, the project file, Geoportale projects with their DTM (grid adopted, partial coverage, replaced or kept, automatic drawings left out) (20) | `terrain/*` |
+| `tests/terrain.html` | slopes, masks and outlines, GeoTIFF sampling, the slope cut, a limit chosen by hand against the toolkit, figures inside the site and the terrain image, the project file, Geoportale projects with their DTM (grid adopted, partial coverage, replaced or kept, automatic drawings left out), the terrain under the pointer (21) | `terrain/*` |
 | `tests/infra.html` | fence, perimeter road, clearances, lots and shared fences, stations (snapping, moving, at the access), roads drawn (12) | `infra.js` |
-| `tests/ui.html` | the real panels on a stand-in map view: stepper states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain, the Layers panel and its visibility switches, the drawing support, dimensions, selection and editing (22) | `ui/tabs.js`, `ui/layers.js`, `ui/maptools.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
+| `tests/ui.html` | the real panels on a stand-in map view: stepper states and gates, the drawing block, structure presets, quick predesign, infrastructure, KMZ and PDF report, Shapefile / GeoPackage / DXF / bill of quantities, background map, the 3D model on the terrain, the Layers panel and its visibility switches, the drawing support, dimensions, selection and editing, the status bar (23) | `ui/tabs.js`, `ui/layers.js`, `ui/maptools.js`, `areas.js`, `field.js`, `quick.js`, `output.js`, `report.js`, `export/*` |
 | `tests/view3d.html` | sun and trackers against pvlib, row shading, heights by country, meshes, ground elevations, terrain tiles, glTF (8) | `view3d/sun.js`, `view3d/geometry.js`, `view3d/model.js`, `view3d/glb.js` |
 | `tests/scene3d.html` | the real SceneView on the synthetic DTM: opens on the site without errors, ground from the terrain, AgriPV heights, sun buttons, views, report, back to 2D (5; minutes long in headless, software WebGL) | `view3d/scene.js` |
 

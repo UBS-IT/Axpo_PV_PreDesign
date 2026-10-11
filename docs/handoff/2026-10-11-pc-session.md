@@ -27,7 +27,7 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 | 2 · Ribbon tools, with part A | merged (#34) | Site area: *Site definition* = **Category** menu (`ui/catmenu.js`, colour dots, Unclassified first and default) and **Type** menu in line, five geometries (Area, Rectangle, Circle, Line, Point) with **Freehand** (`thinned()`, 0.5 m), Undo / Redo, **Buffer** and Height / Width (`renderValues()`), the two drawing-support boxes; *Constraints* = the setback. **Unclassified** objects (`UNCLASSIFIED`, app-only) count nowhere and are exported nowhere (`classified()`). Terrain: Remove, Slope classes / Elevations switches. Layout & Infrastructure: roads with Heavy / Light, At the access, Add module, Import roadmap. Report: the working files, the PDF alone on the right. A tool of tabs 1–3 reopens the Properties panel (`pvp:properties`). The Site panel only shows its figures |
 | 2B · Selection and editing | merged (#35) | Site area, group *Selection*: **Select** (click, Shift+click, Esc, Delete) and **Box**; a click on a Layers row selects. With a selection the Category, Type and Buffer act on it (group tinted, «n selected»). **Reshape, Move / rotate, Split, Merge, Copy, Delete**, each off with its reason; every edit is one step of Undo. The **Selected object** card (name, voltage, size, source). `app/js/edit.js` does the geometry in the local frame. The **Layers panel** only lists the groups that hold objects (Unclassified first) with count and zoom, and the rows with zoom |
 | 3 · Layers | branch `ux/layers`, PR after #37 | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
-| 4 · Status bar, part two | to do | elevation and slope under the pointer (`terrain/store.js`) |
+| 4 · Status bar, part two | branch `ux/statusbar-terrain`, PR after #38 | Elevation and Slope after the scale, only with a terrain grid in memory; the slope as the limit reads it (one figure, or N-S · E-W), red on the cut cells; `terrainAt()` in `terrain/terrain.js`, `exceeds()` in `terrain/slope.js`, the `pvp:view3d` event. §8 |
 | 5 · New functions | to do | only those decided in plan §4 (search of project objects first) |
 | 6 · Docs and tests | to do | README screenshots, the shell table of `architecture.md`, the headless suite, a handoff |
 
@@ -89,10 +89,11 @@ its last console messages.
 
 ## 6. Open work, in the order suggested
 
-1. **Phase 3, the Layers panel**: done on `ux/layers` (§7); the user merges after a green check, then the cleanup.
-   Phase 4 (the status bar, part two) opens with its list of decisions.
+1. **Phase 3** merged (#38). **Phase 4** on `ux/statusbar-terrain` (§8): the user merges after a green check, then
+   the cleanup. Phase 5 (the new functions of plan §4) opens with its list of decisions.
 2. Phases 4 to 6 of the plan, one PR each, each opened with its list of decisions.
-3. To report to the design session: the set lacks point, line, rectangle and circle icons; the kit's tab tick is a glyph.
+3. To report to the design session: the set lacks point, line, rectangle and circle icons; the kit's tab tick is a glyph;
+   the README of the StatusBar says its CRS select changes the display only, here it is the export system (1B).
 4. i18n keys left unused by phase 1 (`top.crsNone`) and any wording «Tools menu» or «Collection» left in the docs: a
    sweep in phase 6.
 5. Still open from the earlier notes: two lines in the Registro of `COORDINAMENTO.md` (AGOL Axpo workspace) for PR #15;
@@ -128,3 +129,18 @@ Traps of this phase:
 - **Seen, not changed** (existing on `main`): entering 3D folds the Layers panel without saving that, and back in 2D it
   stays folded (`view3d/scene.js`, `enter()`); the user reopens it by hand. A candidate for phase 6 or a small PR, the
   user decides.
+
+## 8. Phase 4, the status bar part two (added later on 2026-10-11)
+
+Phase 3 merged as #38 (`main` = `66e572e`, both branches deleted on GitHub by the user, the local ones by the
+session). Decisions G1–G7 accepted («ok su tutto»); the row is in `docs/decisions.md`. Checked before the PR:
+
+- **Test pages in the browser pane**: engine, modules, SDK, import, terrain (21 / 21, a new test on the 12 % plane:
+  154.00 m and 12.00 % exactly), infrastructure, 3D view, `ui.html` (23 / 23, a new test of the bar). `scene3d.html`
+  not run here, the window being hidden; the CI runs it.
+- **The real app at 1366 × 800** on the test project «Slope test» (a 10.3 % plane, a limit of 10 % chosen by hand,
+  the cut switched off): 100.0 m and 10.3 % on the field, not red, the tooltip saying why; «—» outside the grid with
+  the coordinates still shown; «—» for both in 3D; the bar fits the width.
+
+Trap: a first version coloured every cell over the limit. On that test project the bar was red where the map showed
+no hatching, because the cut was off. The red now follows the mask of `overLimit()`, as the hatching and the figures.

@@ -23,7 +23,7 @@ import { stepProvider } from '../ui/tabs.js';
 import { layerVisible, onVisibility } from '../ui/visibility.js';
 import { setLayerFigure } from '../ui/layers.js';
 import { applyStandard } from '../field.js';
-import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear } from './slope.js';
+import { gradients, limitMask, dropSmallPatches, maskToRings, SLOPE_CLASSES, gridOver, bilinear, exceeds } from './slope.js';
 import { terrainData, setTerrainData, saveLocal, loadLocal, clearLocal } from './store.js';
 import { openGeoTiff } from './dtm.js';
 
@@ -247,6 +247,38 @@ export function overLimit() {
     let cells = 0; for (const v of mask) cells += v;
     return { polygon: cells ? maskPolygon(m, mask) : null, mask, limit: L.limit, rule: L.rule, cells, text: L.text, own: L.custom && !L.same };
   });
+}
+
+// ── under the pointer (the status bar, phase 4: decisions G2–G6 of 2026-10-11) ──
+// the grid of the project is in memory (the same test as the panel)
+export function terrainReady() {
+  const m = store.project.terrain.grid;
+  return !!(m && terrainData.z && terrainData.meta?.id === m.id);
+}
+// Elevation and slope at a point of the map (any spatial reference), from the grid only (no request to Esri): the
+// elevation bilinear, as the 3D model takes it; the slope of the cell, as the cut takes it (not interpolated, so the
+// figure agrees with the hatching). { z, slope, ns, ew (percent), split (the limit has a north–south and an east–west
+// value), beyond (above the limit in use), over (and cut: the hatched cells, the cut switched on and the patch large
+// enough, as the figures of 2 · Terrain count them), limit }, or null without a grid or outside it.
+export function terrainAt(point) {
+  if (!point || !terrainReady()) return null;
+  let q = null;
+  try { q = getSdk().projectOperator.execute(point, gridFrame(terrainData.meta).sr); } catch { return null; }
+  return q ? terrainAtLocal(q.x, q.y) : null;
+}
+// the same at a point of the frame of the grid (metres)
+export function terrainAtLocal(x, y) {
+  const m = terrainData.meta, g = grads();
+  if (!m || !g) return null;
+  const u = (x - m.x0) / m.cell, v = (y - m.y0) / m.cell;
+  if (!(u >= 0 && v >= 0 && u < m.nx && v < m.ny)) return null;
+  const z = bilinear(terrainData.z, m.nx, m.ny, u - 0.5, v - 0.5);
+  const k = Math.floor(v) * m.nx + Math.floor(u);
+  const ew = Math.abs(g.gx[k]) * 100, ns = Math.abs(g.gy[k]) * 100, known = Number.isFinite(ew) && Number.isFinite(ns);
+  const limit = effectiveLimit().limit, beyond = known && !!limit && exceeds(ns, ew, limit);
+  const o = beyond && store.project.terrain.applySlopeLimit ? overLimit() : null;
+  return { z: Number.isFinite(z) ? z : null, slope: known ? Math.hypot(ew, ns) : null, ns: known ? ns : null, ew: known ? ew : null,
+    split: !!limit && limit.maxAny == null, beyond, over: !!(o && o.mask[k]), limit };
 }
 
 // Cut for the buildable area (areas.js computeArea): the cells over the limit, in the frame of the site
