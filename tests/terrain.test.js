@@ -6,9 +6,9 @@
 import { loadSdk, getSdk } from '../app/js/sdk.js';
 import { loadCatalog } from '../app/js/catalog.js';
 import { store, defaultProject, upgrade } from '../app/js/state.js';
-import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, ringArea, gridOver, bilinear } from '../app/js/terrain/slope.js';
+import { gradients, limitMask, classMask, dropSmallPatches, maskToRings, ringArea, gridOver, bilinear, contourLines, mosaic } from '../app/js/terrain/slope.js';
 import { openGeoTiff } from '../app/js/terrain/dtm.js';
-import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale, siteStats, siteCoverage, terrainCanvas, terrainAt, terrainReady } from '../app/js/terrain/terrain.js';
+import { sampleDtm, sampleEsri, gridForSite, useGrid, removeTerrain, overLimit, currentSlopeRule, effectiveLimit, setLimit, limitText, terrainStale, siteStats, siteCoverage, terrainCanvas, terrainAt, terrainReady, loadTerrain, aspectColour } from '../app/js/terrain/terrain.js';
 import { terrainData, setTerrainData } from '../app/js/terrain/store.js';
 import { computeArea, siteFrame, importFiles } from '../app/js/areas.js';
 import { readAnyFile } from '../app/js/io/importers.js';
@@ -334,6 +334,39 @@ await test('under the pointer (status bar, phase 4): elevation and slope of the 
   await removeTerrain();
   assert(!terrainReady() && terrainAt(utm(317520, 5063530)) === null, 'no grid: nothing');
   return `${h.z.toFixed(2)} m, ${h.slope.toFixed(2)} %`;
+});
+
+await test('contours, mosaic, aspect and hillshade (phase 9): lines of a plane and of a bowl, the finest model first, the way a slope faces', async () => {
+  // a plane rising 10 % to the north: straight contours every 1 m, 10 m apart
+  const g1 = plane(30, 20, 5, (x, y) => 50 + 0.1 * y);
+  const c1 = contourLines(g1, 1);
+  assert(c1.length > 5 && c1.every(l => l.path.length >= 2 && l.path.every(p => Math.abs(50 + 0.1 * p[1] - l.z) < 1e-6)), 'every point of a contour at its elevation');
+  assert(c1.every(l => Math.abs(l.path[0][0] - l.path.at(-1)[0]) > 100), 'one line across the grid per level: ' + c1.slice(0, 3).map(l => l.path.length).join(','));
+  // a bowl: closed rings
+  const g2 = plane(21, 21, 1, (x, y) => Math.hypot(x - 10.5, y - 10.5));
+  const ring = contourLines(g2, 5).find(l => l.z === 5);
+  assert(ring && Math.hypot(ring.path[0][0] - ring.path.at(-1)[0], ring.path[0][1] - ring.path.at(-1)[1]) < 1e-6 && ring.path.length > 12, 'a closed ring around the bottom');
+  // the finest model first, then the others where it has no data
+  const fine = { z: new Float32Array([1, NaN, 3, NaN]), res: 1 }, coarse = { z: new Float32Array([9, 9, 9, NaN]), res: 10 };
+  const mz = mosaic([coarse, fine]);
+  assert([...mz.z].slice(0, 3).join() === '1,9,3' && Number.isNaN(mz.z[3]) && mz.counts.join() === '1,2' && mz.missing === 1, 'mosaic: ' + [...mz.z].join() + ' / ' + mz.counts);
+  // aspect: downhill to the north red, to the south green, east or west yellow, flat grey
+  const red = aspectColour(0, -0.1), green = aspectColour(0, 0.1), yellow = aspectColour(0.1, 0), grey = aspectColour(0.001, 0.001);
+  assert(red[0] > 200 && green[1] > 150 && green[0] < 100 && yellow[0] > 200 && yellow[1] > 150 && grey[0] === grey[1], 'the colours of the aspect');
+  return `${c1.length} straight contours, a ring of ${ring.path.length} points`;
+});
+
+await test('several elevation models at once (phase 9): mosaicked, said in the meta, the images of aspect and hillshade drawn', async () => {
+  useSite(317500, 5063500);
+  const ok = await loadTerrain('dtm', [file, file]);
+  const m = terrainData.meta;
+  assert(ok && m.parts && m.parts.length === 2 && /Mosaic of 2 models/.test(m.name) && m.parts[0].cells > 0, 'two models: ' + JSON.stringify(m.parts));
+  const cv = terrainCanvas(m, 'a', null), px = cv.getContext('2d').getImageData(cv.width / 2, cv.height / 2, 1, 1).data;
+  assert(px[1] > px[0] && px[3] === 255, `the plane rises to the north, it faces south: green (${px[0]}, ${px[1]}, ${px[2]})`);
+  const hv = terrainCanvas(m, 'h', null).getContext('2d').getImageData(cv.width / 2, cv.height / 2, 1, 1).data;
+  assert(hv[0] === hv[1] && hv[1] === hv[2] && hv[3] === 255, 'hillshade in grey');
+  await removeTerrain();
+  return `${m.name}: ${m.parts.map(p => p.cells).join(' + ')} cells`;
 });
 
 // ── Geoportale projects with slopes from their DTM («Pendenze da DTM», 2026-10-04) ──

@@ -27,8 +27,9 @@ export function buildDxf(model) {
       const pts = closed && part.length > 1 && part[0][0] === part.at(-1)[0] && part[0][1] === part.at(-1)[1] ? part.slice(0, -1) : part;
       if (pts.length < 2) continue;
       ents.push(() => {
-        w(0, 'POLYLINE'); w(8, layer); w(66, 1); w(10, '0.0'); w(20, '0.0'); w(30, '0.0'); w(70, closed ? 1 : 0);
-        for (const [x, y] of pts) { w(0, 'VERTEX'); w(8, layer); w(10, num(x)); w(20, num(y)); w(30, '0.0'); }
+        const zz = it.z != null ? num(it.z) : '0.0';   // a contour carries its elevation
+        w(0, 'POLYLINE'); w(8, layer); w(66, 1); w(10, '0.0'); w(20, '0.0'); w(30, zz); w(70, closed ? 1 : 0);
+        for (const [x, y] of pts) { w(0, 'VERTEX'); w(8, layer); w(10, num(x)); w(20, num(y)); w(30, zz); }
         w(0, 'SEQEND'); w(8, layer);
       });
     }

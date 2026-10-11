@@ -175,10 +175,17 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
 
 ### 2 · Terrain (optional)
 
-The panel says what it does (cuts the areas too steep for the chosen structure), waits for the site (a gate with a
-link to 1 · Site until then), has one primary action (*Analyse the slopes*, Esri World Elevation) and one secondary
-(*Use my own model*, GeoTIFF), shows the structure it applies to (chosen here or in 3 · Layout), and flags the terrain
-as *to redo* when the site or the grid cell changed after the sampling. Grid cell and small patches are advanced options.
+The ribbon sets, the panel explains. **Digital elevation models**: *Analyse the slopes* (Esri World Elevation) and
+*Own models* (one GeoTIFF or several at once: each is sampled on the grid of the site and every cell takes the finest
+model that covers it; a model with nothing of the site is left out and said). **Slope analysis**: the structure (as
+in Layout), the limit in use (the toolkit rule, one value in every direction, or north–south and east–west), its
+values, *Cut over the limit* and the *Slope classes* image. **Other analysis**: *Elevation*, *Aspect* (the way the
+slopes face: north red, south green, east and west yellow, flat grey) and *Hillshade*, one image at a time with the
+slope classes, and *Contours* at a chosen step (0.5 to 10 m; every fifth line thicker), a row of the Layers panel and
+a layer of the DXF with their elevation (with Esri World Elevation, under 2 m they draw the interpolation, and the
+panel says so). *Remove terrain* sits on the right. The panel says what the step does, what the toolkit says for the
+structure and how the limit in use compares with it, and flags the terrain as *to redo* when the site or the grid
+cell changed after the sampling. Grid cell and small patches are advanced options.
 
 The **slope limit in use** is chosen the same two ways as the Geoportale's *Pendenze da DTM*: the toolkit rule of the
 structure (default), one value in every direction, or north–south and east–west apart (a cell is cut when it is over

@@ -167,3 +167,82 @@ export function bilinear(values, width, height, u, v, noData = null) {
   const a = g(i, j), b = g(i + 1, j), c = g(i, j + 1), d = g(i + 1, j + 1);
   return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
 }
+
+// ── contours (phase 9, decision L14) ──
+// The segments of marching squares in a cell, by the corners over the level (1 lower left, 2 lower right, 4 upper
+// right, 8 upper left); edges 0 bottom, 1 right, 2 top, 3 left. 5 and 10 are the saddles, decided by the centre.
+const CASES = { 1: [[3, 0]], 2: [[0, 1]], 3: [[3, 1]], 4: [[1, 2]], 6: [[0, 2]], 7: [[3, 2]], 8: [[2, 3]], 9: [[0, 2]],
+  11: [[1, 2]], 12: [[1, 3]], 13: [[0, 1]], 14: [[3, 0]] };
+// Contour lines of a grid at every multiple of step, on the centres of the cells, joined into polylines:
+// [{ z, path: [[x, y], …] }] in the coordinates of the grid (x0, y0 the lower left corner, cell its size). Cells with
+// no data stop the lines. Each cell is visited once, with only the levels between its lowest and highest corner.
+export function contourLines({ nx, ny, z, cell, x0 = 0, y0 = 0 }, step) {
+  if (!(step > 0)) return [];
+  const X = i => x0 + (i + 0.5) * cell, Y = j => y0 + (j + 0.5) * cell;
+  const byLevel = new Map();
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+    const a = z[j * nx + i], b = z[j * nx + i + 1], c = z[(j + 1) * nx + i + 1], d = z[(j + 1) * nx + i];
+    if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) continue;
+    const lo = Math.min(a, b, c, d), hi = Math.max(a, b, c, d);
+    for (let n = Math.ceil(lo / step); n * step < hi; n++) {
+      const level = n * step;
+      const idx = (a > level ? 1 : 0) | (b > level ? 2 : 0) | (c > level ? 4 : 0) | (d > level ? 8 : 0);
+      if (idx === 0 || idx === 15) continue;
+      const f = (p, q) => (level - p) / (q - p);
+      const edge = e => (e === 0 ? [X(i) + f(a, b) * cell, Y(j)] : e === 1 ? [X(i + 1), Y(j) + f(b, c) * cell]
+        : e === 2 ? [X(i) + f(d, c) * cell, Y(j + 1)] : [X(i), Y(j) + f(a, d) * cell]);
+      const centre = (a + b + c + d) / 4 > level;
+      const pairs = idx === 5 ? (centre ? [[0, 1], [2, 3]] : [[3, 0], [1, 2]])
+        : idx === 10 ? (centre ? [[3, 0], [1, 2]] : [[0, 1], [2, 3]]) : CASES[idx];
+      let list = byLevel.get(n);
+      if (!list) byLevel.set(n, list = []);
+      for (const [p, q] of pairs) list.push([edge(p), edge(q)]);
+    }
+  }
+  const out = [];
+  for (const [n, segs] of [...byLevel].sort((u, v) => u[0] - v[0])) {
+    const level = Math.round(n * step * 1e6) / 1e6;
+    for (const path of joinSegments(segs)) out.push({ z: level, path });
+  }
+  return out;
+}
+// segments that share an end become one polyline (the shared points are computed the same way in both cells)
+function joinSegments(segs) {
+  const key = p => `${p[0].toFixed(5)},${p[1].toFixed(5)}`;
+  const ends = new Map();
+  segs.forEach((s, k) => { for (const e of [0, 1]) { const id = key(s[e]); const l = ends.get(id); if (l) l.push(k); else ends.set(id, [k]); } });
+  const used = new Uint8Array(segs.length), out = [];
+  const next = (p, from) => (ends.get(key(p)) || []).find(k => k !== from && !used[k]);
+  for (let s0 = 0; s0 < segs.length; s0++) {
+    if (used[s0]) continue;
+    used[s0] = 1;
+    const path = [segs[s0][0], segs[s0][1]];
+    for (const forward of [true, false]) {
+      let last = s0;
+      for (;;) {
+        const tip = forward ? path[path.length - 1] : path[0];
+        const k = next(tip, last);
+        if (k === undefined) break;
+        used[k] = 1; last = k;
+        const s = segs[k], other = key(s[0]) === key(tip) ? s[1] : s[0];
+        if (forward) path.push(other); else path.unshift(other);
+      }
+    }
+    out.push(path);
+  }
+  return out;
+}
+
+// ── several elevation models at once (phase 9, decision L11) ──
+// models: [{ z, res }] sampled on the same grid; every cell takes the value of the finest model that has one there.
+// { z, counts (the cells each model gave, in the order of models), missing }
+export function mosaic(models) {
+  const order = models.map((m, k) => k).sort((p, q) => (models[p].res || Infinity) - (models[q].res || Infinity));
+  const n = models[0]?.z.length || 0, z = new Float32Array(n).fill(NaN), counts = models.map(() => 0);
+  let missing = 0;
+  for (let c = 0; c < n; c++) {
+    for (const k of order) { const v = models[k].z[c]; if (Number.isFinite(v)) { z[c] = v; counts[k]++; break; } }
+    if (!Number.isFinite(z[c])) missing++;
+  }
+  return { z, counts, missing };
+}

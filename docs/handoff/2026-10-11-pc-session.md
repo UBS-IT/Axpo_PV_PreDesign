@@ -229,3 +229,18 @@ tables added and removed, Rename and back, the rows of roads, stations and the c
 Traps: a failed run of `ui.html` can leave its preferences in this browser under the test key (`pvp.draw.test`), and
 the next run starts with them: clear the key. A module that imports `ui/maptools.js` must not call it while loading
 (an import cycle through `areas.js`): `ui/snapping.js` subscribes at the first sketch.
+
+## 13. Phase 9, Terrain (added later on 2026-10-11)
+
+Phase 8 merged as #43. On `ux/terrain-ribbon`: the Terrain ribbon (Digital elevation models, Slope analysis, Other
+analysis, Remove terrain on the right), several GeoTIFF mosaicked (`mosaic()` in `terrain/slope.js`, `meta.parts` says
+what each model gave), Aspect and Hillshade beside Elevation and Slope classes (`aspectColour()`, the `view` of the
+project is now `s`, `z`, `a` or `h`), contours (`contourLines()`, `terrainContours()`, a row of Layers, PVP_CONTOURS in the
+exports with the elevation of each line). Checked: `terrain.html` 23 / 23 and `ui.html` 27 / 27 with new tests, every
+other page green but `scene3d.html`; in the app the ribbon at 1366 px, the four images and their legends, the contours
+on the test plane (straight lines) with the Esri warning under 2 m.
+
+Traps: the kit's `.rline` is a flex row, so `[hidden]` needs its own rule; «Show all» of the Layers panel now switches
+the contours on (a test that toggles them must start from off); the export projects the items of WGS 84 together, so
+the contours (in the frame of the grid) are projected on their own. To confirm with the user: *Remove terrain* as its
+own group on the right, contours switched on by «Show all», contours in the Shapefile and GeoPackage too.

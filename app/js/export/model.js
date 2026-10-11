@@ -9,6 +9,7 @@ import { layoutInfra } from '../infra.js';
 import { toSdk } from '../geo/convert.js';
 import { classified } from '../categories.js';
 import { allDimensionParts } from '../dims.js';
+import { terrainContours } from '../terrain/terrain.js';
 
 // DXF layers: the defaults of the app, until Engineering gives its names (plan B3). [name, AutoCAD colour index]
 export const DXF_LAYERS = {
@@ -18,7 +19,7 @@ export const DXF_LAYERS = {
   'area-access': ['PVP_AREA_ACCESS', 4], 'area-mitigation': ['PVP_AREA_MITIGATION', 82], 'area-agri': ['PVP_AREA_AGRI', 50],
   'area-reference': ['PVP_AREA_REFERENCE', 8], buildable: ['PVP_BUILDABLE', 92], tables: ['PVP_TABLES', 5], 'tables-half': ['PVP_TABLES_HALF', 150],
   fence: ['PVP_FENCE', 7], 'road-perimeter': ['PVP_ROAD_PERIMETER', 9], 'road-internal': ['PVP_ROAD_INTERNAL', 9], 'road-drawn': ['PVP_ROAD_DRAWN', 9],
-  'road-axis': ['PVP_ROAD_AXIS', 253], station: ['PVP_STATION', 40], gate: ['PVP_GATE', 7], text: ['PVP_TEXT', 7],
+  'road-axis': ['PVP_ROAD_AXIS', 253], station: ['PVP_STATION', 40], gate: ['PVP_GATE', 7], text: ['PVP_TEXT', 7], contour: ['PVP_CONTOURS', 33],
 };
 
 const round = (v, d = 2) => (v == null || !isFinite(v) ? null : Math.round(v * 10 ** d) / 10 ** d);
@@ -85,13 +86,16 @@ export function exportModel() {
       });
     }
   }
+  // the contours of 2 · Terrain while they are on (L14): one line per contour with its elevation, in the frame of the grid
+  const ct = terrainContours(), contours = [];   // projected on their own: the frame of the grid is not the one of the site
+  if (ct) for (const l of ct.lines) contours.push([new S.Polyline({ paths: [l.path], spatialReference: ct.sr }), { layer: 'contour', file: 'contours', z: l.z, label: null, attrs: { elev_m: l.z } }]);
   if (!local.length && !wgs.length) return { error: 'nothing' };
   const project = (pairs, from) => {
     if (!pairs.length) return [];
     const out = from ? from.toSrMany(pairs.map(p => p[0]), target) : S.projectOperator.executeMany(pairs.map(p => p[0]), target);
     return out.map((g, i) => ({ ...pairs[i][1], geometry: g && g.type === 'polygon' ? S.simplifyOperator.execute(g) : g })).filter(x => x.geometry);
   };
-  const items = [...project(wgs, null), ...(local.length ? project(local, frame) : [])];
+  const items = [...project(wgs, null), ...(local.length ? project(local, frame) : []), ...project(contours, null)];
   return { wkid: P.crs.wkid, sr: target, items, result: r, infra: L, frame };
 }
 

@@ -925,6 +925,39 @@ await test('drawing aids and Layers (phase 8): the snapping menu and its sources
   return `${titles().length} snapping sources · ${pts.length} points on a square`;
 });
 
+await test('the Terrain ribbon (phase 9): four images one at a time, the limit set in the ribbon, the contours on the map, in Layers and in the DXF', async () => {
+  const it = id => document.getElementById(id), T = () => store.project.terrain;
+  // the slope classes are on: the other three in turn, then back to the slope classes (a click on the one on hides it)
+  const ids = ['terViewZ', 'terViewA', 'terViewH', 'terViewS'];
+  for (const id of ids) {
+    it(id).click();
+    await wait(200);
+    assert(T().showSlope && T().view === it(id).dataset.view && ids.every(x => it(x).getAttribute('aria-pressed') === String(x === id)), `${id}: one image at a time`);
+    if (id === 'terViewH') assert(/shaded relief/.test(text('terLegend')), 'the legend follows the image: ' + text('terLegend'));
+  }
+  // the limit in the ribbon: the menu shows the values it needs
+  const sel = it('terLimitSel');
+  sel.value = 'nsew'; sel.dispatchEvent(new Event('change')); await wait(200);
+  assert(T().limit && T().limit.maxNS != null && !it('terLimitNsew').hidden && it('terLimitAny').hidden, 'north–south and east–west');
+  sel.value = 'toolkit'; sel.dispatchEvent(new Event('change')); await wait(200);
+  assert(!T().limit && it('terLimitNsew').hidden && it('terLimitAny').hidden, 'back to the toolkit rule');
+  assert(it('terTech').closest('.rgroup') && it('terApply').closest('.rgroup') && !it('terRule').closest('.rgroup'), 'the settings in the ribbon, the explanations in the panel');
+  // the contours: the tool, the step, the row of Layers, the DXF
+  change('terrain', q => { q.terrain.contours = false; });   // «Show all» of an earlier test switched them on: start from off
+  it('terContours').click(); await wait(400);
+  const cl = view.map.layers.find(l => l.title === 'Contours');
+  assert(T().contours && cl.visible && cl.graphics.length > 0 && it('layContours').checked && /every 1/.test(text('layContoursFig')), `contours drawn and listed: on ${T().contours}, layer ${!!cl} ${cl && cl.visible} ${cl && cl.graphics.length}, row ${it('layContours').checked}, fig «${text('layContoursFig')}», tool disabled ${it('terContours').disabled}`);
+  const step = it('terContourStep'); step.value = '5'; step.dispatchEvent(new Event('change')); await wait(400);
+  assert(T().contourStep === 5 && /every 5/.test(text('layContoursFig')), 'the step');
+  const { exportModel } = await import('../app/js/export/model.js'), { buildDxf } = await import('../app/js/export/dxf.js');
+  const md = exportModel(), cts = md.items ? md.items.filter(x => x.layer === 'contour') : [];
+  const dxf = md.items ? buildDxf(md) : '';
+  assert(cts.length > 0 && cts.every(x => x.attrs.elev_m === x.z) && dxf.includes('PVP_CONTOURS'), `contours in the export: ${cts.length}`);
+  it('layContours').click(); await wait(300);
+  assert(!T().contours && !cl.visible, 'the Layers row switches them off');
+  return `4 images · ${cts.length} contours every 5 m in the DXF`;
+});
+
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
   change('field', q => { q.field.technology = 'ground-fixed'; q.field.structure = '3V9'; q.field.pitch = 10.3; });
   await wait(800);

@@ -104,20 +104,47 @@
   </div>
   <div class="rgroup" data-tab="terrain" role="group" hidden>
     <div class="rgroup-tools">
-      <button type="button" class="tool large primary" id="terEsri" data-icon="terrain" data-i18n="ribbon.analyse" data-i18n-title="terrain.esriBtn"></button>
+      <button type="button" class="tool large primary" id="terEsri" data-icon="globe" data-i18n="ribbon.analyse" data-i18n-title="terrain.esriBtn"></button>
       <button type="button" class="tool large" id="terDtm" data-icon="import" data-i18n="ribbon.ownModel" data-i18n-title="terrain.dtmBtn"></button>
-      <div class="tool-stack">
-        <button type="button" class="tool small" id="terClear" data-icon="trash" data-i18n="ribbon.removeTerrain" data-i18n-title="terrain.clear" disabled></button>
-      </div>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.elevation"></div>
+    <div class="rgroup-label" data-i18n="ribbon.g.dem"></div>
+  </div>
+  <!-- the slope limit, set here (L12); the Properties panel says what it means and how it compares with the toolkit -->
+  <div class="rgroup" data-tab="terrain" role="group" hidden>
+    <div class="rgroup-tools">
+      <div class="rform">
+        <label class="rcap" for="terTech" data-i18n="ribbon.structure"></label>
+        <select class="rsel" id="terTech" data-i18n-title="terrain.techHint"><option value="ground-fixed" data-i18n="tech.ground-fixed"></option><option value="agri-fixed" data-i18n="tech.agri-fixed"></option><option value="agri-tracker" data-i18n="tech.agri-tracker"></option></select>
+        <label class="rcap" for="terLimitSel" data-i18n="ribbon.limit"></label>
+        <select class="rsel" id="terLimitSel" data-i18n-title="terrain.limitHint"><option value="toolkit" data-i18n="terrain.modeToolkit"></option><option value="any" data-i18n="terrain.modeAny"></option><option value="nsew" data-i18n="terrain.modeNsew"></option></select>
+      </div>
+      <div class="rvals">
+        <div class="rline" id="terLimitAny" hidden><label class="rcap" for="terMaxAny" data-i18n="ribbon.maxAny"></label><span class="unit sm"><input class="input" id="terMaxAny" type="number" min="0" max="100" step="0.5"><span>%</span></span></div>
+        <div class="rline" id="terLimitNsew" hidden><label class="rcap" for="terMaxNS" data-i18n="ribbon.maxNS"></label><span class="unit sm"><input class="input" id="terMaxNS" type="number" min="0" max="100" step="0.5"><span>%</span></span><label class="rcap" for="terMaxEW" data-i18n="ribbon.maxEW"></label><span class="unit sm"><input class="input" id="terMaxEW" type="number" min="0" max="100" step="0.5"><span>%</span></span></div>
+        <label class="chk mini" data-i18n-title="terrain.apply"><input type="checkbox" id="terApply"> <span data-i18n="ribbon.cut"></span></label>
+      </div>
+      <button type="button" class="tool large" id="terViewS" data-view="s" aria-pressed="false" data-icon="slope" data-i18n="ribbon.viewSlope" data-i18n-title="ribbon.viewSlopeTitle" disabled></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.slope"></div>
   </div>
   <div class="rgroup" data-tab="terrain" role="group" hidden>
     <div class="rgroup-tools">
-      <button type="button" class="tool large" id="terViewS" data-view="s" aria-pressed="false" data-icon="slope" data-i18n="ribbon.viewSlope" data-i18n-title="ribbon.viewSlopeTitle" disabled></button>
-      <button type="button" class="tool large" id="terViewZ" data-view="z" aria-pressed="false" data-icon="sun" data-i18n="ribbon.viewElev" data-i18n-title="ribbon.viewElevTitle" disabled></button>
+      <button type="button" class="tool large" id="terViewZ" data-view="z" aria-pressed="false" data-icon="terrain" data-i18n="ribbon.viewElev" data-i18n-title="ribbon.viewElevTitle" disabled></button>
+      <button type="button" class="tool large" id="terViewA" data-view="a" aria-pressed="false" data-icon="aspect" data-i18n="ribbon.viewAspect" data-i18n-title="ribbon.viewAspectTitle" disabled></button>
+      <button type="button" class="tool large" id="terViewH" data-view="h" aria-pressed="false" data-icon="sun" data-i18n="ribbon.viewHill" data-i18n-title="ribbon.viewHillTitle" disabled></button>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="terContours" aria-pressed="false" data-icon="contour" data-i18n="ribbon.contours" data-i18n-title="ribbon.contoursTitle" disabled></button>
+        <select class="rsel sm" id="terContourStep" data-i18n-title="ribbon.contourStep"><option value="0.5">0.5 m</option><option value="1">1 m</option><option value="2">2 m</option><option value="5">5 m</option><option value="10">10 m</option></select>
+      </div>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.view"></div>
+    <div class="rgroup-label" data-i18n="ribbon.g.other"></div>
+  </div>
+  <!-- removing the terrain, on the right, apart from the analysis (L11) -->
+  <div class="rgroup end" data-tab="terrain" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large" id="terClear" data-icon="trash" data-i18n="ribbon.removeTerrain" data-i18n-title="terrain.clear" disabled></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.terrainEnd"></div>
   </div>
   <div class="rgroup" data-tab="fields" role="group" hidden>
     <div class="rgroup-tools">
@@ -191,6 +218,7 @@
         <label class="layer" hidden><input type="checkbox" id="layTerImage"><span class="sw ramp"></span><span class="nm" data-i18n="lay.terImage"></span><span class="cnt" id="layTerImageFig"></span></label>
         <div class="legend" id="terLegend"></div>
         <label class="layer" hidden><input type="checkbox" data-lay="terrain:cut" checked><span class="sw hatch" style="--c:var(--slope-cut)"></span><span class="nm" data-i18n="lay.terCut"></span><span class="cnt" data-fig="terrain:cut"></span></label>
+        <label class="layer" hidden><input type="checkbox" id="layContours"><span class="sw line" style="--c:rgb(110,70,30)"></span><span class="nm" data-i18n="lay.contours"></span><span class="cnt" id="layContoursFig"></span></label>
       </details>
       <details class="lgroup" data-tab="fields" open><summary><span data-i18n="tab.fields"></span></summary>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:buildable" checked><span class="sw line dash" style="--c:var(--ok)"></span><span class="nm" data-i18n="lay.buildable"></span><span class="cnt" data-fig="layout:buildable"></span></label>
@@ -284,30 +312,10 @@
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.limit"></b></div>
-        <label class="lbl" for="terTech" data-i18n="terrain.tech"></label>
-        <select id="terTech">
-          <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
-          <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
-          <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
-        </select>
         <p class="hint" data-i18n="terrain.techHint"></p>
         <div id="terRule"></div>
-        <label class="lbl" id="terLimitLabel" data-i18n="terrain.limitMode"></label>
-        <div class="chips plain" id="terLimitMode" role="radiogroup" aria-labelledby="terLimitLabel">
-          <button type="button" class="chip" role="radio" data-lmode="toolkit" aria-checked="true" data-i18n="terrain.modeToolkit"></button>
-          <button type="button" class="chip" role="radio" data-lmode="any" aria-checked="false" data-i18n="terrain.modeAny"></button>
-          <button type="button" class="chip" role="radio" data-lmode="nsew" aria-checked="false" data-i18n="terrain.modeNsew"></button>
-        </div>
-        <div class="row2" id="terLimitAny" hidden>
-          <div><label class="lbl" for="terMaxAny" data-i18n="terrain.maxAny"></label><input id="terMaxAny" type="number" min="0" max="100" step="0.5"></div>
-        </div>
-        <div class="row2" id="terLimitNsew" hidden>
-          <div><label class="lbl" for="terMaxNS" data-i18n="terrain.maxNS"></label><input id="terMaxNS" type="number" min="0" max="100" step="0.5"></div>
-          <div><label class="lbl" for="terMaxEW" data-i18n="terrain.maxEW"></label><input id="terMaxEW" type="number" min="0" max="100" step="0.5"></div>
-        </div>
         <div class="status" id="terLimitStatus" role="status"></div>
         <p class="hint" data-i18n="terrain.limitHint"></p>
-        <label class="chk"><input type="checkbox" id="terApply"> <span data-i18n="terrain.apply"></span></label>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
@@ -508,7 +516,7 @@
 <input type="file" id="fileImport" accept=".axpo,.geojson,.json,.kml,.kmz,.zip,.csv,.txt,.dwg,.dxf" multiple hidden>
 <input type="file" id="fileProject" accept=".pvpd" hidden>
 <input type="file" id="fileRoadmap" accept=".xlsx,.xlsm,.xls,.csv" hidden>
-<input type="file" id="fileDtm" accept=".tif,.tiff" hidden>
+<input type="file" id="fileDtm" accept=".tif,.tiff" multiple hidden>
 <script type="module" src="./js/main.js"></script>
 </body>
 </html>
