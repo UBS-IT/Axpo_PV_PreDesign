@@ -119,6 +119,9 @@ export function initField(mapView) {
   };
   $('specYield').onchange = () => change('yield', p => { p.specificYield = num($('specYield')); });
   // the line of key figures at the top of the panel takes the eye to the full results
+  // the advanced settings: a window opened from the ribbon (phase 10, L17)
+  const adv = $('dlgAdvanced'), ab = $('fAdvBtn');
+  if (ab && adv) ab.onclick = () => { try { if (!adv.open) adv.showModal(); } catch (e) { console.warn('[field] window', e); } };
   $('fSticky').onclick = () => { const sec = $('secResults'); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   for (const topic of ['site', 'settings', 'field', 'modules', 'project', 'crs', 'terrain', 'infra']) on(topic, () => { syncInputs(); schedule(); });

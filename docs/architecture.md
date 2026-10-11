@@ -59,10 +59,12 @@ Three ideas explain most of the design:
 
 ## 2. The steps (the tabs) and the files behind them
 
-Since the ribbon refactor (phases 1A to 6, 2026-10-10 and 11) the shell is a top bar, four tabs (`app/js/ui/tabs.js`:
-Site area, Terrain Analysis, Layout & Infrastructure, Report & exports), the ribbon of the active tab
+Since the ribbon refactor (phases 1A to 6, 2026-10-10 and 11, and the second round from phase 7) the shell is a top bar,
+five tabs (`app/js/ui/tabs.js`: Site area, Terrain Analysis, Layout, Infrastructure, Report & exports), the ribbon of
+the active tab, which sets (the Properties panel shows; the advanced settings of the field and the module library are
+windows opened from it, `dlgAdvanced` and `dlgModules`)
 (`ui/ribbon.js`: the actions of the panels, whose tools keep the ids of the buttons they replace; the drawing menu
-of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–3 reopens a collapsed Properties panel), the map between two docked panels that
+of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–4 reopens a collapsed Properties panel), the map between two docked panels that
 collapse to a strip, Layers on the left (`ui/layers.js`: one group per tab, a visibility switch and a figure per layer, the
 objects by category in the first group, the Dimensions row at the end; the switches are `ui/visibility.js`)
 and Properties on the right (the sections of the steps of the active tab), and a status bar (`ui/statusbar.js`:
@@ -72,8 +74,7 @@ event, the snapping switch, the autosave time; the 3D view announces itself with
 site, Measure, Dimensions) sits under the zoom and the north arrow, the basemap toggle and the opacity slider
 bottom right, the messages (`ui/toast.js`) bottom left, each with a ×; in 3D the card of `view3d/scene.js` takes the
 top left corner with the Daylight widget inside it and the controls of the scene to its right (`scene.ui.padding`); the kit of the design system (`css/kit.css`, phase 1C) draws the pieces and `css/shell.css` lays them
-out. The steps below are unchanged: a tab holds one or two of
-them (the third tab holds fields and infra). Each panel tells the tabs how its step stands: locked (a
+out. The steps below are unchanged: a tab holds one of them (Layout and Infrastructure apart since phase 10). Each panel tells the tabs how its step stands: locked (a
 prerequisite is missing), ready, optional or done with its key figure. The panels are independent files; they talk
 to each other only through the project and a small publish/subscribe (`change(topic)` / `on(topic)` in `state.js`).
 
@@ -84,7 +85,7 @@ to each other only through the project and a small publish/subscribe (`change(to
 | **3 · Layout** | Chooses technology, structure, module, tilt, azimuth, pitch; reads the results | `app/js/field.js` | `layout/structures.js` (the nVm notation and the size of a table), `layout/rows.js` (the row-fill engine), `modules.js` (the module library and the roadmaps), `catalog.js` | the buildable area of step 1, the cuts of steps 2 and 4, the module | `field`, `plannedModules`, `moduleDefs`, `specificYield` |
 | **4 · Infrastructure** | Fences, perimeter road, gates, internal roads, stations | `app/js/infra.js` | `catalog.js` (the country values) | the usable land of step 1, the rows of step 3, the country of the site | `infra` (fence groups, perimeter road, clearance, stations, roads) |
 | **5 · Outputs** | Picks the export coordinate system, exports | `app/js/output.js` | `export/model.js` (what goes to Engineering), `export/shp.js`, `export/gpkg.js`, `export/dxf.js`, `export/boq.js`, `report.js` (the PDF), `io/xlsxwrite.js` | everything above | `crs` (when chosen by hand) |
-| **Quick predesign** (ribbon of Layout & Infrastructure) | One dialog, one click: group standards and the best grid position | `app/js/quick.js` | calls steps 2, 3 and 4 | the site | `field`, `terrain`, `infra` |
+| **Quick predesign** (ribbon of Layout, on the right) | One dialog, one click: group standards and the best grid position | `app/js/quick.js` | calls steps 2, 3 and 4 | the site | `field`, `terrain`, `infra` |
 | **2D / 3D** (map switch) | Looks at the plant in 3D with sun and shadows, saves views, exports glTF | `app/js/view3d/scene.js` | `view3d/model.js` (what to draw), `view3d/geometry.js` (heights and vertices), `view3d/sun.js` (sun position, trackers), `view3d/glb.js` (the glTF writer) | the layout, the infrastructure, the terrain, the toolkit heights | `view3d` (heights, tracker mode, saved viewpoints) |
 
 Shared by every step:

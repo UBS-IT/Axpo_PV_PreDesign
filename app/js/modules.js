@@ -344,15 +344,20 @@ export function initModulesUi() {
 
   seedCatalogModules();
   adoptProjectModules();
-  // «Add module» is a ribbon tool: the form opens in the Modules section of the Properties panel (opened and shown;
-  // the panel itself reopens by the rule of the ribbon, so the focus waits for it)
-  document.getElementById('modAddBtn').onclick = () => {
+  // the module library is a window opened from the ribbon (phase 10, L17): «Modules…» opens it, «Add module» opens it
+  // on the form (a second click closes the form), «Import roadmap» reads a file
+  const dlg = document.getElementById('dlgModules');
+  const openLib = () => { try { if (dlg && !dlg.open) dlg.showModal(); } catch (e) { console.warn('[modules] window', e); } };
+  const addForm = () => {
     form.hidden = !form.hidden;
     if (form.hidden) return;
-    const sec = document.getElementById('secModules');
-    if (sec) sec.open = true;
+    openLib();
     setTimeout(() => { form.scrollIntoView({ block: 'nearest' }); document.getElementById('mfMan').focus(); }, 0);
   };
+  document.getElementById('modAddBtn').onclick = addForm;
+  const inDlg = id => document.getElementById(id);
+  if (inDlg('modLibBtn')) inDlg('modLibBtn').onclick = openLib;
+  if (inDlg('modAddInDlg')) inDlg('modAddInDlg').onclick = () => { if (form.hidden) addForm(); };
   document.getElementById('mfCancel').onclick = () => { form.hidden = true; };
   form.onsubmit = e => {
     e.preventDefault();
@@ -366,6 +371,7 @@ export function initModulesUi() {
     setPlanned(m.id, true);   // a module added by hand is meant for this project
   };
   document.getElementById('modImportBtn').onclick = () => input.click();
+  if (inDlg('modImportInDlg')) inDlg('modImportInDlg').onclick = () => input.click();
   input.onchange = async () => {
     const f = input.files && input.files[0]; input.value = '';
     if (!f) return;

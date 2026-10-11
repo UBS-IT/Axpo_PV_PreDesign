@@ -1,5 +1,6 @@
-// The workflow tabs: four tabs over the ribbon (Site area, Terrain Analysis, Layout & Infrastructure, Report &
-// exports). The steps of the app stay what they were (areas, terrain, fields, infra, output): a tab holds one or two
+// The workflow tabs: five tabs over the ribbon (Site area, Terrain Analysis, Layout, Infrastructure, Report & exports;
+// Layout and Infrastructure are apart since phase 10, decision L15, so that each has room for its settings in the
+// ribbon). The steps of the app stay what they were (areas, terrain, fields, infra, output): a tab holds one
 // of them, and the Properties panel shows the sections of the steps of the active tab. Every step reports its state
 // through a provider registered by its panel — locked (a prerequisite is missing: the step still opens, with a gate
 // that says why and where to go), ready, optional, done (a tick and a key figure) — and the tab combines the states
@@ -12,8 +13,9 @@ export const STEPS = ['areas', 'terrain', 'fields', 'infra', 'output'];
 export const TABS = [
   { id: 'areas', num: 1, steps: ['areas'] },
   { id: 'terrain', num: 2, steps: ['terrain'] },
-  { id: 'fields', num: 3, steps: ['fields', 'infra'] },
-  { id: 'output', num: 4, steps: ['output'] },
+  { id: 'fields', num: 3, steps: ['fields'] },
+  { id: 'infra', num: 4, steps: ['infra'] },
+  { id: 'output', num: 5, steps: ['output'] },
 ];
 export const TAB_OF = Object.fromEntries(TABS.flatMap(tb => tb.steps.map(s => [s, tb.id])));
 const PREREQ = { areas: null, terrain: 'areas', fields: 'areas', infra: 'areas', output: 'fields' };

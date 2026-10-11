@@ -22,8 +22,8 @@ by hand) at 1366 × 800; `tools/headless/shots.mjs` takes the pictures again.
 |---|---|
 | ![The Site area tab](docs/img/01-site-area.png) | ![The Terrain Analysis tab](docs/img/02-terrain.png) |
 | **Site area**: the ribbon with the six drawing tools and the selection, the Layers panel with a switch per layer, the buildable-area ledger on the right | **Terrain Analysis**: the slope classes on the map, their legend in the Layers panel, the terrain model and the limit in use |
-| ![The Layout & Infrastructure tab](docs/img/03-layout.png) | ![The Report & exports tab](docs/img/04-report.png) |
-| **Layout & Infrastructure**: 560 tables on 6.6 ha, the field in the Properties panel, the figures of every layer in the Layers panel | **Report & exports**: the working files and the PDF report in the ribbon, the coordinate system of the exports in the status bar |
+| ![The Layout tab](docs/img/03-layout.png) | ![The Report & exports tab](docs/img/04-report.png) |
+| **Layout**: 560 tables on 6.6 ha, the field in the Properties panel, the figures of every layer in the Layers panel | **Report & exports**: the working files and the PDF report in the ribbon, the coordinate system of the exports in the status bar |
 | ![The search of the objects](docs/img/05-search.png) | |
 | **Ctrl K**: the search of the objects of the project; the magnifier top right looks for an address or coordinates | |
 
@@ -58,15 +58,16 @@ to Nominatim (OpenStreetMap, free and without a key, so the typed text goes to i
 never while typing, as its rules ask. The place gets a pin; × or Esc clears it.
 
 The shell is the **ribbon workspace** of the design system (`docs/plan-ribbon-refactor.md`): a top bar (project
-name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **four tabs** in the order of
-the dependencies — Site area, Terrain Analysis, Layout & Infrastructure, Report & exports — the **ribbon** of the
-active tab (its tools, since phase 2: Import and the drawing menu and tools; Analyse the slopes, Own model, Remove
-and the two views of the terrain image; Quick predesign, Optimise, roads, stations and modules; the working files, then
-the PDF report on the right),
+name, New / Open / Save / Save as as icons, the autosave state, the theme), a strip of **five tabs** in the order of
+the dependencies — Site area, Terrain Analysis, Layout, Infrastructure, Report & exports — the **ribbon** of the
+active tab, which sets everything that can be set (Import, the drawing menu and tools; the elevation models, the
+slope analysis and the other images of the terrain; the field — technology, structure, module, expected build date,
+tilt, azimuth, pitch — with *Advanced…* and *Modules…* as windows and Quick predesign on the right; roads and
+stations; the working files, then the PDF report on the right),
 and the map between two docked panels that collapse to a narrow strip at their edge (the strip keeps the name and,
 for Layers, the count of the objects): **Layers** on the left (the layers of every tab with their visibility, the objects by category) and **Properties** on the
-right (the parameters, figures and notices of the steps of the active tab; the third tab stacks Layout and
-Infrastructure). The **status bar** at the foot shows the coordinates of the pointer E / N in the coordinate system
+right (what the settings give: the figures, how they compare with the toolkit, the notices and the lists of what is
+on the map). The **status bar** at the foot shows the coordinates of the pointer E / N in the coordinate system
 chosen for the exports, the CRS select itself (coloured when it disagrees with the one proposed from the site
 location), the scale as a menu (1:100 to 1:25,000) with a padlock that holds the zoom at that scale while the map
 still pans, the elevation and the slope under the pointer when the project has a terrain grid, the mode
@@ -156,7 +157,7 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   open and marked). *Site area*: the categories that hold objects (Unclassified first), each with its count and a
   magnifier that zooms to it, and the objects with their name and a magnifier. *Terrain Analysis*: the terrain image
   (the same switch as in the Terrain ribbon, the legend of the slope classes under it) and the cut over the slope
-  limit. *Layout & Infrastructure*: buildable area, tables, fences and gates, roads and stations, each with its figure
+  limit. *Layout*: buildable area and tables; *Infrastructure*: fences and gates, roads and stations; each with its figure
   (hectares, count, kilometres). Every row has a box that shows or hides it on the map, and in the 3D model for the
   tables, fences, stations and obstacles; *Hide all · Show all* at the top. A hidden category still counts, its objects are
   still selected from their row, and drawing in it shows it again. The boxes are remembered in this browser, not in
@@ -219,6 +220,12 @@ toolkit values live only here.
 - The grid is kept in the browser (IndexedDB) and inside the project file (`terrain/grid.f32`).
 
 ### 3 · Layout
+
+The ribbon sets the field: Technology, Structure (an own one typed beside it), Module, Expected build date (the
+semester of the module power), Tilt, Azimuth and Pitch, *Optimise position*, *Advanced…* (a window: gaps, crossing
+tracks, half tables, target capacity, grid position, specific yield) and *Modules…* (a window: the library, the
+planned modules, a module added by hand, a roadmap imported); *Quick predesign* sits on the right. The Properties
+panel shows what they give: the structure in words, the toolkit minimum of the pitch, the figures and the notices.
 
 - **Standards of the group** — module TOPCon 2382 × 1134 mm bifacial; ground-mounted 3V9 (27 modules) at 15°;
   tracker 1V28 ±55°, 0.50 m between trackers in line, at most 4 in line then a 4 m gap, 1.19 m drive gap (measured on

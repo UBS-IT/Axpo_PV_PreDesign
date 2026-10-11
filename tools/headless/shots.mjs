@@ -63,7 +63,7 @@ await page.evaluate(async () => { const A = await import('./js/areas.js'); A.zoo
 await tab(0); await settled(4000); await shot('01-site-area.png');
 await tab(1); await settled(4000); await shot('02-terrain.png');
 await tab(2); await settled(6000); await shot('03-layout.png');
-await tab(3); await settled(2000); await shot('04-report.png');
+await tab(4); await settled(2000); await shot('04-report.png');
 // the search of the objects (Ctrl K) over the layout
 await tab(2); await settled(1000);
 await page.keyboard.press('Control+K');

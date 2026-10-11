@@ -2,8 +2,9 @@
 // drawing menu and tools, the terrain and its image, roads, stations, modules, the exports). They live in the ribbon
 // markup of index.html, grouped by tab (data-tab on the group), with their ids, so the step modules wire them. The
 // ribbon shows the groups of the active tab and the key figure of the tab in its context block on the right. A tool of
-// tabs 1–3 writes its outcome in the Properties panel, so it asks for the panel when it is collapsed (pvp:properties,
-// main.js); the exports of tab 4 answer with a message and leave the panel as it is.
+// tabs 1–4 writes its outcome in the Properties panel, so it asks for the panel when it is collapsed (pvp:properties,
+// main.js); the exports of tab 5 answer with a message and leave the panel as it is. Since phase 10 the ribbon sets
+// and the panel shows: the settings of a step are in its ribbon, the panel keeps its figures, notices and lists.
 import { onStep, onRefresh, currentTab, tabState, TABS } from './tabs.js';
 import { t } from '../i18n.js';
 
