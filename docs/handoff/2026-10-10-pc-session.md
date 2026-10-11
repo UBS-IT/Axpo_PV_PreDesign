@@ -1,5 +1,8 @@
 # Handoff — session on the user's computer, 2026-10-10
 
+> **Superseded by `2026-10-11-pc-session.md`** for the state of the repository and the open work. This note keeps
+> the history of phases 0–2B and the traps found on 2026-10-10 (§5).
+
 Written on 2026-10-10 by the session that worked on the user's PC (clone `Axpo_PV_PreDesign-git`), after the note
 `2026-10-09-pc-session.md`. Read `CLAUDE.md` first for the rules; `docs/plan-ribbon-refactor.md` is the plan being
 executed and `docs/decisions.md` holds every dated decision. This page holds the state, what was verified, how the
