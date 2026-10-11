@@ -242,5 +242,17 @@ on the test plane (straight lines) with the Esri warning under 2 m.
 
 Traps: the kit's `.rline` is a flex row, so `[hidden]` needs its own rule; «Show all» of the Layers panel now switches
 the contours on (a test that toggles them must start from off); the export projects the items of WGS 84 together, so
-the contours (in the frame of the grid) are projected on their own. To confirm with the user: *Remove terrain* as its
+the contours (in the frame of the grid) are projected on their own. Confirmed by the user, merged as #44: *Remove terrain* as its
 own group on the right, contours switched on by «Show all», contours in the Shapefile and GeoPackage too.
+
+## 14. Phase 10A, Layout (added later on 2026-10-11)
+
+Phase 10 is split in two PRs: 10A Layout here, 10B Infrastructure next (roads with the perimeter road, the fence with
+mesh, height, gates and the mitigation strip inside it, the lists of the panel). On `ux/layout-ribbon`: five tabs
+(`TABS` in `ui/tabs.js`), the field in the ribbon of Layout (the ids of the inputs did not change, `field.js` wires
+them as before; a label and its field that hide together are a `.rpair`, `display: contents`), *Advanced…* and
+*Modules…* as `<dialog>` windows at the end of the body (`dlgAdvanced`, `dlgModules`; `#fAdv` is now the body of the
+first), Quick predesign on the right, roads and stations in the ribbon of Infrastructure, the Layers panel with a group
+for each. The test pages mount `body > dialog` with the rest. Checked: `ui.html` 28 / 28 with a new test, every other
+page green but `scene3d.html`; in the app the five tabs, the ribbon of Layout within 1366 px, both windows, the
+Infrastructure tab with its own ribbon, panel and Layers group.

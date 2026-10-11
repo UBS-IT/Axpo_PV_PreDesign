@@ -212,6 +212,15 @@ body.in-3d #geoSearch, body.in-3d #objSearch { display: none; }
 /* Rename in place in the Layers panel */
 #areaCats .it .input.rename { flex: 1; min-width: 0; height: 24px; font-size: 12px; }
 #collPanel .lgroup[hidden], #layEmpty[hidden], #collPanel .layer-tools[hidden] { display: none; }
+/* the ribbon of Layout (phase 10): a label and its field that show or hide together, inside a two-column form */
+.rpair { display: contents; }
+.rpair[hidden] { display: none; }
+#fTiltBox { gap: 6px; }
+#fPitch { width: 70px; }
+/* the windows of the ribbon (Advanced…, Modules…) */
+.dialog.wide { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow-y: auto; }
+.dialog .btns form { display: contents; }
+
 /* the ribbon of Terrain (phase 9): one line of values at a time, a narrow step for the contours */
 .rvals .rline[hidden] { display: none; }
 #terContourStep { width: 76px; }

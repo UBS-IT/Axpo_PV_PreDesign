@@ -11,7 +11,7 @@ import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, comput
 import { measureFeature } from '../app/js/edit.js';
 import { layerVisible, setLayerVisible, KIND_3D } from '../app/js/ui/visibility.js';
 import { initRibbon } from '../app/js/ui/ribbon.js';
-import { stepState, refreshRail, currentTab, showStep } from '../app/js/ui/tabs.js';
+import { stepState, refreshRail, currentTab, showStep, TABS } from '../app/js/ui/tabs.js';
 import { initSearch, searchItems, matchItems, highlight, fold } from '../app/js/ui/search.js';
 import { initGeoSearch, parseCoordinates, setGeocoder, run as geoRun, pinCount, clearPin, goToPlace } from '../app/js/ui/geosearch.js';
 import { initMapNav, projectBox, lockedScale, nearestScale, SCALES } from '../app/js/ui/mapnav.js';
@@ -68,7 +68,7 @@ const box = document.createElement('div');
 box.style.display = 'none';
 // the shell: top bar, tabs, ribbon (the tools of the steps keep their ids there), the two docked panels, the status bar
 box.append(doc.getElementById('top'), doc.getElementById('tabs'), doc.getElementById('ribbon'), doc.getElementById('leftPanel'), doc.getElementById('collTab'),
-  doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), doc.getElementById('statusbar'), ...doc.querySelectorAll('body > input[type=file]'), doc.getElementById('toast'),
+  doc.getElementById('rightPanel'), doc.getElementById('rpOpen'), doc.getElementById('statusbar'), ...doc.querySelectorAll('body > input[type=file]'), ...doc.querySelectorAll('body > dialog'), doc.getElementById('toast'),
   doc.querySelector('#mapStack .mapchips'), doc.getElementById('d3Card'), doc.getElementById('objSearch'), doc.getElementById('geoSearch'));
 const banner = document.createElement('div'); banner.id = 'banner'; box.append(banner);
 const railAreas = document.createElement('span'); railAreas.id = 'railAreas'; box.append(railAreas);
@@ -733,7 +733,7 @@ await test('Layers panel (phase 3): a switch per layer, its figure, Hide all / S
   const flip = (key, on) => { const b = box(key); b.checked = on; b.dispatchEvent(new Event('change', { bubbles: true })); };
   const keys = ['terrain:cut', 'layout:buildable', 'layout:tables', 'layout:fences', 'layout:roads', 'layout:stations'];
   assert(keys.every(k => box(k) && box(k).checked), 'a row per computed layer, all on');
-  assert(['areas', 'terrain', 'fields'].every(tab => document.querySelector(`#collPanel .lgroup[data-tab="${tab}"]`)), 'three groups in the order of the tabs');
+  assert(['areas', 'terrain', 'fields', 'infra'].every(tab => document.querySelector(`#collPanel .lgroup[data-tab="${tab}"]`)), 'a group per tab, in their order');
   assert(/ha$/.test(fig('layout:buildable')) && /^\d[\d,]*$/.test(fig('layout:tables')) && /km$/.test(fig('layout:fences')), `figures: ${fig('layout:buildable')} · ${fig('layout:tables')} · ${fig('layout:fences')}`);
   // a category: its objects leave the map, they still count
   const before = computeArea(siteFrame()).buildableArea;
@@ -956,6 +956,31 @@ await test('the Terrain ribbon (phase 9): four images one at a time, the limit s
   it('layContours').click(); await wait(300);
   assert(!T().contours && !cl.visible, 'the Layers row switches them off');
   return `4 images · ${cts.length} contours every 5 m in the DXF`;
+});
+
+await test('Layout and Infrastructure (phase 10A): five tabs, the field set in the ribbon, Advanced… and Modules… as windows, Quick predesign on the right', async () => {
+  const it = id => document.getElementById(id);
+  const tabs = TABS.map(x => x.id);   // the bar itself is not built on this page
+  assert(tabs.join() === 'areas,terrain,fields,infra,output', 'five tabs: ' + tabs.join());
+  const fieldGroup = it('fTech').closest('.rgroup');
+  assert(fieldGroup && fieldGroup.dataset.tab === 'fields' && ['fStructSel', 'fModule', 'fPeriod', 'fTilt', 'fAz', 'fPitch', 'fOptimise', 'fAdvBtn'].every(id => fieldGroup.contains(it(id))), 'the field in the ribbon of Layout');
+  assert(!document.querySelector('#side [data-step="fields"] select, #side [data-step="fields"] input'), 'the panel of Layout has no setting left');
+  assert(it('btnQuick').closest('.rgroup').classList.contains('end') && it('infRoadDraw').closest('.rgroup').dataset.tab === 'infra' && it('infCC').closest('.rgroup').dataset.tab === 'infra', 'Quick on the right; roads and stations in Infrastructure');
+  // the windows
+  it('fAdvBtn').click();
+  assert(it('dlgAdvanced').open && it('dlgAdvanced').contains(it('fTarget')) && it('dlgAdvanced').contains(it('specYield')), 'Advanced… opens with the gaps, the target and the specific yield');
+  it('dlgAdvanced').close();
+  it('modLibBtn').click();
+  assert(it('dlgModules').open && it('dlgModules').contains(it('modList')) && it('modList').children.length > 0, 'Modules… opens the library');
+  it('dlgModules').close();
+  // a setting of the ribbon still drives the layout
+  const pitch = it('fPitch'), before = store.project.field.pitch;
+  pitch.value = String((before || 10) + 0.5); pitch.dispatchEvent(new Event('change'));
+  await wait(500);
+  assert(store.project.field.pitch === (before || 10) + 0.5, 'the pitch set from the ribbon');
+  pitch.value = before == null ? '' : String(before); pitch.dispatchEvent(new Event('change'));
+  await wait(500);
+  return tabs.length + ' tabs';
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {

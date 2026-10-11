@@ -146,14 +146,33 @@
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.terrainEnd"></div>
   </div>
+  <!-- the field, set here (L16); the Properties panel keeps what the settings give and the notices -->
   <div class="rgroup" data-tab="fields" role="group" hidden>
     <div class="rgroup-tools">
-      <button type="button" class="tool large primary" id="btnQuick" data-icon="bolt" data-i18n="ribbon.quick" data-i18n-title="quick.btnTitle"></button>
-      <button type="button" class="tool large" id="fOptimise" data-icon="refresh" data-i18n="ribbon.optimise" data-i18n-title="field.optimise"></button>
+      <div class="rform">
+        <label class="rcap" for="fTech" data-i18n="field.tech"></label>
+        <select class="rsel" id="fTech"><option value="ground-fixed" data-i18n="tech.ground-fixed"></option><option value="agri-fixed" data-i18n="tech.agri-fixed"></option><option value="agri-tracker" data-i18n="tech.agri-tracker"></option></select>
+        <label class="rcap" for="fStructSel" data-i18n="ribbon.structure"></label>
+        <select class="rsel" id="fStructSel"></select>
+        <div class="rpair" id="fStructBox" hidden><label class="rcap" for="fStruct" data-i18n="ribbon.structureCustom"></label><input class="input rsel" id="fStruct" type="text" list="structPresets" autocomplete="off"><datalist id="structPresets"></datalist></div>
+      </div>
+      <div class="rform">
+        <label class="rcap" for="fModule" data-i18n="field.module"></label>
+        <select class="rsel" id="fModule"></select>
+        <div class="rpair" id="fPeriodBox" hidden><label class="rcap" for="fPeriod" data-i18n="field.period"></label><select class="rsel" id="fPeriod" data-i18n-title="field.periodHint"></select></div>
+      </div>
+      <div class="rvals">
+        <div class="rline"><span class="rline" id="fTiltBox"><label class="rcap" for="fTilt" data-i18n="ribbon.tilt"></label><span class="unit sm"><input class="input" id="fTilt" type="number" min="0" max="60" step="0.5"><span>°</span></span></span><label class="rcap" for="fAz" data-i18n="ribbon.azimuth"></label><span class="unit sm"><input class="input" id="fAz" type="number" min="0" max="360" step="1"><span>°</span></span></div>
+        <div class="rline"><label class="rcap" for="fPitch" data-i18n="ribbon.pitch"></label><span class="unit"><input class="input" id="fPitch" type="number" min="0.5" step="0.01"><span>m</span></span></div>
+      </div>
+      <div class="tool-stack">
+        <button type="button" class="tool small" id="fOptimise" data-icon="refresh" data-i18n="ribbon.optimise" data-i18n-title="field.optimise"></button>
+        <button type="button" class="tool small" id="fAdvBtn" data-icon="settings" data-i18n="ribbon.advanced" data-i18n-title="field.adv"></button>
+      </div>
     </div>
-    <div class="rgroup-label" data-i18n="ribbon.g.layout"></div>
+    <div class="rgroup-label" data-i18n="ribbon.g.field"></div>
   </div>
-  <div class="rgroup" data-tab="fields" role="group" hidden>
+  <div class="rgroup" data-tab="infra" role="group" hidden>
     <div class="rgroup-tools">
       <button type="button" class="tool large" id="infRoadDraw" aria-pressed="false" data-icon="road" data-i18n="infra.drawRoad" data-i18n-title="ribbon.drawRoadTitle"></button>
       <div class="tool-stack" id="infRoadKind" role="radiogroup" data-i18n-aria="infra.roadKindLabel">
@@ -163,7 +182,7 @@
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.roads"></div>
   </div>
-  <div class="rgroup" data-tab="fields" role="group" hidden>
+  <div class="rgroup" data-tab="infra" role="group" hidden>
     <div class="rgroup-tools">
       <button type="button" class="tool large" id="infCC" aria-pressed="false" data-icon="station" data-i18n="infra.addCC" data-i18n-title="infra.addCC"></button>
       <button type="button" class="tool large" id="infCU" aria-pressed="false" data-icon="station" data-i18n="infra.addCU" data-i18n-title="infra.addCU"></button>
@@ -179,9 +198,17 @@
       <div class="tool-stack">
         <button type="button" class="tool small" id="modAddBtn" data-icon="plus" data-i18n="mod.add"></button>
         <button type="button" class="tool small" id="modImportBtn" data-icon="import" data-i18n="mod.import" data-i18n-title="mod.importTitle"></button>
+        <button type="button" class="tool small" id="modLibBtn" data-icon="list" data-i18n="ribbon.modules" data-i18n-title="mod.sub"></button>
       </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.modules"></div>
+  </div>
+  <!-- the quick predesign on the right, apart from the settings (L20) -->
+  <div class="rgroup end" data-tab="fields" role="group" hidden>
+    <div class="rgroup-tools">
+      <button type="button" class="tool large primary" id="btnQuick" data-icon="bolt" data-i18n="ribbon.quick" data-i18n-title="quick.btnTitle"></button>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.quick"></div>
   </div>
   <div class="rgroup" data-tab="output" role="group" hidden>
     <div class="rgroup-tools">
@@ -223,6 +250,8 @@
       <details class="lgroup" data-tab="fields" open><summary><span data-i18n="tab.fields"></span></summary>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:buildable" checked><span class="sw line dash" style="--c:var(--ok)"></span><span class="nm" data-i18n="lay.buildable"></span><span class="cnt" data-fig="layout:buildable"></span></label>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:tables" checked><span class="sw fill" style="--c:var(--table)"></span><span class="nm" data-i18n="lay.tables"></span><span class="cnt" data-fig="layout:tables"></span></label>
+      </details>
+      <details class="lgroup" data-tab="infra" open><summary><span data-i18n="tab.infra"></span></summary>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:fences" checked><span class="sw line dot" style="--c:var(--fence)"></span><span class="nm" data-i18n="lay.fences"></span><span class="cnt" data-fig="layout:fences"></span></label>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:roads" checked><span class="sw fill" style="--c:var(--road)"></span><span class="nm" data-i18n="lay.roads"></span><span class="cnt" data-fig="layout:roads"></span></label>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:stations" checked><span class="sw point" style="--c:var(--accent-strong)"></span><span class="nm" data-i18n="lay.stations"></span><span class="cnt" data-fig="layout:stations"></span></label>
@@ -329,60 +358,13 @@
       <button type="button" class="sticky" id="fSticky" data-i18n-title="res.stickyTitle" hidden></button>
 
       <details class="fold" id="secField" open>
-        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-sun"/></svg></span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
+        <summary><span class="ico" aria-hidden="true"></span><span class="ttl"><b data-i18n="field.title"></b><small data-i18n="field.sub"></small></span></summary>
         <div class="bd">
-          <label class="lbl" for="fTech" data-i18n="field.tech"></label>
-          <select id="fTech">
-            <option value="ground-fixed" data-i18n="tech.ground-fixed"></option>
-            <option value="agri-fixed" data-i18n="tech.agri-fixed"></option>
-            <option value="agri-tracker" data-i18n="tech.agri-tracker"></option>
-          </select>
-          <label class="lbl" for="fStructSel" data-i18n="field.structure"></label>
-          <select id="fStructSel"></select>
-          <div id="fStructBox" hidden>
-            <label class="lbl" for="fStruct" data-i18n="field.structureCustom"></label>
-            <input id="fStruct" type="text" list="structPresets" autocomplete="off">
-            <datalist id="structPresets"></datalist>
-          </div>
+          <p class="hint" data-i18n="field.inRibbon"></p>
           <div class="hint" id="fStructHint"></div>
-          <label class="lbl" for="fModule" data-i18n="field.module"></label>
-          <select id="fModule"></select>
-          <div id="fPeriodBox" hidden>
-            <label class="lbl" for="fPeriod" data-i18n="field.period"></label>
-            <select id="fPeriod"></select>
-            <div class="hint" data-i18n="field.periodHint"></div>
-          </div>
-          <div class="row2">
-            <div id="fTiltBox"><label class="lbl" for="fTilt" data-i18n="field.tilt"></label><input id="fTilt" type="number" min="0" max="60" step="0.5"></div>
-            <div><label class="lbl" for="fAz" data-i18n="field.azimuth"></label><input id="fAz" type="number" min="0" max="360" step="1"></div>
-          </div>
           <div class="hint" data-i18n="field.azimuthHint"></div>
-          <label class="lbl" for="fPitch" data-i18n="field.pitch"></label>
-          <input id="fPitch" type="number" min="0.5" step="0.01">
           <div class="hint" id="fPitchHint"></div>
           <div class="hint" id="fOptHint"></div>
-          <details class="adv" id="fAdv">
-            <summary data-i18n="field.adv" data-icon="info"></summary>
-            <div class="row2">
-              <div><label class="lbl" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
-              <div><label class="lbl" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
-            </div>
-            <label class="chk"><input type="checkbox" id="fTracks"> <span data-i18n="field.tracks"></span></label>
-            <div class="row3">
-              <div><label class="lbl" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
-              <div><label class="lbl" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
-              <div><label class="lbl" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
-            </div>
-            <label class="chk"><input type="checkbox" id="fHalf"> <span data-i18n="field.half"></span></label>
-            <div class="hint" id="fHalfHint"></div>
-            <label class="lbl" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
-            <input id="fTarget" type="number" min="0" step="0.1">
-            <label class="lbl" data-i18n="field.position"></label>
-            <div class="row2">
-              <div><label class="lbl" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
-              <div><label class="lbl" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
-            </div>
-          </details>
         </div>
       </details>
 
@@ -390,9 +372,6 @@
         <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-chart"/></svg></span><span class="ttl"><b data-i18n="res.title"></b><small data-i18n="res.sub"></small></span></summary>
         <div class="bd">
           <div class="results" id="kpis"></div>
-          <label class="lbl" for="specYield" data-i18n="res.specYield"></label>
-          <input id="specYield" type="number" min="0" step="1">
-          <div class="hint" data-i18n="res.specYieldHint"></div>
           <div class="warns" id="warns"></div>
           <details class="gloss"><summary data-i18n="res.gloss" data-icon="info"></summary>
             <ul><li data-i18n="res.gl1"></li><li data-i18n="res.gl2"></li><li data-i18n="res.gl3"></li><li data-i18n="res.gl4"></li></ul>
@@ -400,30 +379,6 @@
         </div>
       </details>
 
-      <details class="fold" id="secModules">
-        <summary><span class="ico" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-table"/></svg></span><span class="ttl"><b data-i18n="mod.title"></b><small data-i18n="mod.sub"></small></span><span class="cnt" id="modCnt"></span></summary>
-        <div class="bd">
-          <div class="list" id="modList" data-i18n-empty="mod.empty"></div>
-          <form id="modForm" hidden>
-            <div class="row2">
-              <div><label class="lbl" for="mfMan" data-i18n="mod.manufacturer"></label><input id="mfMan" type="text"></div>
-              <div><label class="lbl" for="mfModel" data-i18n="mod.model"></label><input id="mfModel" type="text"></div>
-            </div>
-            <div class="row3">
-              <div><label class="lbl" for="mfWp" data-i18n="mod.wp"></label><input id="mfWp" type="number" min="1" step="1"></div>
-              <div><label class="lbl" for="mfLen" data-i18n="mod.length"></label><input id="mfLen" type="number" min="0" step="any"></div>
-              <div><label class="lbl" for="mfWid" data-i18n="mod.width"></label><input id="mfWid" type="number" min="0" step="any"></div>
-            </div>
-            <label class="chk"><input type="checkbox" id="mfBif"> <span data-i18n="mod.bifacial"></span></label>
-            <div class="hint" data-i18n="mod.dimsHint"></div>
-            <div class="btns">
-              <button type="submit" class="btn primary" data-i18n="mod.save"></button>
-              <button type="button" class="btn" id="mfCancel" data-i18n="mod.cancel"></button>
-            </div>
-          </form>
-          <div class="hint" id="modHint" data-i18n="mod.hint"></div>
-        </div>
-      </details>
     </section>
 
     <!-- 4 · infra -->
@@ -513,6 +468,60 @@
 </footer>
 </div>
 
+<!-- the advanced settings of the field and the module library, opened from the ribbon (L17) -->
+<dialog class="dialog wide" id="dlgAdvanced" aria-labelledby="dlgAdvTitle">
+  <h3 id="dlgAdvTitle" data-i18n="adv.title"></h3>
+  <p class="hint" data-i18n="field.adv"></p>
+  <div id="fAdv">
+    <div class="row2">
+      <div><label class="lbl" for="fTableGap" data-i18n="field.tableGap"></label><input id="fTableGap" type="number" min="0" step="0.01"></div>
+      <div><label class="lbl" for="fModGap" data-i18n="field.moduleGap"></label><input id="fModGap" type="number" min="0" step="0.005"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="fTracks"> <span data-i18n="field.tracks"></span></label>
+    <div class="row3">
+      <div><label class="lbl" for="fTrackEvery" data-i18n="field.tracksEvery"></label><input id="fTrackEvery" type="number" min="10" step="1"></div>
+      <div><label class="lbl" for="fTrackTables" data-i18n="field.tracksTables"></label><input id="fTrackTables" type="number" min="1" step="1"></div>
+      <div><label class="lbl" for="fTrackWidth" data-i18n="field.tracksWidth"></label><input id="fTrackWidth" type="number" min="0" step="0.5"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="fHalf"> <span data-i18n="field.half"></span></label>
+    <div class="hint" id="fHalfHint"></div>
+    <label class="lbl" for="fTarget"><span data-i18n="field.target"></span> <span class="opt" data-i18n="field.optional"></span></label>
+    <input id="fTarget" type="number" min="0" step="0.1">
+    <label class="lbl" data-i18n="field.position"></label>
+    <div class="row2">
+      <div><label class="lbl" for="fRowOff" data-i18n="field.rowOffset"></label><input id="fRowOff" type="number" min="0" step="0.1"></div>
+      <div><label class="lbl" for="fColOff" data-i18n="field.colOffset"></label><input id="fColOff" type="number" min="0" step="0.1"></div>
+    </div>
+    <label class="lbl" for="specYield" data-i18n="res.specYield"></label>
+    <input id="specYield" type="number" min="0" step="1">
+    <div class="hint" data-i18n="res.specYieldHint"></div>
+  </div>
+  <form method="dialog" class="btns"><button type="submit" class="btn primary" data-i18n="dlg.close"></button></form>
+</dialog>
+<dialog class="dialog wide" id="dlgModules" aria-labelledby="dlgModTitle">
+  <h3 id="dlgModTitle"><span data-i18n="mod.title"></span> <span class="cnt" id="modCnt"></span></h3>
+  <p class="hint" data-i18n="mod.sub"></p>
+  <div class="list" id="modList" data-i18n-empty="mod.empty"></div>
+  <form id="modForm" hidden>
+    <div class="row2">
+      <div><label class="lbl" for="mfMan" data-i18n="mod.manufacturer"></label><input id="mfMan" type="text"></div>
+      <div><label class="lbl" for="mfModel" data-i18n="mod.model"></label><input id="mfModel" type="text"></div>
+    </div>
+    <div class="row3">
+      <div><label class="lbl" for="mfWp" data-i18n="mod.wp"></label><input id="mfWp" type="number" min="1" step="1"></div>
+      <div><label class="lbl" for="mfLen" data-i18n="mod.length"></label><input id="mfLen" type="number" min="0" step="any"></div>
+      <div><label class="lbl" for="mfWid" data-i18n="mod.width"></label><input id="mfWid" type="number" min="0" step="any"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="mfBif"> <span data-i18n="mod.bifacial"></span></label>
+    <div class="hint" data-i18n="mod.dimsHint"></div>
+    <div class="btns">
+      <button type="submit" class="btn primary" data-i18n="mod.save"></button>
+      <button type="button" class="btn" id="mfCancel" data-i18n="mod.cancel"></button>
+    </div>
+  </form>
+  <div class="hint" id="modHint" data-i18n="mod.hint"></div>
+  <div class="btns"><button type="button" class="btn" id="modAddInDlg" data-i18n="mod.add"></button><button type="button" class="btn" id="modImportInDlg" data-i18n="mod.import"></button><form method="dialog"><button type="submit" class="btn primary" data-i18n="dlg.close"></button></form></div>
+</dialog>
 <input type="file" id="fileImport" accept=".axpo,.geojson,.json,.kml,.kmz,.zip,.csv,.txt,.dwg,.dxf" multiple hidden>
 <input type="file" id="fileProject" accept=".pvpd" hidden>
 <input type="file" id="fileRoadmap" accept=".xlsx,.xlsm,.xls,.csv" hidden>
