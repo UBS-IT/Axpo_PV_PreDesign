@@ -20,6 +20,7 @@ import { updateCollection } from './ui/layers.js';
 import { onDrawPrefs } from './ui/maptools.js';
 import { icon } from './ui/icons.js';
 import { initCatMenu } from './ui/catmenu.js';
+import { layerVisible, setLayerVisible, onVisibility } from './ui/visibility.js';
 import { splitFeature, mergeFeatures, copyFeatures, measureFeature, frameFor } from './edit.js';
 
 let view, featLayer, sketchLayer, sketchVM;
@@ -188,6 +189,8 @@ export function initAreas(mapView) {
   on('infra', renderSummarySoon);
   on('field', renderSummarySoon);   // the slope limit depends on the structure
   on('settings', () => { $('boundarySetback').value = store.project.settings.boundarySetback; renderSummarySoon(); });
+  // the switch of a category in the Layers panel (phase 3): its objects and their buffers leave the map
+  onVisibility(keys => { if (keys.some(k => k.startsWith('cat:'))) render(); });
   on('project', () => {
     history.undo.length = 0; history.redo.length = 0;
     selection.clear();
@@ -343,6 +346,7 @@ function toggleTool(tool) {
 }
 export function startDraw(category, tool) {
   if (!TOOLS.includes(tool) || !CATEGORY[category] || !CATEGORY[category].geom.includes(TOOL_KIND[tool])) return;
+  if (!layerVisible('cat:' + category)) setLayerVisible('cat:' + category, true);   // F8: nothing is drawn unseen
   if (op) cancelOp();
   if (selection.size) clearSelection();   // a drawing tool leaves the selection
   if (editing) sketchVM.complete();
@@ -619,6 +623,7 @@ export function reclassifySelection(category) {
   const refused = fs.filter(f => !accepts(category, f.geometry)).length;
   if (ok.length) {
     openCats.add(category);
+    if (!layerVisible('cat:' + category)) setLayerVisible('cat:' + category, true);   // the objects stay in sight
     mutate(p => { for (const g of p.features) if (ok.includes(g.id)) { g.category = category; g.attrs = { ...defaultAttrs(category), ...keepAttrs(g.attrs, category) }; } });
   }
   if (refused) toast(tn('sel.refused', refused, { cat: t('cat.' + category) }), 'err', 7000);
@@ -828,6 +833,7 @@ export function render() {
   const frame = siteFrame();
   const graphics = [];
   for (const f of feats) {
+    if (!layerVisible('cat:' + f.category)) continue;   // switched off in the Layers panel (a view: it still counts)
     const geometry = toSdk(f.geometry);
     if (!geometry) continue;
     const d = cutDistance(f);
@@ -860,8 +866,12 @@ function catCard(c) {
   const items = store.project.features.filter(f => f.category === c.id);
   if (!items.length) return '';
   const zoom = esc(t('coll.zoomGroup', { cat: t('cat.' + c.id) }));
-  return `<details class="cat${c.pending ? ' pending' : ''}" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
-    <summary><span class="ttl"><b>${esc(t('cat.' + c.id))}</b><small>${esc(t('cat.' + c.id + '.hint'))}</small></span>
+  const on = layerVisible('cat:' + c.id), show = esc(t('lay.show', { name: t('cat.' + c.id) }));
+  // a row of the LayerList: the switch (a checkbox inside the summary toggles itself, not the group), the symbol,
+  // the name with its hint as tooltip, the count, the magnifier; the objects below it
+  return `<details class="cat${c.pending ? ' pending' : ''}${on ? '' : ' off'}" data-cat="${c.id}" style="--c:rgb(${c.colour.join(',')})" ${openCats.has(c.id) ? 'open' : ''}>
+    <summary title="${esc(t('cat.' + c.id + '.hint'))}"><input type="checkbox" data-lay="cat:${c.id}" ${on ? 'checked' : ''} aria-label="${show}" title="${show}">
+      <span class="sw ${c.pending ? 'dash line' : 'fill'}"></span><span class="ttl"><b>${esc(t('cat.' + c.id))}</b></span>
       <span class="cnt">${items.length}</span>
       <button type="button" class="zx" data-zoomcat="${c.id}" title="${zoom}" aria-label="${zoom}">${icon('search', 'sm')}</button></summary>
     <div class="catbody" role="listbox" aria-multiselectable="true" aria-label="${esc(t('cat.' + c.id))}">${items.map(row).join('')}</div>

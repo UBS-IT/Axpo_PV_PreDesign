@@ -20,7 +20,7 @@ imagery (the Esri attribution under them is kept compact: the terms of use ask f
 the north arrow (the map turns with a right drag; a click puts north back up), a column of three controls: **Fit the
 site**, **Measure** (a card with Distance / Area chips: a temporary measure with the Esri widgets, never saved) and
 **Dimensions**: measured lines kept in the project, drawn like a polyline (the tool stays armed; Esc stops it), with
-the length of every segment in true metres and the total of a chain, ticks at the vertices; the foot of the Layers
+the length of every segment in true metres and the total of a chain, ticks at the vertices; the last row of the Layers
 panel counts them, shows or hides them and removes them all, one is removed with a click, then Delete (or the Remove
 button of the message); they cut nothing and belong to no category. They go to the PDF report and to the DXF (layer
 `PVP_DIM`), not to the KMZ. The scale bar sits at the bottom centre. The drawing support is remembered in the
@@ -34,7 +34,7 @@ active tab (its tools, since phase 2: Import and the drawing menu and tools; Ana
 and the two views of the terrain image; Quick predesign, Optimise, roads, stations and modules; the working files, then
 the PDF report on the right),
 and the map between two docked panels that collapse to a narrow strip at their edge (the strip keeps the name and,
-for Layers, the count of the objects): **Layers** on the left (the objects by category) and **Properties** on the
+for Layers, the count of the objects): **Layers** on the left (the layers of every tab with their visibility, the objects by category) and **Properties** on the
 right (the parameters, figures and notices of the steps of the active tab; the third tab stacks Layout and
 Infrastructure). The **status bar** at the foot shows the coordinates of the pointer E / N in the coordinate system
 chosen for the exports, the CRS select itself (coloured when it disagrees with the one proposed from the site
@@ -114,8 +114,15 @@ Ctrl+Shift+S, Ctrl+O), **Import**, and a badge with the coordinate system of the
   Every edit goes through Undo / Redo; a removal shows a message with *Undo*. One selected object shows a *Selected
   object* card above the figures of the Site panel: its name, the voltage of a power line, its area or length in true
   metres and its source. The geometry is done in `app/js/edit.js`, in the local metric frame.
-- **Layers panel** — only the groups that hold objects (Unclassified first), each with its count and a magnifier
-  that zooms to it, and the rows with their name and a magnifier; nothing is edited there.
+- **Layers panel** — the layers in three groups that fold, in the order of the tabs (the group of the active tab is
+  open and marked). *Site area*: the categories that hold objects (Unclassified first), each with its count and a
+  magnifier that zooms to it, and the objects with their name and a magnifier. *Terrain Analysis*: the terrain image
+  (the same switch as in the Terrain ribbon, the legend of the slope classes under it) and the cut over the slope
+  limit. *Layout & Infrastructure*: buildable area, tables, fences and gates, roads and stations, each with its figure
+  (hectares, count, kilometres). Every row has a box that shows or hides it on the map, and in the 3D model for the
+  tables, fences, stations and obstacles; *Hide all · Show all* at the top. A hidden category still counts, its objects are
+  still selected from their row, and drawing in it shows it again. The boxes are remembered in this browser, not in
+  the project. Nothing is edited there, except *Remove all* on the Dimensions row.
 - **Net area** — used as it is when given (e.g. *Perimetro Netto* from the Geoportale); otherwise computed as gross
   area minus a boundary setback (setbacks change between countries and regions). In both cases exclusions,
   linear infrastructure, obstacles, mitigation and agricultural zones are cut out with their own buffers. The panel
@@ -160,7 +167,7 @@ toolkit values live only here.
 - **On the map and in the panel** — the same drawing as the Geoportale: hill-shaded elevations or slope classes
   (a chip), transparent outside the site plus its buffer, the cells over the limit hatched in red, the outline of
   the cut dashed; the figures inside the site (mean and steepest slope, hectares and share over the limit) and how
-  much of the site the grid covers.
+  much of the site the grid covers. The image and the cut are shown or hidden from the Layers panel.
 - The grid is kept in the browser (IndexedDB) and inside the project file (`terrain/grid.f32`).
 
 ### 3 · Layout

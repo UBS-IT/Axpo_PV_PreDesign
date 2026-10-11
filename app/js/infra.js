@@ -14,6 +14,8 @@ import { last } from './field.js';
 import { toast } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { stepProvider } from './ui/tabs.js';
+import { layerVisible, onVisibility } from './ui/visibility.js';
+import { setLayerFigure } from './ui/layers.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
 const STATION_COLOUR = { CC: [31, 153, 204], CU: [110, 170, 60], CT: [233, 120, 30] };
@@ -369,27 +371,34 @@ function draw(frame, L) {
   const to = g => projectOperator.execute(g, view.spatialReference);
   const out = [];
   const roadSym = a => ({ type: 'simple-fill', color: [...GREY, a], outline: { color: [120, 120, 120, 0.8], width: 0.5 } });
-  if (L.road) out.push(new Graphic({ geometry: to(L.road), symbol: roadSym(0.55) }));
-  for (const r of last.result?.roads || []) out.push(new Graphic({ geometry: to(r), symbol: roadSym(0.45) }));
+  // every graphic says which switch of the Layers panel it follows (lay): roads, fences with gates and lot numbers, stations
+  if (L.road) out.push(new Graphic({ geometry: to(L.road), symbol: roadSym(0.55), attributes: { lay: 'layout:roads' } }));
+  for (const r of last.result?.roads || []) out.push(new Graphic({ geometry: to(r), symbol: roadSym(0.45), attributes: { lay: 'layout:roads' } }));
   for (const r of L.roads) {
-    out.push(new Graphic({ geometry: to(r.strip), symbol: roadSym(0.6), attributes: { road: r.id } }));
-    out.push(new Graphic({ geometry: to(r.line), symbol: { type: 'simple-line', color: [90, 90, 90, 0.9], width: 1, style: 'dash' }, attributes: { road: r.id } }));
+    out.push(new Graphic({ geometry: to(r.strip), symbol: roadSym(0.6), attributes: { road: r.id, lay: 'layout:roads' } }));
+    out.push(new Graphic({ geometry: to(r.line), symbol: { type: 'simple-line', color: [90, 90, 90, 0.9], width: 1, style: 'dash' }, attributes: { road: r.id, lay: 'layout:roads' } }));
   }
   for (const f of L.fences) out.push(new Graphic({ geometry: to(new Polyline({ paths: f.rings, spatialReference: frame.sr })),
-    symbol: { type: 'simple-line', color: [60, 60, 60], width: 2, style: 'short-dash-dot' } }));
+    symbol: { type: 'simple-line', color: [60, 60, 60], width: 2, style: 'short-dash-dot' }, attributes: { lay: 'layout:fences' } }));
   for (const s of L.stations) {
     const c = STATION_COLOUR[s.kind];
-    out.push(new Graphic({ geometry: to(s.cut), symbol: { type: 'simple-fill', color: [...c, 0.1], outline: { color: [...c, 0.8], width: 1, style: 'dash' } } }));
-    out.push(new Graphic({ geometry: to(s.footprint), symbol: { type: 'simple-fill', color: [...c, 0.85], outline: { color: [255, 255, 255], width: s.id === moving ? 3 : 1 } } }));
+    out.push(new Graphic({ geometry: to(s.cut), symbol: { type: 'simple-fill', color: [...c, 0.1], outline: { color: [...c, 0.8], width: 1, style: 'dash' } }, attributes: { lay: 'layout:stations' } }));
+    out.push(new Graphic({ geometry: to(s.footprint), symbol: { type: 'simple-fill', color: [...c, 0.85], outline: { color: [255, 255, 255], width: s.id === moving ? 3 : 1 } }, attributes: { lay: 'layout:stations' } }));
   }
   for (const g of L.gates) out.push(new Graphic({ geometry: to(new Point({ x: g.point[0], y: g.point[1], spatialReference: frame.sr })),
-    symbol: { type: 'simple-marker', style: 'square', size: 11, color: [30, 30, 30], outline: { color: [255, 255, 255], width: 1.5 } } }));
+    symbol: { type: 'simple-marker', style: 'square', size: 11, color: [30, 30, 30], outline: { color: [255, 255, 255], width: 1.5 } }, attributes: { lay: 'layout:fences' } }));
   // lot numbers (with the letter of their fence when lots share one)
   const shared = new Set(L.fences.filter(f => f.lots.length > 1).map(f => f.letter));
   for (const l of L.lots) out.push(new Graphic({ geometry: to(new Point({ x: l.label[0], y: l.label[1], spatialReference: frame.sr })),
     symbol: { type: 'text', text: shared.has(l.fence) ? `${l.n} · ${l.fence}` : String(l.n), color: [255, 255, 255], haloColor: [20, 30, 40], haloSize: 1.5,
-      font: { size: 13, weight: 'bold' } } }));
+      font: { size: 13, weight: 'bold' } }, attributes: { lay: 'layout:fences' } }));
+  for (const g of out) g.visible = layerVisible(g.attributes?.lay || '');
   layer.addMany(out.filter(g => g.geometry));
+}
+// a switch of the Layers panel changed: the graphics that follow it show or hide (nothing is recomputed)
+function visibleInfra(keys) {
+  if (!layer || !keys.some(k => k.startsWith('layout:'))) return;
+  for (const g of layer.graphics) if (g.attributes?.lay) g.visible = layerVisible(g.attributes.lay);
 }
 
 // ── panel ──
@@ -409,6 +418,11 @@ function render() {
     : t('infra.noClearance', { country });
   const fenceLen = L.fences.reduce((s, f) => s + f.length, 0);
   infraState.fenceLength = fenceLen; infraState.fences = L.fences.length;
+  // the key figures of the Layers panel: fence and road lengths, the number of stations
+  const roadLen = L.roadLength + (r?.roadsLength || 0) + L.roads.reduce((s, x) => s + (x.length || 0), 0);
+  setLayerFigure('layout:fences', fenceLen > 0 ? `${fmt(fenceLen / 1000, 2)} km` : '');
+  setLayerFigure('layout:roads', roadLen > 0 ? `${fmt(roadLen / 1000, 2)} km` : '');
+  setLayerFigure('layout:stations', L.stations.length ? fmt(L.stations.length) : '');
   $('infFenceInfo').innerHTML = L.fences.length
     ? `<div class="ledger"><div class="r"><span>${esc(t('infra.fenceLength'))}</span><b>${fmt(fenceLen, 0)} m</b></div>`
       + (L.fences.length > 1 ? `<div class="r"><span>${esc(t('infra.fenceCount'))}</span><b>${fmt(L.fences.length)}</b></div>` : '') + `</div>`
@@ -541,6 +555,7 @@ export function initInfra(mapView) {
   view = mapView;
   const { GraphicsLayer, SketchViewModel } = getSdk();
   layer = new GraphicsLayer({ title: 'Infrastructure', listMode: 'hide' });
+  onVisibility(visibleInfra);
   sketchLayer = new GraphicsLayer({ title: 'Infrastructure sketch', listMode: 'hide' });
   view.map.addMany([layer, sketchLayer]);
   try {

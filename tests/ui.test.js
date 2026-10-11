@@ -9,6 +9,7 @@ import { loadCountries } from '../app/js/crs.js';
 import { initAreas, historySize, undo, redo, selectDrawCat, pendingCount, computeArea, siteFrame, selectFeatures, selectionIds, selectedFeatures,
   selectByGeometry, splitSelection, mergeSelection, copySelection, deleteSelection } from '../app/js/areas.js';
 import { measureFeature } from '../app/js/edit.js';
+import { layerVisible, KIND_3D } from '../app/js/ui/visibility.js';
 import { initRibbon } from '../app/js/ui/ribbon.js';
 import { stepState, refreshRail } from '../app/js/ui/tabs.js';
 import { initCollection, toggleCollection, isOpen, showInCollection } from '../app/js/ui/layers.js';
@@ -180,7 +181,7 @@ await test('drawing in two steps from the ribbon: the category menu (Unclassifie
   assert(fh && !fh.checked, 'the Freehand box, off');
   assert(document.getElementById('drawUndo').disabled && historySize().undo === 0, 'nothing to undo yet');
   // the Layers panel has nothing to edit any more (B5): the ribbon draws and edits
-  assert(!document.querySelector('#areaCats .drawbtn, #areaCats [data-del], #areaCats select, #areaCats input'), 'Layers: nothing to edit on the cards');
+  assert(!document.querySelector('#areaCats .drawbtn, #areaCats [data-del], #areaCats select, #areaCats input:not([data-lay])'), 'Layers: nothing to edit on the cards (only the visibility switches)');
   // remove the site through the selection: a message with Undo instead of a confirmation; Undo brings it back
   selectFeatures(['g']);
   deleteSelection();
@@ -681,6 +682,43 @@ await test('infrastructure panel: lots numbered, two of them joined in one fence
   change('site', q => { q.features = q.features.filter(x => x.category !== 'linear'); q.infra.fenceGroups = []; });
   await wait(500);
   return labels.join(' | ');
+});
+
+await test('Layers panel (phase 3): a switch per layer, its figure, Hide all / Show all, remembered in this browser, the 3D kinds', async () => {
+  const box = key => document.querySelector(`#collPanel input[data-lay="${key}"]`);
+  const fig = key => (document.querySelector(`#collPanel [data-fig="${key}"]`)?.textContent || '').trim();
+  const layer = title => view.map.layers.find(l => l.title === title);
+  const flip = (key, on) => { const b = box(key); b.checked = on; b.dispatchEvent(new Event('change', { bubbles: true })); };
+  const keys = ['terrain:cut', 'layout:buildable', 'layout:tables', 'layout:fences', 'layout:roads', 'layout:stations'];
+  assert(keys.every(k => box(k) && box(k).checked), 'a row per computed layer, all on');
+  assert(['areas', 'terrain', 'fields'].every(tab => document.querySelector(`#collPanel .lgroup[data-tab="${tab}"]`)), 'three groups in the order of the tabs');
+  assert(/ha$/.test(fig('layout:buildable')) && /^\d[\d,]*$/.test(fig('layout:tables')) && /km$/.test(fig('layout:fences')), `figures: ${fig('layout:buildable')} · ${fig('layout:tables')} · ${fig('layout:fences')}`);
+  // a category: its objects leave the map, they still count
+  const before = computeArea(siteFrame()).buildableArea;
+  flip('cat:gross', false);
+  await wait(200);
+  assert(!layerVisible('cat:gross') && !layer('Areas').graphics.some(x => x.attributes?.id === 'g') && document.querySelector('#areaCats .cat[data-cat="gross"]').classList.contains('off'), 'the gross area leaves the map');
+  assert(Math.abs(computeArea(siteFrame()).buildableArea - before) < 0.01, 'and still counts');
+  flip('cat:gross', true);
+  await wait(200);
+  assert(layer('Areas').graphics.some(x => x.attributes?.id === 'g'), 'back on the map');
+  // a computed layer: the tables, the fences of the infrastructure layer
+  flip('layout:tables', false); flip('layout:fences', false);
+  const lay = g => g.attributes?.lay;
+  assert(!layer('Tables').visible && layer('Infrastructure').graphics.filter(g => lay(g) === 'layout:fences').every(g => !g.visible)
+    && layer('Infrastructure').graphics.filter(g => lay(g) === 'layout:roads').every(g => g.visible), 'tables and fences hidden, roads still shown');
+  // Hide all: every switch off, the terrain image too; remembered under the test key; Show all brings them back
+  document.getElementById('layHide').click();
+  await wait(300);
+  assert([...document.querySelectorAll('#collPanel input[data-lay]')].every(i => !i.checked) && !layer('Buildable area').visible && !layer('Slopes').visible
+    && !store.project.terrain.showSlope && !document.getElementById('layTerImage').checked, 'all hidden');
+  assert(JSON.parse(localStorage.getItem('pvp.test.layerVis'))['layout:tables'] === false, 'remembered in this browser (test key)');
+  document.getElementById('layShow').click();
+  await wait(300);
+  assert([...document.querySelectorAll('#collPanel input[data-lay]')].every(i => i.checked) && layer('Tables').visible && layer('Slopes').visible
+    && store.project.terrain.showSlope && document.getElementById('layTerImage').checked && !document.getElementById('terLegend').hidden, 'all shown, the image and its legend');
+  assert(KIND_3D.tables === 'layout:tables' && KIND_3D.fence === 'layout:fences' && KIND_3D.stations === 'layout:stations', 'the 3D model follows the same switches');
+  return `${keys.length} computed layers · ${fig('layout:tables')} tables · ${fig('layout:fences')}`;
 });
 
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {

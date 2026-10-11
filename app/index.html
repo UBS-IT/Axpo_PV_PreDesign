@@ -181,8 +181,26 @@
   <aside id="leftPanel" class="panel left" aria-labelledby="collTitle">
     <header class="panel-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><div class="ttl"><b id="collTitle" data-i18n="coll.title"></b><small id="collSub"></small></div>
       <button type="button" class="ibtn" id="collClose" data-icon="collapse-left" data-i18n-title="coll.close" data-i18n-aria="coll.close"></button></header>
-    <div class="panel-b" id="collPanel"><div id="areaCats"></div></div>
-    <div class="panel-f" id="dimsRow" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-dimension"/></svg><span class="ttl"><b data-i18n="tools.dims"></b><small id="dimsCount"></small></span><button type="button" class="ibtn" id="dimsShow" aria-pressed="true" data-i18n-title="tools.dimShow" data-i18n-aria="tools.dimShow"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button><button type="button" class="ibtn" id="dimsClear" data-i18n-title="tools.dimClear" data-i18n-aria="tools.dimClear"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg></button></div>
+    <div class="panel-b" id="collPanel">
+      <div class="layer-tools"><span data-i18n="lay.visibility"></span><span><button type="button" class="linkbtn" id="layHide" data-i18n="lay.hideAll"></button> · <button type="button" class="linkbtn" id="layShow" data-i18n="lay.showAll"></button></span></div>
+      <details class="lgroup" data-tab="areas" open><summary><span data-i18n="tab.areas"></span><span class="cnt" id="layCntAreas"></span></summary>
+        <div id="areaCats"></div>
+      </details>
+      <details class="lgroup" data-tab="terrain" open><summary><span data-i18n="tab.terrain"></span></summary>
+        <label class="layer"><input type="checkbox" id="layTerImage"><span class="sw ramp"></span><span class="nm" data-i18n="lay.terImage"></span><span class="cnt" id="layTerImageFig"></span></label>
+        <div class="legend" id="terLegend"></div>
+        <label class="layer"><input type="checkbox" data-lay="terrain:cut" checked><span class="sw hatch" style="--c:var(--slope-cut)"></span><span class="nm" data-i18n="lay.terCut"></span><span class="cnt" data-fig="terrain:cut"></span></label>
+      </details>
+      <details class="lgroup" data-tab="fields" open><summary><span data-i18n="tab.fields"></span></summary>
+        <label class="layer"><input type="checkbox" data-lay="layout:buildable" checked><span class="sw line dash" style="--c:var(--ok)"></span><span class="nm" data-i18n="lay.buildable"></span><span class="cnt" data-fig="layout:buildable"></span></label>
+        <label class="layer"><input type="checkbox" data-lay="layout:tables" checked><span class="sw fill" style="--c:var(--table)"></span><span class="nm" data-i18n="lay.tables"></span><span class="cnt" data-fig="layout:tables"></span></label>
+        <label class="layer"><input type="checkbox" data-lay="layout:fences" checked><span class="sw line dot" style="--c:var(--fence)"></span><span class="nm" data-i18n="lay.fences"></span><span class="cnt" data-fig="layout:fences"></span></label>
+        <label class="layer"><input type="checkbox" data-lay="layout:roads" checked><span class="sw fill" style="--c:var(--road)"></span><span class="nm" data-i18n="lay.roads"></span><span class="cnt" data-fig="layout:roads"></span></label>
+        <label class="layer"><input type="checkbox" data-lay="layout:stations" checked><span class="sw point" style="--c:var(--accent-strong)"></span><span class="nm" data-i18n="lay.stations"></span><span class="cnt" data-fig="layout:stations"></span></label>
+      </details>
+      <!-- the dimensions: a switch, the count and «Remove all», the one edit left in this panel (F7 a) -->
+      <div class="layer dims" id="dimsRow" hidden><input type="checkbox" id="dimsShow" checked data-i18n-aria="tools.dimShow"><span class="sw line" style="--c:var(--txt)"></span><span class="nm" data-i18n="tools.dims"></span><span class="cnt" id="dimsCount"></span><button type="button" class="zx" id="dimsClear" data-i18n-title="tools.dimClear" data-i18n-aria="tools.dimClear"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg></button></div>
+    </div>
   </aside>
   <button type="button" class="strip left" id="collTab" aria-expanded="false" aria-controls="collPanel" data-i18n-title="coll.toggle" hidden><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg><span data-i18n="coll.title"></span><span class="tot" id="collTot"></span><span class="dots" id="collDots"></span></button>
 
@@ -287,7 +305,6 @@
       <div class="card">
         <div class="cardhd"><b data-i18n="terrain.slope"></b></div>
         <div id="terStats"></div>
-        <div class="legend" id="terLegend"></div>
       </div>
     </section>
 

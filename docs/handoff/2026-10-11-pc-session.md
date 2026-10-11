@@ -11,7 +11,9 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
   - **#36 `ci/runner-progress`**: the 3D scene test back to its 900 × 560 box, the headless runner that says where a
     page stopped, the runner scripts working on Windows (§3);
   - **#35 `ux/select-edit`**: phase 2B, selection and editing.
-- The clone is on `main`, no local branch left. On GitHub only `main` and `claude/elegant-pascal-pu0yal` (the cloud
+- Later the same day: **#37 `docs/handoff-2b`** (this note) merged, `main` = `3e058cc`; then phase 3 on the branch
+  **`ux/layers`** (one commit and a merge of `main`), its PR after #37 (§7).
+- When this note was first written the clone was on `main`, no local branch left. On GitHub only `main` and `claude/elegant-pascal-pu0yal` (the cloud
   session of 2026-10-09, PRs #15 and #16, merged; left to the user to delete).
 - The CI (`browser-tests`) is expected green on `main`: every page passed headless on this PC on the code of #36 and
   of #35 (§3). The user merges after a green check.
@@ -24,7 +26,7 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 | 1A · Shell, 1B · Status bar and docked panels, 1C · Kit | merged (#30, #31, #32) | see the note of 2026-10-10 |
 | 2 · Ribbon tools, with part A | merged (#34) | Site area: *Site definition* = **Category** menu (`ui/catmenu.js`, colour dots, Unclassified first and default) and **Type** menu in line, five geometries (Area, Rectangle, Circle, Line, Point) with **Freehand** (`thinned()`, 0.5 m), Undo / Redo, **Buffer** and Height / Width (`renderValues()`), the two drawing-support boxes; *Constraints* = the setback. **Unclassified** objects (`UNCLASSIFIED`, app-only) count nowhere and are exported nowhere (`classified()`). Terrain: Remove, Slope classes / Elevations switches. Layout & Infrastructure: roads with Heavy / Light, At the access, Add module, Import roadmap. Report: the working files, the PDF alone on the right. A tool of tabs 1–3 reopens the Properties panel (`pvp:properties`). The Site panel only shows its figures |
 | 2B · Selection and editing | merged (#35) | Site area, group *Selection*: **Select** (click, Shift+click, Esc, Delete) and **Box**; a click on a Layers row selects. With a selection the Category, Type and Buffer act on it (group tinted, «n selected»). **Reshape, Move / rotate, Split, Merge, Copy, Delete**, each off with its reason; every edit is one step of Undo. The **Selected object** card (name, voltage, size, source). `app/js/edit.js` does the geometry in the local frame. The **Layers panel** only lists the groups that hold objects (Unclassified first) with count and zoom, and the rows with zoom |
-| 3 · Layers | **next** | visibility switches (D6), legend of the slope classes |
+| 3 · Layers | branch `ux/layers`, PR after #37 | the Layers panel as the kit's LayerList: three groups in the order of the tabs (the active one open and marked), Hide all / Show all, a box, the kit's symbol, the name and a figure per row; the categories of Site area, the terrain image (= `terrain.showSlope`, its legend under it) and the cut, buildable area, tables, fences and gates, roads, stations, the Dimensions row with Remove all (F7 a). The switches are `app/js/ui/visibility.js` (a view preference in this browser, `pvp.layerVis`; never in the project or an export); the modules that draw a layer ask it and listen to it; the 3D model follows them (`KIND_3D`). §7 |
 | 4 · Status bar, part two | to do | elevation and slope under the pointer (`terrain/store.js`) |
 | 5 · New functions | to do | only those decided in plan §4 (search of project objects first) |
 | 6 · Docs and tests | to do | README screenshots, the shell table of `architecture.md`, the headless suite, a handoff |
@@ -87,8 +89,8 @@ its last console messages.
 
 ## 6. Open work, in the order suggested
 
-1. **Phase 3, the Layers panel**: its decisions first. The panel now lists only the objects of 1 · Site by category;
-   the computed layers (tables, buildable area, fences, roads, stations, slope image, dimensions) have no switch.
+1. **Phase 3, the Layers panel**: done on `ux/layers` (§7); the user merges after a green check, then the cleanup.
+   Phase 4 (the status bar, part two) opens with its list of decisions.
 2. Phases 4 to 6 of the plan, one PR each, each opened with its list of decisions.
 3. To report to the design session: the set lacks point, line, rectangle and circle icons; the kit's tab tick is a glyph.
 4. i18n keys left unused by phase 1 (`top.crsNone`) and any wording «Tools menu» or «Collection» left in the docs: a
@@ -98,3 +100,31 @@ its last console messages.
    `.pvpd` and IDs, P0 integrity of `terrain/grid.f32`, P1 CI failing on browser errors: the runner still only prints
    them); lots, roads between rows and fillets, elevation profile.
 6. The clone inside OneDrive: moving it to `C:\dev` remains the recommendation; the user decides.
+
+## 7. Phase 3, the Layers panel (added later on 2026-10-11)
+
+Decisions F1–F9 accepted by the user («ok su tutto, F7 opzione a»); the row is in `docs/decisions.md`. What was
+checked before the PR:
+
+- **Test pages in the browser pane**: engine, modules, SDK, import, terrain, infrastructure, 3D view and `ui.html`
+  (22 / 22, with a new test for the panel) passed. `scene3d.html` was not run here: the Claude window was hidden, so
+  the page could not draw (`document.visibilityState` = hidden); the CI runs it.
+- **The real app at 1366 × 800**: every row and figure (6.6 ha, 580 tables, 1.08 km of fences; roads and stations
+  empty in the test project, a station placed by hand gave «1»), the tables and stations hidden and shown in 2D and in
+  3D, Hide all / Show all with the terrain image and its legend, a hidden category with its row still selecting with
+  the outline, a drawing in a hidden category showing it again, the Dimensions row (switch, count, Remove all), the
+  group of the active tab marked.
+
+Traps of this phase:
+
+- **`button[data-del]` is used by three lists** (the stations, the module library, the 3D viewpoints): a test script
+  that clicked the first one removed the catalog module from the browser's library of the test project. It was put
+  back with `seedCatalogModules()` (the field then picks the group standard again). Select inside the list
+  (`#infStations button[data-del]`).
+- **`sed -i` in Git Bash rewrites a CRLF file with LF**: edit with Python that keeps the line endings, or with the
+  Edit tool.
+- **A test page in a background tab or a hidden window does not draw a SceneView**: front the tab, keep the window
+  visible, or run the headless suite.
+- **Seen, not changed** (existing on `main`): entering 3D folds the Layers panel without saving that, and back in 2D it
+  stays folded (`view3d/scene.js`, `enter()`); the user reopens it by hand. A candidate for phase 6 or a small PR, the
+  user decides.

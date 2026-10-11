@@ -124,8 +124,9 @@ Estimate, in sessions of work: 0 = 1 · 1 = 3 · 2 = 2 · 3 = 1 · 4 = 1 · 6 = 
 Progress: phase 0 merged (PR 29); phase 1 split in three PRs — 1A the shell (PR 30), 1B the status bar, the docked
 panels and the map controls column in place of the Tools menu (PR 31), 1C the kit `bundle.css` as `app/css/kit.css`
 (PR 32). Phase 2, the ribbon tools with the category menu and Unclassified objects, then its part A (Category and Type
-in line, Circle, Freehand, Buffer, the Site panel with its figures only): PR 34. Phase 2B, selection and editing: the branch
-`ux/select-edit`, PR after 34. Next: phase 3, the visibility switches of the Layers panel.
+in line, Circle, Freehand, Buffer, the Site panel with its figures only): PR 34. Phase 2B, selection and editing: PR 35 (the
+3D scene test fixed in PR 36). Phase 3, the Layers panel as the design system's LayerList with a visibility switch
+and a figure per layer (decisions F1–F9): the branch `ux/layers`, PR after 36. Next: phase 4, the status bar part two.
 
 ## 6. Rollback and safety
 

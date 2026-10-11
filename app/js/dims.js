@@ -1,9 +1,9 @@
 // Dimensions: measured lines kept in the project (project.dims, one polyline each in WGS 84), drawn on the map with
 // the length of every segment in true metres (the local frame of the site, never Web Mercator), ticks at the
 // vertices and the total of a chain; drawn from the Dimensions button of the map controls column (ui/maptools.js),
-// shown or hidden and removed all at once from the Dimensions row at the foot of the Layers panel, removed one by
-// one (click, then Delete). They are not objects of 1 · Site: they cut nothing and belong to no category. They go to the PDF
-// report and to the DXF (layer PVP_DIM), see report.js and export/model.js.
+// shown or hidden and removed all at once from the Dimensions row of the Layers panel (its switch is remembered),
+// removed one by one (click, then Delete). They are not objects of 1 · Site: they cut nothing and belong to no
+// category. They go to the PDF report and to the DXF (layer PVP_DIM), see report.js and export/model.js.
 import { getSdk } from './sdk.js';
 import { store, change, on, uid } from './state.js';
 import { t, fmt } from './i18n.js';
@@ -13,9 +13,10 @@ import { makeLocalFrame } from './geo/localframe.js';
 import { siteFrame, areasLayer, banner } from './areas.js';
 import { onDrawPrefs } from './ui/maptools.js';
 import { confirmDialog } from './ui/dialog.js';
+import { layerVisible, setLayerVisible, onVisibility } from './ui/visibility.js';
 
 let view = null, layer = null, scratch = null, sketchVM = null;
-let drawing = false, selected = null, visible = true;
+let drawing = false, selected = null, visible = layerVisible('dims');   // the switch of the Layers panel, remembered in this browser
 const TICK = 3;            // m: the tick at every vertex, across the dimension
 const LINE = [20, 30, 40];
 
@@ -70,9 +71,10 @@ export function initDims(mapView) {
   on('dims', render);
   on('site', render);          // the frame of the site moves with the site
   on('project', () => { selected = null; if (drawing) stopDimension(); render(); });
-  // the Dimensions row at the foot of the Layers panel: count, show / hide, remove all
+  // the Dimensions row of the Layers panel: its switch, the count, Remove all (the one edit left there, F7 a)
   const show = document.getElementById('dimsShow'), clear = document.getElementById('dimsClear');
-  if (show) show.onclick = () => setDimsVisible(!visible);
+  if (show) show.onchange = () => setDimsVisible(show.checked);
+  onVisibility(keys => { if (keys.includes('dims') && layerVisible('dims') !== visible) setDimsVisible(layerVisible('dims')); });
   if (clear) clear.onclick = () => clearDimensions();
   render();
 }
@@ -83,8 +85,8 @@ function renderRow() {
   const n = (store.project.dims || []).length;
   row.hidden = !n;
   const c = document.getElementById('dimsCount'), s = document.getElementById('dimsShow');
-  if (c) c.textContent = t(n === 1 ? 'dims.count.one' : 'dims.count', { n });
-  if (s) s.setAttribute('aria-pressed', String(visible));
+  if (c) { c.textContent = String(n); c.title = t(n === 1 ? 'dims.count.one' : 'dims.count', { n }); }   // a bare figure, as on the other rows
+  if (s) s.checked = visible;
 }
 
 // ── drawing ──
@@ -124,7 +126,7 @@ function finish(graphic) {
 
 // ── visibility, removal ──
 export const dimsVisible = () => visible;
-export function setDimsVisible(on) { visible = !!on; if (layer) layer.visible = visible; notify(); }
+export function setDimsVisible(on) { visible = !!on; if (layer) layer.visible = visible; setLayerVisible('dims', visible); notify(); }
 export function removeDimension(id) {
   const d = store.project.dims.find(x => x.id === id);
   if (!d) return;

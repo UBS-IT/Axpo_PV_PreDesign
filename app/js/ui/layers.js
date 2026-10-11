@@ -1,7 +1,13 @@
-// The Layers panel: the objects of the site by category (the cards of #areaCats, drawn by areas.js), floating over
-// the map on the left. Open by default, collapsible to a button in its corner, remembered in this browser; opened
-// from «See in the collection ›» in the Last drawing box of 1 · Site. The function names come from the drawer this
-// panel replaced (the Collection): toggleCollection, updateCollection, showInCollection are what the modules call.
+// The Layers panel, docked on the left of the map: the design system's LayerList (phase 3, decisions F1–F9). Three
+// groups in the order of the tabs — Site area (the categories of #areaCats, drawn by areas.js, each with its objects),
+// Terrain, Layout & Infrastructure — and the Dimensions row; every row has a visibility switch (ui/visibility.js,
+// remembered in this browser), its symbol and a count or a key figure the modules write with setLayerFigure. The
+// group of the active tab is open and marked. Open by default, collapsible to a strip, remembered in this browser.
+// The function names come from the drawer this panel replaced (the Collection): toggleCollection, updateCollection,
+// showInCollection are what the modules call.
+import { layerVisible, setLayersVisible, onVisibility } from './visibility.js';
+import { onStep, currentTab } from './tabs.js';
+import { CATEGORIES, UNCLASSIFIED } from '../categories.js';
 const $ = id => document.getElementById(id);
 // test pages set __PVP_TEST__ so that they never touch the setting of the app (same origin)
 const KEY = globalThis.__PVP_TEST__ ? 'pvp.layers.test' : 'pvp.layers';
@@ -20,6 +26,46 @@ export function initCollection() {
   let open = true;
   try { open = localStorage.getItem(KEY) !== '0'; } catch {}
   toggleCollection(open, false);
+  // the switches of the rows (the categories are drawn by areas.js inside #areaCats: same attribute)
+  const list = $('collPanel');
+  if (list) list.addEventListener('change', e => {
+    const cb = e.target.closest('input[data-lay]');
+    if (cb) setLayersVisible([cb.dataset.lay], cb.checked);
+  });
+  onVisibility(syncSwitches);
+  // Hide all / Show all (F1): every switch of the panel, the terrain image included (terrain.js listens)
+  const all = on => {
+    setLayersVisible(allKeys(), on);
+    document.dispatchEvent(new CustomEvent('pvp:layers-all', { detail: { on } }));
+  };
+  const hide = $('layHide'), show = $('layShow');
+  if (hide) hide.onclick = () => all(false);
+  if (show) show.onclick = () => all(true);
+  // the group of the active tab: open and marked (the others keep how the designer left them)
+  onStep(markCurrent);
+  markCurrent();
+  syncSwitches();
+}
+
+// every key of the panel: the categories (also those without objects yet), the computed layers, the dimensions
+const allKeys = () => [...CATEGORIES.map(c => 'cat:' + c.id), 'cat:' + UNCLASSIFIED,
+  ...[...document.querySelectorAll('#collPanel input[data-lay]')].map(i => i.dataset.lay), 'dims'];
+// the boxes follow the switches (a switch can change from elsewhere: Hide all, a drawing in a hidden category)
+function syncSwitches() {
+  document.querySelectorAll('#collPanel input[data-lay]').forEach(i => { i.checked = layerVisible(i.dataset.lay); });
+}
+function markCurrent() {
+  const tab = currentTab();
+  document.querySelectorAll('#collPanel .lgroup[data-tab]').forEach(g => {
+    const on = g.dataset.tab === tab;
+    g.classList.toggle('current', on);
+    if (on) g.open = true;
+  });
+}
+// the count or key figure on the right of a row («580», «1.60 km»); '' clears it
+export function setLayerFigure(key, text) {
+  const el = document.querySelector(`#collPanel [data-fig="${key}"]`);
+  if (el) el.textContent = text || '';
 }
 
 export const isOpen = () => document.body.classList.contains('coll-open');
@@ -46,6 +92,8 @@ export function updateCollection(counts) {
   if (dots) dots.innerHTML = counts.filter(c => c.n > 0).map(c => `<span class="dot" style="--c:rgb(${c.colour.join(',')})" title="${esc(c.label)}: ${c.n}"><i></i>${c.n}</span>`).join('');
   const sub = $('collSub');
   if (sub) sub.textContent = total ? (total === 1 ? '1 object' : `${total} objects`) : '';
+  const grp = $('layCntAreas');
+  if (grp) grp.textContent = total || '';
 }
 
 // open the panel on one object: its category card unfolds, its row scrolls into view and flashes

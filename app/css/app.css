@@ -41,19 +41,22 @@ body.in-3d #view3d { display: block; }
 .btns.col { flex-direction: column; }
 
 /* area categories (the cards of the Layers panel, drawn by areas.js) */
-#areaCats { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 12px; }
-.cat { border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radius-lg); background: var(--panel); transition: box-shadow .12s, background .12s; }
-.cat > summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; border-radius: 0 8px 8px 0; user-select: none; }
+/* the categories of 1 · Site in the Layers panel (phase 3): rows of the LayerList, as the kit's .layer — the switch,
+   the symbol in the colour of the category, the name, the count, the magnifier, the chevron that unfolds the objects */
+#areaCats { display: flex; flex-direction: column; margin: 0; }
+.cat { border: 0; border-radius: var(--radius-sm); background: none; }
+.cat > summary { list-style: none; display: flex; align-items: center; gap: 7px; min-height: 28px; padding: 2px 4px 2px 16px; cursor: pointer; border-radius: var(--radius-sm); user-select: none; font-size: 11.5px; }
 .cat > summary::-webkit-details-marker { display: none; }
 .cat > summary:hover { background: var(--hover); }
-.cat > summary::after { content: ''; flex: none; width: 6px; height: 6px; margin: 0 4px 2px 2px; border-right: 2px solid var(--mut); border-bottom: 2px solid var(--mut); transform: rotate(45deg); transition: transform .15s; }
+.cat > summary input { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--link); }
+.cat > summary::after { content: ''; flex: none; width: 5px; height: 5px; margin: 0 4px 2px 2px; border-right: 1.6px solid var(--mut); border-bottom: 1.6px solid var(--mut); transform: rotate(45deg); transition: transform .15s; }
 .cat[open] > summary::after { transform: rotate(-135deg); margin-bottom: -3px; }
-.cat .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
-.cat .ttl b { font-size: 13px; font-weight: 600; }
-.cat .ttl small { font-size: 11px; color: var(--mut); }
-.cat .cnt { flex: none; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill); color: var(--txt); background: color-mix(in srgb, var(--c) 22%, transparent); }
+.cat .ttl { flex: 1; min-width: 0; line-height: 1.25; }
+.cat .ttl b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat .cnt { flex: none; font-size: 10.5px; color: var(--mut); font-variant-numeric: tabular-nums; }
 .cat .cnt:empty { display: none; }
-.catbody { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--line); }
+.cat.off > summary .ttl, .cat.off > summary .sw, .cat.off > summary .cnt { opacity: .45; }
+.catbody { max-height: 320px; overflow-y: auto; margin: 0 0 4px 22px; border-left: 1px solid var(--line); }
 .catbody .empty { padding: 8px 10px; color: var(--mut); font-size: 12px; }
 /* the rows of the Layers panel (phase 2B): a click selects, the magnifier zooms; the selected rows in the accent */
 .cat .it { cursor: pointer; gap: 6px; padding: 5px 6px 5px 10px; }
