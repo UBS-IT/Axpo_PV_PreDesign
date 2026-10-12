@@ -64,7 +64,8 @@ five tabs (`app/js/ui/tabs.js`: Site area, Terrain Analysis, Layout, Infrastruct
 the active tab, which sets (the Properties panel shows; the advanced settings of the field and the module library are
 windows opened from it, `dlgAdvanced` and `dlgModules`)
 (`ui/ribbon.js`: the actions of the panels, whose tools keep the ids of the buttons they replace; the drawing menu
-of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–4 reopens a collapsed Properties panel), the map between two docked panels that
+of 1 · Site is `ui/catmenu.js`; a tool of tabs 1–4 reopens a collapsed Properties panel; an ⓘ beside the name of
+every group opens a popover of the browser with what is done there, the texts `ribbon.i.*` of `i18n.js`), the map between two docked panels that
 collapse to a strip, Layers on the left (`ui/layers.js`: one group per tab, a visibility switch and a figure per layer, the
 objects by category in the first group, the Dimensions row at the end; the switches are `ui/visibility.js`)
 and Properties on the right (the sections of the steps of the active tab), and a status bar (`ui/statusbar.js`:

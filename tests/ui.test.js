@@ -1025,6 +1025,34 @@ await test('Infrastructure (phase 10B): the fence set in the ribbon, the mitigat
   return `${((before - after) / 1e4).toFixed(2)} ha taken by the strip`;
 });
 
+await test('explanations (phase 11): an ⓘ beside the name of every group of the ribbon, its lines in a popover, one at a time, closed by another tab', async () => {
+  initRibbon();   // a second call adds no second ⓘ
+  const groups = [...document.querySelectorAll('#ribbon .rgroup')], btns = [...document.querySelectorAll('#ribbon .rinfo')];
+  assert(groups.length === 16 && btns.length === 16 && groups.every(g => g.querySelectorAll('.rinfo').length === 1), `${groups.length} groups, ${btns.length} ⓘ`);
+  const pop = b => document.getElementById(b.getAttribute('popovertarget'));
+  assert(btns.every(b => pop(b) && pop(b).querySelector('p').textContent.length > 80 && !/ribbon\.i\./.test(pop(b).textContent)), 'every group has its lines');
+  assert(document.getElementById('rgSiteLabel').closest('.rgroup-foot'), 'the name keeps its element (the Site group renames it on a selection)');
+  let asked = 0;
+  const ask = () => { asked++; };
+  document.addEventListener('pvp:properties', ask);
+  const fence = btns.find(b => b.closest('.rgroup').contains(document.getElementById('infFence'))), roads = btns.find(b => b.closest('.rgroup').contains(document.getElementById('infRoadDraw')));
+  showStep('infra'); await wait(300);
+  fence.click(); await wait(200);
+  assert(pop(fence).matches(':popover-open') && fence.getAttribute('aria-expanded') === 'true' && /mitigation strip/.test(pop(fence).textContent), 'the Fence ⓘ opens its lines');
+  const r = pop(fence).getBoundingClientRect(), rb = document.getElementById('ribbon').getBoundingClientRect();
+  assert(r.top >= rb.bottom && r.left >= 0 && r.right <= innerWidth, 'under the ribbon, within the window');
+  roads.click(); await wait(200);
+  assert(pop(roads).matches(':popover-open') && !pop(fence).matches(':popover-open') && fence.getAttribute('aria-expanded') === 'false', 'one at a time');
+  roads.click(); await wait(200);
+  assert(!pop(roads).matches(':popover-open'), 'a second click closes it');
+  fence.click(); await wait(200);
+  showStep('fields'); await wait(300);
+  assert(!pop(fence).matches(':popover-open'), 'another tab closes it');
+  document.removeEventListener('pvp:properties', ask);
+  assert(asked === 0, 'an ⓘ does not ask for the Properties panel');
+  return `${btns.length} groups explained`;
+});
+
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
   change('field', q => { q.field.technology = 'ground-fixed'; q.field.structure = '3V9'; q.field.pitch = 10.3; });
   await wait(800);
