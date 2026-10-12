@@ -1,7 +1,7 @@
 // The visibility of the map layers (phase 3, decisions F1–F9 of 2026-10-11): one switch per row of the Layers panel,
 // a view preference remembered in this browser (F6): not in the project file, never in a calculation or an export.
 // Keys: 'cat:<category>' for the objects of 1 · Site, 'terrain:cut', 'layout:buildable', 'layout:tables',
-// 'layout:fences', 'layout:roads', 'layout:stations', 'dims'. The terrain image is not here: its switch is the
+// 'layout:fences', 'layout:strip' (the mitigation strip inside the fence), 'layout:roads', 'layout:stations', 'dims'. The terrain image is not here: its switch is the
 // project's terrain.showSlope, as before (the ribbon of Terrain and the Layers panel show the same state).
 // The modules that draw a layer ask layerVisible(key) and are told of a change by onVisibility(fn(keys)).
 const KEY = globalThis.__PVP_TEST__ ? 'pvp.test.layerVis' : 'pvp.layerVis';

@@ -45,8 +45,11 @@ export function defaultProject() {
     // step 3: fences around the lots of the usable land (fenceGroups: lots sharing one fence, kept as points
     // [lon, lat] inside them), perimeter road (null = not decided: off, the app shows its suggestion), fence →
     // structures clearance (null = the toolkit value of the country), stations { id, kind CC|CU|CT, lon, lat, rot },
-    // roads drawn by the designer { id, kind heavy|light, width, geometry LineString }
-    infra: { fence: true, fenceGroups: [], perimeterRoad: null, clearance: null, stations: [], roads: [] },
+    // roads drawn by the designer { id, kind heavy|light, width, geometry LineString }; the fence as built (null =
+    // the toolkit of the country): fenceMesh (text), fenceHeight (m), gate (the id of a gate of the country, or
+    // 'custom' with gateWidth in m); mitigation: width in m of the strip inside the fence (null = none)
+    infra: { fence: true, fenceGroups: [], perimeterRoad: null, clearance: null, stations: [], roads: [],
+      fenceMesh: null, fenceHeight: null, gate: null, gateWidth: null, mitigation: null },
     // 4b · 3D: heights (null = the toolkit value of the country), AgriPV category of the trackers (IT axis heights),
     // tracker angle following the sun at the time of the view or set by hand, saved viewpoints { id, name, camera }
     view3d: { lowEdge: null, trackerCategory: 'standard', axisHeight: null, trackerMode: 'sun', trackerAngle: 0, viewpoints: [], ground: 'dtm' },

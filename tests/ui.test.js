@@ -983,6 +983,48 @@ await test('Layout and Infrastructure (phase 10A): five tabs, the field set in t
   return tabs.length + ' tabs';
 });
 
+await test('Infrastructure (phase 10B): the fence set in the ribbon, the mitigation strip cut, listed and exported, the panel compares with the toolkit', async () => {
+  const it = id => document.getElementById(id);
+  const set = async (id, v) => { const el = it(id); el.value = v; el.dispatchEvent(new Event('change')); await wait(700); };
+  const g = it('infFence').closest('.rgroup');
+  assert(g && g.dataset.tab === 'infra' && ['infClear', 'infStrip', 'infMesh', 'infHeight', 'infGate'].every(id => g.contains(it(id))), 'the fence in its group');
+  assert(it('infRoad').closest('.rgroup') === it('infRoadDraw').closest('.rgroup'), 'the perimeter road with the roads');
+  assert(!document.querySelector('#side [data-step="infra"] select, #side [data-step="infra"] input:not([data-lot])'), 'no setting left in the panel but the boxes of the lots');
+  assert(/welded mesh/.test(it('infMesh').placeholder) && parseFloat(it('infHeight').placeholder) === 2 && it('infGate').value === 'GATE-IT-6', 'the toolkit as placeholders: ' + [it('infMesh').placeholder, it('infHeight').placeholder, it('infGate').value]);
+  // the strip: cut from the buildable area, a row of Layers, a row of the area summary, a layer of the exports
+  const before = computeArea(siteFrame()).buildableArea;
+  await set('infStrip', '5');
+  const after = computeArea(siteFrame()).buildableArea;
+  assert(store.project.infra.mitigation === 5 && after < before, `the strip cuts: ${before} -> ${after}`);
+  assert(!it('collPanel').querySelector('[data-lay="layout:strip"]').closest('.layer').hidden && /ha/.test(it('collPanel').querySelector('[data-fig="layout:strip"]').textContent), 'a row of Layers with its area');
+  assert(/mitigation along the fence/.test(text('areaSummary')) && /Mitigation along the fence/.test(text('infFenceInfo')) && /strip/.test(text('infClearHint')), 'the summary and the panel');
+  const strip = view.map.layers.find(l => l.title === 'Infrastructure').graphics.filter(x => x.attributes?.lay === 'layout:strip');
+  assert(strip.length === 1 && strip.getItemAt(0).visible, 'drawn on the map');
+  // the fence as built, typed in the ribbon, compared in the panel, in the exports
+  await set('infHeight', '2.5');
+  await set('infMesh', 'Invented mesh 1');
+  assert(/2,5|2\.5/.test(text('infFenceInfo')) && /typed in the ribbon/.test(text('infClearHint')), 'the panel compares: ' + text('infClearHint'));
+  const md = exportModel();
+  assert(!md.error, 'export model: ' + md.error);
+  const st = md.items.filter(x => x.layer === 'mitigation-strip'), fc = md.items.filter(x => x.layer === 'fence');
+  assert(st.length === 1 && st[0].attrs.width_m === 5 && st[0].attrs.area_m2 > 0 && buildDxf(md).includes('PVP_MITIGATION_STRIP'), 'the strip in the DXF');
+  assert(fc.length && fc.every(x => x.attrs.mesh === 'Invented mesh 1' && x.attrs.height_m === 2.5), 'mesh and height on the fence');
+  const gj = buildGeoJSON();
+  assert(gj.features.some(x => x.properties.category === 'mitigation-strip'), 'the strip in the GeoJSON and the KMZ');
+  // an own gate, then back to the toolkit
+  await set('infGate', 'custom');
+  assert(!it('infGateWBox').hidden && store.project.infra.gate === 'custom', 'an own width');
+  await set('infGateW', '7');
+  assert(store.project.infra.gateWidth === 7, 'the width of the gate');
+  // without a fence everything else is off
+  it('infFence').click(); await wait(600);
+  assert(['infRoad', 'infClear', 'infStrip', 'infMesh', 'infHeight', 'infGate'].every(id => it(id).disabled) && computeArea(siteFrame()).buildableArea > before, 'no fence: the settings off, no strip, no band');
+  it('infFence').click(); await wait(300);
+  for (const [id, v] of [['infStrip', ''], ['infHeight', ''], ['infMesh', ''], ['infGate', 'GATE-IT-6'], ['infGateW', '']]) await set(id, v);
+  assert(store.project.infra.mitigation == null && store.project.infra.fenceHeight == null && store.project.infra.fenceMesh == null && store.project.infra.gate === 'GATE-IT-6', 'back to the toolkit');
+  return `${((before - after) / 1e4).toFixed(2)} ha taken by the strip`;
+});
+
 await test('area summary shows the slope cut and the terrain panel its figures', async () => {
   change('field', q => { q.field.technology = 'ground-fixed'; q.field.structure = '3V9'; q.field.pitch = 10.3; });
   await wait(800);

@@ -89,7 +89,7 @@ the scene. The app is a desktop tool: under 760 px of window width it shows a me
 | **1 · Site** | Import or draw the boundary and the constraints (two-step drawing: what, then with which tool; undo / redo), sorted into categories (below); net area given or computed |
 | **2 · Terrain** | Optional: analyse the slopes from Esri World Elevation or your own DTM / DSM (GeoTIFF) on a grid over the site; the areas too steep for the structure are cut from the buildable area; stale when the site changes |
 | **3 · Layout** | Technology, toolkit structure (3V9 / 1V28 by default, custom notation on request), module (power by semester), tilt, azimuth, pitch; advanced options folded (gaps, tracks, half tables, target, grid position); results |
-| **4 · Infrastructure** | Fence with its clearance, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
+| **4 · Infrastructure** | Fence with its clearance, mesh, height and gate (toolkit values, changeable) and a mitigation strip inside it, perimeter road (suggested up to ~9 MWp), internal roads from the corridors, gates at the accesses, delivery / user / transformer stations with their clearance |
 | **5 · Outputs** | Export coordinate system; one-page PDF report; KMZ, GeoJSON, Shapefile, GeoPackage, DXF and Excel bill of quantities. The electrical design is not part of the predesign (kept open on purpose) |
 | **2D / 3D** (map switch) | SceneView on the shared map, terrain, structures, sun and shadows, saved views, PNG/PDF and glTF export; editing remains in 2D |
 
@@ -243,25 +243,37 @@ panel shows what they give: the structure in words, the toolkit minimum of the p
 
 ### 4 · Infrastructure
 
+The ribbon sets: **Roads** (*Draw a road*, Heavy / Light, *Perimeter road*), **Fence** (the fence on or off, the
+distance to the structures, the mitigation strip, the mesh, the height, the gate) and **Stations**; the toolkit values
+of the country show in the empty fields, and an empty field takes them back. The panel shows what they give: the
+figures, how they compare with the toolkit, the notices and the lists (lots, roads drawn, gates, stations).
+
 - **Lots and fences** — the land the plant can use (base area minus the objects of 1 · Site) often falls apart in
   lots, e.g. between roads, lines and ditches: they are numbered on the map (north to south) and each has its own
   fence. Tick lots and **join them in one fence**: it runs around them and across the gaps between them, never outside
   the site nor over the lots of another fence. The band between fence and structures is cut from the buildable area:
   in Italy 4 m, or 6 m with the perimeter road (1 m, 4 m road, 1 m). The designer can type another clearance or switch
   the fence off.
+- **Mitigation strip** — a width in metres (empty: none): a strip of hedges or green screen inside the fence, along
+  it. The clearance and the perimeter road start from its inner edge (in Italy 4 m from the strip to the structures),
+  so the strip is cut from the buildable area too; it is drawn in the colour of the Mitigation category, has its row in
+  the Layers panel and in the area summary, and goes to the exports (DXF layer `PVP_MITIGATION_STRIP`) and the report.
+- **Mesh, height and gate** — from the toolkit of the country (Italy: welded mesh 50/50 galvanised, 2 m, a 6 m gate;
+  France: 6 or 7 m gates), each changeable; the gate can also take another width. The height draws the fence and the
+  gates in 3D; all three go to the report, the bill of quantities and the attributes of the exports.
 - **Perimeter road** — a switch. It is the template for plants up to about 9 MWp: the panel shows the suggestion
   for the current layout and the quick predesign applies it; the designer decides.
 - **Roads** — the corridors across the rows of 3 · Layout (e.g. a 4 m gap after 4 trackers in line) are drawn and
   measured; any other road is drawn on the map (heavy 4 m or light 3 m in Italy), reshaped by its vertices, removed,
   and cut from the buildable area with its width.
-- **Gates** — one on the fence next to each site access (toolkit width, 6 m in Italy).
+- **Gates** — one on the fence next to each site access, of the gate chosen in the ribbon (6 m in Italy).
 - **Stations** — delivery, user and transformer stations with the sizes of the country (IT: CT 8.70 × 3.00, CC and
   CU 7.50 × 3.00 m) and 3 m kept free around them; placed or moved within 25 m of a fence they snap flush with it and
   along it (elsewhere they follow the rows), turned by 90° with a click; delivery and user stations can be placed at the site access in one
   click (flush with the fence, user station within 20 m); transformer stations by hand, with a hint of about one every
   3 MWp (part of the electrical design, optional). Stations are cut from the buildable area.
 - Countries without toolkit values get no borrowed value: the panel says what is missing.
-- Fence, roads, stations and gates are part of the GeoJSON export.
+- Fence, mitigation strip, roads, stations and gates are part of the GeoJSON export.
 
 ### 5 · Outputs
 

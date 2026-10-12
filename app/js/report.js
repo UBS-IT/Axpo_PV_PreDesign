@@ -8,7 +8,7 @@ import { countryValue, countryName } from './catalog.js';
 import { crsState } from './areas.js';
 import { last } from './field.js';
 import { moduleLabel, powerAge, periodLabel } from './modules.js';
-import { layoutInfra, clearances } from './infra.js';
+import { layoutInfra, clearances, fenceSpec, gateSpec } from './infra.js';
 import { effectiveLimit, limitText } from './terrain/terrain.js';
 import { crsLabel } from './crs.js';
 import { toSdk } from './geo/convert.js';
@@ -52,7 +52,14 @@ export function reportData() {
   if (f.technology === 'agri-tracker') a.push(t('rep.aTrackerPitch'));
   const age = powerAge(r.module);
   a.push(r.power?.period ? t('rep.aPower', { wp: fmt(r.power.wp), period: periodLabel(r.power.period), date: age.date || '—' }) : t('rep.aPowerManual', { wp: fmt(r.power?.wp) }));
-  if (L.fences.length) a.push(c.clearance != null ? t('rep.aFence', { m: fmt(c.clearance, 1), src: c.source === 'custom' ? t('rep.custom') : country, road: t(c.road ? 'rep.withRoad' : 'rep.withoutRoad') }) : t('infra.noClearance', { country }));
+  if (L.fences.length) {
+    const src = c.source === 'custom' ? t('rep.custom') : country, road = t(c.road ? 'rep.withRoad' : 'rep.withoutRoad');
+    if (c.clearance == null) a.push(t('infra.noClearance', { country }));
+    else if (L.strip) a.push(t('rep.aStrip', { m: fmt(L.stripWidth, 1), ha: fmt(L.stripArea / 1e4, 2), c: fmt(c.clearance, 1), src, road }));
+    else a.push(t('rep.aFence', { m: fmt(c.clearance, 1), src, road }));
+    const fs = fenceSpec(P), gs = gateSpec(P);   // the fence as built: the ribbon of Infrastructure, else the toolkit
+    a.push(t('rep.aFenceBuilt', { mesh: fs.mesh || '—', h: fs.height != null ? fmt(fs.height, 1) : '—', w: gs.width != null ? fmt(gs.width, 1) : '—' }));
+  }
   const lim = effectiveLimit();
   if (P.terrain.grid && lim.limit && P.terrain.applySlopeLimit) {
     if (!lim.custom || lim.same) a.push(t('rep.aSlope', { rule: lim.rule ? lim.rule.text : limitText(lim.limit), src: P.terrain.grid.name }));
@@ -165,9 +172,10 @@ function drawMap(doc, d, x0, y0, w, h) {
     if (q.type === 'polygon') fillPoly(ringsOfPolygon(q), [229, 72, 77], 0.22, [229, 72, 77], 0.2);
     else if (q.type === 'polyline') { doc.setDrawColor(233, 30, 140); doc.setLineWidth(0.35); doc.path(lineOps(q.paths)); doc.stroke(); }
   }
-  // roads, buildable area, tables
+  // the mitigation strip along the fence, roads, buildable area, tables
   const L = d.infra;
-  const grey = [150, 150, 150];
+  const grey = [150, 150, 150], green = [110, 170, 60];
+  if (L.strip) fillPoly(ringsOfPolygon(L.strip), green, 0.35);
   for (const rd of [L.road, ...(r.roads || []), ...L.roads.map(x => x.strip)]) if (rd) fillPoly(ringsOfPolygon(rd), grey, 0.7);
   if (r.area.buildable) fillPoly(ringsOfPolygon(r.area.buildable), null, 1, [45, 190, 126], 0.25, [1.2, 0.8]);
   doc.setFillColor(57, 69, 207);
@@ -208,6 +216,7 @@ function drawMap(doc, d, x0, y0, w, h) {
   doc.setFont('helvetica', 'bold'); doc.text('N', nx, ny + 9.5, { align: 'center' });
   // legend
   const items = [[[255, 140, 26], t('cat.gross')], [[229, 72, 77], t('rep.lgExcl')], [[57, 69, 207], t('rep.lgTables')], [grey, t('infra.roads')], [[40, 40, 40], t('infra.fence')]];
+  if (L.strip) items.push([green, t('infra.strip')]);
   let lx = x0 + w - 2;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8);
   for (const [rgb, label] of items.reverse()) {

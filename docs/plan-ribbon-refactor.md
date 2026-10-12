@@ -132,7 +132,7 @@ project (Ctrl K), and as asked by the user an address / coordinates search and *
 PR 40. The other functions of §4 wait, each with its decisions. Phase 6 (I1–I7, with the user's notes on the 3D
 panels, the messages and the drawing tools): PR 41. With it the refactor of this plan is complete. The second
 round is §8: phase 7 (L1–L4) PR 42; phase 8 (L5–L10) PR 43; phase 9 (L11–L14) PR 44; phase 10 in two PRs, 10A Layout (L15–L17, L20, L21) PR 45,
-then 10B Infrastructure (L18, L19, L21); then phase 11 (L22).
+10B Infrastructure (L18, L19, L21; details M1–M6) on the branch `ux/infra-ribbon`, PR after 46; then phase 11 (L22).
 
 ## 6. Rollback and safety
 

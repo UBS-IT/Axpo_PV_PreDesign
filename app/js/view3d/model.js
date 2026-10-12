@@ -2,8 +2,7 @@
 // module surfaces, stations, fences, gates and obstacles with their elevations. One query of ground elevations for
 // all the points, then plain geometry (geometry.js).
 import { store } from '../state.js';
-import { getCatalog } from '../catalog.js';
-import { crsState, siteFrame } from '../areas.js';
+import { siteFrame } from '../areas.js';
 import { last } from '../field.js';
 import { layoutInfra, rectangle } from '../infra.js';
 import { toSdk } from '../geo/convert.js';
@@ -43,7 +42,7 @@ export function retilt(m, date = new Date()) {
 export async function model3d({ date = new Date(), query } = {}) {
   const P = store.project, frame = last.result?.frame || siteFrame();
   if (!frame) return null;
-  const r = last.result, h = heights3d(P), iso = crsState.iso;
+  const r = last.result, h = heights3d(P);
   const out = { frame, h, angle: 0, tables: null, stations: [], fences: [], gates: [], obstacles: [], notes: [], gaps: 0, center: [frame.lon0, frame.lat0] };
   const tables = r?.tablesLocal || [];
   const L = r?.area ? layoutInfra(frame, r.area.pre, r.area.base) : null;
@@ -86,9 +85,8 @@ export async function model3d({ date = new Date(), query } = {}) {
   const fh = h.fence;
   if (fc.length && !(fh > 0)) out.notes.push('d3.noteFence');
   for (const f of fc) for (const ring of f.rings) { const g = next(ring.length); if (fh > 0) out.fences.push({ letter: f.letter, mesh: wallMesh(ring, g, fh) }); }
-  const gh = ((iso && getCatalog()?.countries?.[iso]?.gates) || [])[0]?.height ?? fh;
-  for (const g of gt) {
-    const gz = next(1)[0];
+  for (const g of gt) {   // each gate carries the width and height of the gate in use (gateSpec in infra.js)
+    const gz = next(1)[0], gh = g.height ?? fh;
     if (gh > 0 && g.width > 0) out.gates.push(boxMesh(rectangle(g.point, g.width, 0.15, Math.atan2(g.dir[1], g.dir[0]) * 180 / Math.PI), gz, gh));
   }
   for (const o of obs) { const g = next(o.ring.length); out.obstacles.push({ kind: o.kind, mesh: prismMesh(o.ring, Math.min(...g), o.height) }); }
