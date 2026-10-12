@@ -21,7 +21,7 @@ export function heights3d(P = store.project, iso = crsState.iso) {
   const v = P.view3d, f = P.field, tracker = f.technology === 'agri-tracker';
   const out = { tracker, lowEdge: null, axis: null, missing: null,
     maxRotation: countryValue(iso, 'tracker.rotationDeg')?.value ?? standardFor('agri-tracker')?.rotationDeg ?? null,
-    fence: countryValue(iso, 'fence.height')?.value ?? null };
+    fence: P.infra?.fenceHeight > 0 ? P.infra.fenceHeight : countryValue(iso, 'fence.height')?.value ?? null };   // typed in the ribbon, else the toolkit
   if (tracker) {
     const ah = countryValue(iso, 'tracker.axisHeights')?.value;
     if (v.axisHeight > 0) out.axis = { value: v.axisHeight, source: 'custom', category: null };

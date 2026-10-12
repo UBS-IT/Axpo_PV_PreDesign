@@ -223,5 +223,8 @@ body.in-3d #geoSearch, body.in-3d #objSearch { display: none; }
 
 /* the ribbon of Terrain (phase 9): one line of values at a time, a narrow step for the contours */
 .rvals .rline[hidden] { display: none; }
+/* the fence of Infrastructure (phase 10B): the mesh and the gate narrower, the width of an own gate beside it */
+#infMesh, #infGate { width: 170px; }
+.rvals:has(#infFence) { gap: 3px; }   /* the switch and two values within the height of the ribbon */
 #terContourStep { width: 76px; }
 #terLimitSel, #terTech { width: 190px; }

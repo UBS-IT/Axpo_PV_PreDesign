@@ -172,6 +172,7 @@
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.field"></div>
   </div>
+  <!-- roads (L18): a road drawn of a kind, and the perimeter road inside the fence -->
   <div class="rgroup" data-tab="infra" role="group" hidden>
     <div class="rgroup-tools">
       <button type="button" class="tool large" id="infRoadDraw" aria-pressed="false" data-icon="road" data-i18n="infra.drawRoad" data-i18n-title="ribbon.drawRoadTitle"></button>
@@ -179,8 +180,33 @@
         <button type="button" class="tool small" role="radio" data-roadkind="heavy" aria-checked="true"></button>
         <button type="button" class="tool small" role="radio" data-roadkind="light" aria-checked="false"></button>
       </div>
+      <div class="rvals">
+        <label class="chk mini" data-i18n-title="infra.roadOn"><input type="checkbox" id="infRoad"> <span data-i18n="ribbon.perimeterRoad"></span></label>
+      </div>
     </div>
     <div class="rgroup-label" data-i18n="ribbon.g.roads"></div>
+  </div>
+  <!-- the fence, set here (L19): the toolkit values of the country as placeholders; the panel shows what they give -->
+  <div class="rgroup" data-tab="infra" role="group" hidden>
+    <div class="rgroup-tools">
+      <div class="rvals">
+        <label class="chk mini" data-i18n-title="infra.fenceOn"><input type="checkbox" id="infFence"> <span data-i18n="ribbon.fenceOn"></span></label>
+        <div class="rline"><label class="rcap" for="infClear" data-i18n="ribbon.fenceClear"></label><span class="unit sm"><input class="input" id="infClear" type="number" min="0" step="0.5"><span>m</span></span></div>
+        <div class="rline"><label class="rcap" for="infStrip" data-i18n="ribbon.strip" data-i18n-title="ribbon.stripTitle"></label><span class="unit sm"><input class="input" id="infStrip" type="number" min="0" step="0.5" data-i18n-title="ribbon.stripTitle"><span>m</span></span></div>
+      </div>
+      <div class="rform">
+        <label class="rcap" for="infMesh" data-i18n="ribbon.mesh"></label>
+        <input class="input rsel" id="infMesh" type="text" autocomplete="off">
+        <label class="rcap" for="infHeight" data-i18n="ribbon.fenceHeight"></label>
+        <span class="unit sm"><input class="input" id="infHeight" type="number" min="0" step="0.1"><span>m</span></span>
+      </div>
+      <div class="rform">
+        <label class="rcap" for="infGate" data-i18n="ribbon.gate"></label>
+        <select class="rsel" id="infGate"></select>
+        <div class="rpair" id="infGateWBox" hidden><label class="rcap" for="infGateW" data-i18n="ribbon.gateW"></label><span class="unit sm"><input class="input" id="infGateW" type="number" min="0" step="0.5" data-i18n-title="ribbon.gateWidth"><span>m</span></span></div>
+      </div>
+    </div>
+    <div class="rgroup-label" data-i18n="ribbon.g.fence"></div>
   </div>
   <div class="rgroup" data-tab="infra" role="group" hidden>
     <div class="rgroup-tools">
@@ -253,6 +279,7 @@
       </details>
       <details class="lgroup" data-tab="infra" open><summary><span data-i18n="tab.infra"></span></summary>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:fences" checked><span class="sw line dot" style="--c:var(--fence)"></span><span class="nm" data-i18n="lay.fences"></span><span class="cnt" data-fig="layout:fences"></span></label>
+        <label class="layer" hidden><input type="checkbox" data-lay="layout:strip" checked><span class="sw fill" style="--c:var(--cat-mitigation)"></span><span class="nm" data-i18n="lay.strip"></span><span class="cnt" data-fig="layout:strip"></span></label>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:roads" checked><span class="sw fill" style="--c:var(--road)"></span><span class="nm" data-i18n="lay.roads"></span><span class="cnt" data-fig="layout:roads"></span></label>
         <label class="layer" hidden><input type="checkbox" data-lay="layout:stations" checked><span class="sw point" style="--c:var(--accent-strong)"></span><span class="nm" data-i18n="lay.stations"></span><span class="cnt" data-fig="layout:stations"></span></label>
       </details>
@@ -388,10 +415,11 @@
       <details class="gloss"><summary data-i18n="infra.gloss" data-icon="info"></summary>
         <ul><li data-i18n="infra.introMore1"></li><li data-i18n="infra.introMore2"></li></ul>
       </details>
+      <!-- what the settings of the ribbon give (L21): figures, the comparison with the toolkit, the lists -->
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.fence"></b></div>
-        <label class="chk"><input type="checkbox" id="infFence"> <span data-i18n="infra.fenceOn"></span></label>
         <div id="infFenceInfo"></div>
+        <div id="infClearHint"></div>
         <div id="infLotsBox" hidden>
           <p class="hint" id="infLotsHint"></p>
           <div class="list" id="infLots"></div>
@@ -400,13 +428,9 @@
             <button type="button" class="btn" id="infSeparate" data-i18n="infra.separate"></button>
           </div>
         </div>
-        <label class="lbl" for="infClear" data-i18n="infra.clear"></label>
-        <input id="infClear" type="number" min="0" step="0.5">
-        <p class="hint" id="infClearHint"></p>
       </div>
       <div class="card">
         <div class="cardhd"><b data-i18n="infra.road"></b></div>
-        <label class="chk"><input type="checkbox" id="infRoad"> <span data-i18n="infra.roadOn"></span></label>
         <div id="infRoadInfo"></div>
       </div>
       <div class="card">

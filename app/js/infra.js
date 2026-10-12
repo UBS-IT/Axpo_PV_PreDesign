@@ -3,8 +3,9 @@
 // every value is a default the designer can change, and a missing country value is reported, never borrowed.
 //
 // The fence runs along the outline of the land the plant can use (the base area minus the objects of 1 · Areas,
-// holes ignored). The band between the fence and the structures (with a perimeter road: fence → road → structures)
-// is cut from the buildable area, and so is every station with its clearance.
+// holes ignored). From the fence inwards: the mitigation strip when there is one, then the band up to the structures
+// (with a perimeter road: strip → road → structures); both are cut from the buildable area, and so is every station
+// with its clearance. Since phase 10B the ribbon of Infrastructure sets all of it, the panel shows what it gives.
 import { getSdk } from './sdk.js';
 import { store, change, on, uid } from './state.js';
 import { t, fmt } from './i18n.js';
@@ -20,6 +21,7 @@ import { registerSketch } from './ui/snapping.js';
 
 const KINDS = { CC: 'delivery-station', CU: 'user-station', CT: 'transformer-station' };
 const STATION_COLOUR = { CC: [31, 153, 204], CU: [110, 170, 60], CT: [233, 120, 30] };
+const STRIP_COLOUR = [110, 170, 60];   // the colour of the Mitigation category of 1 · Site
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let view = null, layer = null, placing = null, clickHandle = null;
@@ -65,18 +67,37 @@ export function building(kind) {
   const list = (crsState.iso && getCatalog()?.countries?.[crsState.iso]?.buildings) || [];
   return list.find(b => b.kind === KINDS[kind]) || null;
 }
-// Clearances in force: { clearance (fence → structures), roadGap (fence → road), roadWidth, source, missing }
+// Clearances in force: { clearance (fence → structures, or from the inner edge of the mitigation strip), roadGap
+// (the same edge → road), roadWidth, strip (width of the mitigation strip, 0 = none), source, toolkit, road }
 export function clearances(P = store.project) {
   const road = !!P.infra.perimeterRoad;
-  const tk = val(road ? 'clearances.fenceToStructuresWithPerimeterRoad' : 'clearances.fenceToStructuresWithoutRoad');
+  const strip = P.infra.fence && P.infra.mitigation > 0 ? P.infra.mitigation : 0;
+  // with a strip and no road the toolkit measures from the strip (IT: greenStripToStructures); a country without
+  // that value keeps its fence → structures distance, now taken from the strip
+  const tk = road ? val('clearances.fenceToStructuresWithPerimeterRoad')
+    : (strip ? val('clearances.greenStripToStructures') : null) ?? val('clearances.fenceToStructuresWithoutRoad');
   const roadGap = val('clearances.fenceToPerimeterRoad')?.value ?? null;
   const roadWidth = val('clearances.perimeterRoadWidth')?.value ?? val('roads.heavy.width')?.value ?? null;
   const custom = P.infra.clearance;
   return { clearance: custom != null ? custom : tk?.value ?? null, source: custom != null ? 'custom' : tk ? 'toolkit' : null,
-    toolkit: tk?.value ?? null, roadGap, roadWidth, road };
+    toolkit: tk?.value ?? null, roadGap, roadWidth, road, strip };
 }
 export function stationClearance() { return val('clearances.stationClearance')?.value ?? 0; }
-export function gateWidth() { const g = (crsState.iso && getCatalog()?.countries?.[crsState.iso]?.gates) || []; return g[0]?.width ?? null; }
+// The fence and the gates as built: the designer's values, else the toolkit of the country.
+// { mesh, height, meshToolkit, heightToolkit }
+export function fenceSpec(P = store.project) {
+  const I = P.infra, mt = val('fence.mesh')?.value ?? null, ht = val('fence.height')?.value ?? null;
+  return { mesh: I.fenceMesh || mt, height: I.fenceHeight > 0 ? I.fenceHeight : ht, meshToolkit: mt, heightToolkit: ht };
+}
+export function countryGates() { return (crsState.iso && getCatalog()?.countries?.[crsState.iso]?.gates) || []; }
+// The gate in use: one of the country (infra.gate = its id, null = the first) or a width typed in (infra.gate =
+// 'custom'); a gate without a height of its own is as high as the fence. { id, custom, width, height, type }
+export function gateSpec(P = store.project) {
+  const I = P.infra, fh = fenceSpec(P).height;
+  if (I.gate === 'custom') return { id: null, custom: true, width: I.gateWidth > 0 ? I.gateWidth : null, height: fh, type: '' };
+  const list = countryGates(), g = list.find(x => x.id === I.gate) || list[0];
+  return { id: g?.id ?? null, custom: false, width: g?.width ?? null, height: g?.height ?? fh, type: g?.type || '' };
+}
 export function suggestedRoad(mwp) {
   const s = standardFor('perimeterRoad');
   return s && mwp > 0 ? mwp <= s.suggestedUpToMWp : null;
@@ -201,10 +222,11 @@ function toLocalPt(frame, lon, lat) {
 // Road widths of the country: heavy (trucks) and light traffic
 export function roadWidth(kind) { return val(`roads.${kind}.width`)?.value ?? null; }
 
-// Everything computed for a frame: { lots, fences, band, road, roadLength, roads (drawn), stations, gates, notes }
+// Everything computed for a frame: { lots, fences, strip, stripWidth, stripArea, band, road, roadLength, roads (drawn),
+// stations, gates, notes }
 export function layoutInfra(frame, pre, base = pre) {
   const P = store.project, I = P.infra;
-  const out = { lots: [], fences: [], band: null, road: null, roadLength: 0, roads: [], stations: [], gates: [], notes: [] };
+  const out = { lots: [], fences: [], strip: null, stripWidth: 0, stripArea: 0, band: null, road: null, roadLength: 0, roads: [], stations: [], gates: [], notes: [] };
   if (!pre) return out;
   const { lots, fences } = fencesOf(frame, pre, base);
   out.lots = lots;
@@ -221,25 +243,32 @@ export function layoutInfra(frame, pre, base = pre) {
   out.fences = fences;
   const c = clearances(P);
   if (c.clearance == null) out.notes.push(t('infra.noClearance', { country: countryName(crsState.iso) || '—' }));
-  const bands = [], roads = [];
+  const bands = [], roads = [], strips = [], w = c.strip;
   for (const f of fences) {
-    if (c.clearance > 0) bands.push(minus(f.polygon, shrink(f.polygon, c.clearance)));
+    // from the fence inwards: the mitigation strip (M1), then the clearance with the perimeter road in it
+    const inner = w > 0 ? shrink(f.polygon, w) : f.polygon;
+    if (w > 0) strips.push(minus(f.polygon, inner));
+    if (c.clearance > 0 && inner) bands.push(minus(inner, shrink(f.polygon, w + c.clearance)));
     if (c.road && c.roadGap != null && c.roadWidth > 0) {
-      roads.push(minus(shrink(f.polygon, c.roadGap), shrink(f.polygon, c.roadGap + c.roadWidth)));
-      out.roadLength += perimeterOf(shrink(f.polygon, c.roadGap + c.roadWidth / 2));
+      roads.push(minus(shrink(f.polygon, w + c.roadGap), shrink(f.polygon, w + c.roadGap + c.roadWidth)));
+      out.roadLength += perimeterOf(shrink(f.polygon, w + c.roadGap + c.roadWidth / 2));
     }
     if (f.lots.length > 1 && f.parts > 1) out.notes.push(t('infra.fenceParts', { lots: f.lots.join(', '), n: f.parts }));
   }
   const union = arr => { const a = arr.filter(g => g && g.rings && g.rings.length); return a.length > 1 ? S.unionOperator.executeMany(a) : a[0] || null; };
   out.band = union(bands);
   out.road = union(roads);
+  out.strip = union(strips);
+  out.stripWidth = out.strip ? w : 0;
+  out.stripArea = out.strip ? S.areaOperator.execute(out.strip) : 0;
   const allRings = fences.flatMap(f => f.rings);
-  // gates at the site accesses, on the nearest fence
+  // gates at the site accesses, on the nearest fence, all of the gate in use
+  const gs = gateSpec(P);
   for (const a of P.features.filter(x => x.category === 'access' && x.attrs?.type !== 'grid-connection')) {
     const c0 = a.geometry.type === 'Point' ? a.geometry.coordinates : a.geometry.type === 'LineString' ? a.geometry.coordinates[0] : null;
     const p = c0 && toLocalPt(frame, c0[0], c0[1]);
     const n = p && nearestOnRings(allRings, p);
-    if (n) out.gates.push({ id: a.id, name: a.name, point: n.point, dir: n.dir, dist: n.dist, width: gateWidth() });
+    if (n) out.gates.push({ id: a.id, name: a.name, point: n.point, dir: n.dir, dist: n.dist, width: gs.width, height: gs.height, type: gs.type });
   }
   stationsOf(frame, out, allRings);
   return out;
@@ -267,11 +296,13 @@ function stationsOf(frame, out, allRings) {
   }
 }
 
-// Cuts for the buildable area (areas.js): the fence band, the roads drawn by the designer and the stations
+// Cuts for the buildable area (areas.js): the mitigation strip, the fence band, the roads drawn by the designer and
+// the stations
 extraCuts.push((frame, ctx) => {
   if (!ctx) return null;
   const L = layoutInfra(frame, ctx.pre, ctx.base);
   const out = L.notes.map(note => ({ note }));
+  if (L.strip) out.push({ geometry: L.strip, kind: 'strip', label: t('infra.stripCut') });
   if (L.band) out.push({ geometry: L.band, kind: 'fence', label: t('infra.fenceBand') });
   for (const r of L.roads) out.push({ geometry: r.strip, kind: 'road', label: t('infra.roadDrawn') });
   for (const s of L.stations) out.push({ geometry: s.cut, kind: 'station', label: t('infra.kind.' + s.kind) });
@@ -372,7 +403,10 @@ function draw(frame, L) {
   const to = g => projectOperator.execute(g, view.spatialReference);
   const out = [];
   const roadSym = a => ({ type: 'simple-fill', color: [...GREY, a], outline: { color: [120, 120, 120, 0.8], width: 0.5 } });
-  // every graphic says which switch of the Layers panel it follows (lay): roads, fences with gates and lot numbers, stations
+  // every graphic says which switch of the Layers panel it follows (lay): the mitigation strip, roads, fences with
+  // gates and lot numbers, stations
+  if (L.strip) out.push(new Graphic({ geometry: to(L.strip), symbol: { type: 'simple-fill', color: [...STRIP_COLOUR, 0.35],
+    outline: { color: [...STRIP_COLOUR, 0.9], width: 0.5 } }, attributes: { lay: 'layout:strip' } }));
   if (L.road) out.push(new Graphic({ geometry: to(L.road), symbol: roadSym(0.55), attributes: { lay: 'layout:roads' } }));
   for (const r of last.result?.roads || []) out.push(new Graphic({ geometry: to(r), symbol: roadSym(0.45), attributes: { lay: 'layout:roads' } }));
   for (const r of L.roads) {
@@ -411,12 +445,23 @@ function render() {
   const L = frame && ctx ? layoutInfra(frame, ctx.pre, ctx.base) : { lots: [], fences: [], roads: [], stations: [], gates: [], notes: [] };
   const c = clearances(P), country = countryName(crsState.iso) || '—';
   const r = last.result;
-  $('infFence').checked = !!I.fence;
-  $('infClear').value = I.clearance ?? '';
-  $('infClear').placeholder = c.toolkit != null ? `${fmt(c.toolkit, 1)} (${t('infra.toolkit')})` : '';
-  $('infClearHint').textContent = c.toolkit != null
-    ? t(c.road ? 'infra.clearWithRoad' : 'infra.clearNoRoad', { m: fmt(c.toolkit, 1), country })
-    : t('infra.noClearance', { country });
+  renderRibbon(c, country);
+  const fs = fenceSpec(P), gs = gateSpec(P);
+  // how the settings compare with the toolkit of the country (L21)
+  const own = (v, tk) => v != null && tk != null && v !== tk;
+  const checks = [];
+  if (I.fence) {
+    checks.push(c.toolkit != null
+      ? ['hint', t(c.strip ? (c.road ? 'infra.clearStripRoad' : 'infra.clearStrip') : c.road ? 'infra.clearWithRoad' : 'infra.clearNoRoad', { m: fmt(c.toolkit, 1), country })
+        + (own(c.clearance, c.toolkit) ? ' ' + t('infra.clearOwn', { m: fmt(c.clearance, 1) }) : '')]
+      : ['notice warn', t('infra.noClearance', { country })]);
+    if (L.strip) checks.push(['hint', t('infra.stripInfo', { m: fmt(L.stripWidth, 1), ha: fmt(L.stripArea / 1e4, 2) })]);
+    if (own(I.fenceHeight, fs.heightToolkit)) checks.push(['hint', t('infra.heightOwn', { m: fmt(fs.height, 1), tk: fmt(fs.heightToolkit, 1), country })]);
+    if (I.fenceMesh && fs.meshToolkit && I.fenceMesh !== fs.meshToolkit) checks.push(['hint', t('infra.meshOwn', { tk: fs.meshToolkit, country })]);
+    if (fs.height == null) checks.push(['notice warn', t('infra.noFenceHeight', { country })]);
+    if (gs.width == null && L.gates.length) checks.push(['notice warn', t(gs.custom ? 'infra.gateNoWidth' : 'infra.noGate', { country })]);
+  }
+  $('infClearHint').innerHTML = checks.map(([cls, s]) => `<div class="${cls}">${esc(s)}</div>`).join('');
   const fenceLen = L.fences.reduce((s, f) => s + f.length, 0);
   infraState.fenceLength = fenceLen; infraState.fences = L.fences.length;
   // the key figures of the Layers panel: fence and road lengths, the number of stations
@@ -424,9 +469,16 @@ function render() {
   setLayerFigure('layout:fences', fenceLen > 0 ? `${fmt(fenceLen / 1000, 2)} km` : '');
   setLayerFigure('layout:roads', roadLen > 0 ? `${fmt(roadLen / 1000, 2)} km` : '');
   setLayerFigure('layout:stations', L.stations.length ? fmt(L.stations.length) : '');
+  setLayerFigure('layout:strip', L.strip ? `${fmt(L.stripArea / 1e4, 2)} ha` : '');
+  // the fence as built: length, mesh, height, the mitigation strip and the clearance in use
+  const rowsF = [[t('infra.fenceLength'), `${fmt(fenceLen, 0)} m`]];
+  if (L.fences.length > 1) rowsF.push([t('infra.fenceCount'), fmt(L.fences.length)]);
+  if (fs.mesh) rowsF.push([t('infra.mesh'), fs.mesh, 'wrap']);
+  if (fs.height != null) rowsF.push([t('infra.height'), `${fmt(fs.height, 1)} m`]);
+  if (L.strip) rowsF.push([t('infra.strip'), `${fmt(L.stripWidth, 1)} m · ${fmt(L.stripArea / 1e4, 2)} ha`]);
+  if (c.clearance != null) rowsF.push([t(c.strip ? 'infra.stripClear' : 'infra.fenceClear'), `${fmt(c.clearance, 1)} m`]);
   $('infFenceInfo').innerHTML = L.fences.length
-    ? `<div class="ledger"><div class="r"><span>${esc(t('infra.fenceLength'))}</span><b>${fmt(fenceLen, 0)} m</b></div>`
-      + (L.fences.length > 1 ? `<div class="r"><span>${esc(t('infra.fenceCount'))}</span><b>${fmt(L.fences.length)}</b></div>` : '') + `</div>`
+    ? `<div class="ledger">${rowsF.map(([k, v, cls]) => `<div class="r ${cls || ''}"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`
     : `<div class="hint">${esc(t(I.fence ? 'infra.noSite' : 'infra.fenceOff'))}</div>`;
   // lots and their fences
   for (const n of [...selectedLots]) if (!L.lots.some(l => l.n === n)) selectedLots.delete(n);
@@ -434,8 +486,7 @@ function render() {
       <span class="nm">${esc(t('infra.lot', { n: l.n }))}<small>${esc(t('infra.lotInfo', { ha: fmt(l.area / 1e4, 2), fence: l.fence }))}</small></span></label>`).join('') : '';
   $('infLotsBox').hidden = L.lots.length < 2 || !I.fence;
   $('infLotsHint').textContent = L.lots.length > 1 ? t('infra.lotsHint', { n: L.lots.length, fences: L.fences.length }) : '';
-  // perimeter road and its suggestion
-  $('infRoad').checked = !!I.perimeterRoad;
+  // perimeter road (set in the ribbon) and its suggestion
   const sug = suggestedRoad(r?.dcMWp), std = standardFor('perimeterRoad');
   let html = L.road ? `<div class="hint">${esc(t('infra.roadInfo', { len: fmt(L.roadLength, 0), w: fmt(c.roadWidth, 1), gap: fmt(c.roadGap, 1) }))}</div>` : '';
   if (sug != null) {
@@ -497,6 +548,36 @@ function render() {
   ].filter(Boolean).join(' ');
   for (const k of ['CC', 'CU', 'CT']) $('inf' + k).disabled = !building(k);
   draw(frame, L);
+}
+
+// The settings of the ribbon (L18, L19): the perimeter road, the fence, its clearance, mesh and height, the gate and
+// the mitigation strip; the toolkit values as placeholders, everything but the fence switch off without a fence
+function renderRibbon(c, country) {
+  const P = store.project, I = P.infra, fs = fenceSpec(P), gs = gateSpec(P), gates = countryGates();
+  const tip = (v, missing) => (v != null && v !== '' ? t('infra.toolkitIs', { v, country }) : t(missing, { country }));
+  $('infFence').checked = !!I.fence;
+  $('infRoad').checked = !!I.perimeterRoad;
+  $('infClear').value = I.clearance ?? '';
+  $('infClear').placeholder = c.toolkit != null ? fmt(c.toolkit, 1) : '';
+  $('infClear').title = tip(c.toolkit != null ? `${fmt(c.toolkit, 1)} m` : null, 'infra.noClearance');
+  $('infStrip').value = I.mitigation ?? '';
+  $('infMesh').value = I.fenceMesh ?? '';
+  $('infMesh').placeholder = fs.meshToolkit || '';
+  $('infMesh').title = tip(fs.meshToolkit, 'infra.noMesh');
+  $('infHeight').value = I.fenceHeight ?? '';
+  $('infHeight').placeholder = fs.heightToolkit != null ? fmt(fs.heightToolkit, 1) : '';
+  $('infHeight').title = tip(fs.heightToolkit != null ? `${fmt(fs.heightToolkit, 1)} m` : null, 'infra.noFenceHeight');
+  // the gates of the country, then a width typed in; rebuilt only when the list changes (an open menu stays open)
+  const sel = $('infGate');
+  const html = gates.map(g => `<option value="${esc(g.id)}">${esc(t('infra.gateOpt', { w: g.width != null ? fmt(g.width, 1) : '—', type: g.type || g.id }))}</option>`).join('')
+    + (gates.length ? '' : `<option value="">${esc(t('infra.gateNone'))}</option>`)
+    + `<option value="custom">${esc(t('infra.gateCustom'))}</option>`;
+  if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; }
+  sel.value = gs.custom ? 'custom' : gs.id ?? '';
+  sel.title = gs.custom ? t('infra.gateCustom') : gs.id ? `${gs.id}: ${gs.type}` : t('infra.noGate', { country });
+  $('infGateWBox').hidden = !gs.custom;
+  $('infGateW').value = I.gateWidth ?? '';
+  for (const id of ['infRoad', 'infClear', 'infStrip', 'infMesh', 'infHeight', 'infGate', 'infGateW']) $(id).disabled = !I.fence;
 }
 
 // one map mode at a time: placing a station, moving one, drawing or reshaping a road
@@ -583,6 +664,13 @@ export function initInfra(mapView) {
   $('infFence').onchange = () => change('infra', p => { p.infra.fence = $('infFence').checked; });
   $('infClear').onchange = () => change('infra', p => { const v = $('infClear').value; p.infra.clearance = v === '' ? null : Math.max(0, Number(v) || 0); });
   $('infRoad').onchange = () => change('infra', p => { p.infra.perimeterRoad = $('infRoad').checked; });
+  // the fence as built and the mitigation strip: an empty field (or 0) gives the toolkit value back, or no strip
+  const num = v => (v === '' ? null : Math.max(0, Number(v) || 0) || null);
+  $('infStrip').onchange = () => change('infra', p => { p.infra.mitigation = num($('infStrip').value); });
+  $('infMesh').onchange = () => change('infra', p => { p.infra.fenceMesh = $('infMesh').value.trim() || null; });
+  $('infHeight').onchange = () => change('infra', p => { p.infra.fenceHeight = num($('infHeight').value); });
+  $('infGate').onchange = () => change('infra', p => { p.infra.gate = $('infGate').value || null; });
+  $('infGateW').onchange = () => change('infra', p => { p.infra.gateWidth = num($('infGateW').value); });
   $('infLots').onchange = e => { const cb = e.target.closest('[data-lot]'); if (cb) { const n = Number(cb.dataset.lot); if (cb.checked) selectedLots.add(n); else selectedLots.delete(n); } };
   $('infJoin').onclick = () => { if (joinLots([...selectedLots])) selectedLots.clear(); };
   $('infSeparate').onclick = () => { if (selectedLots.size && separateLots([...selectedLots])) selectedLots.clear(); };

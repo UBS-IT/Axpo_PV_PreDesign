@@ -86,10 +86,10 @@ features (1 · Site) ──► siteFrame() local TM frame ──► computeArea(
                                                           base = net given | gross − setback
                                                           pre  = base − cuts of the Areas categories (buffers)
                                                           buildable = pre − extraCuts  ◄── terrain cut (slope limit of field.structure)
-                                                                                      ◄── infra cuts (fence band, drawn roads, stations)
+                                                                                      ◄── infra cuts (mitigation strip, fence band, drawn roads, stations)
 field (3 · Layout) + module + pitch ──► fillRows(buildable rings) ──► tables ──► KPIs, warnings, roads from corridors
                                                                             └──► emit('layout') ──► infra panel, 3D, exports, report
-infra (4) ──► layoutInfra(frame, pre, base): lots, fences (closing of grouped lots), clearance band, perimeter road,
+infra (4) ──► layoutInfra(frame, pre, base): lots, fences (closing of grouped lots), mitigation strip, clearance band, perimeter road,
               gates at access points, stations (snap to fence) ──► feeds back into computeArea as extraCuts
 output (5): exportModel() projects everything to project.crs.wkid; GeoJSON/KMZ in WGS 84; report from last.result
 3D (map switch): model3d() = tables/trackers at toolkit heights on the ground (2 · Terrain grid or World Elevation) + infra meshes

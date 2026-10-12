@@ -8,13 +8,13 @@ first; `docs/plan-ribbon-refactor.md` is the plan being executed and `docs/decis
 
 Brought up to date at the end of 2026-10-11, after the merge of phase 10A.
 
-- `main` = `f5f4e28`, merge of PR #45 (phase 10A). Merged on 2026-10-11, in this order:
+- `main` = `b2beee3`, merge of PR #46 (this note after phase 10A). Merged on 2026-10-11, in this order:
   - **#34, #36, #35**: phase 2 and its part A, the runner and the 3D test box (§3), phase 2B;
   - **#37**: the first version of this note;
   - **#38 to #41**: phases 3 to 6, the end of the first round of the ribbon refactor (§7 to §10);
-  - **#42 to #45**: phases 7, 8, 9 and 10A of the second round (§11 to §14).
+  - **#42 to #45**: phases 7, 8, 9 and 10A of the second round (§11 to §14); **#46** this note brought up to date.
 - The clone is on `main`, no local branch of a merged phase left; on GitHub only `main` (the branch of the cloud
-  session of 2026-10-09 is gone too). This update of the note is on `docs/handoff-10a`, its PR after #45.
+  session of 2026-10-09 is gone too). Phase 10B is on `ux/infra-ribbon` (§16), its PR after #46.
 - The CI (`browser-tests`) is expected green on `main`: the user merges after a green check, and every phase was
   checked page by page on this PC before its PR (`scene3d.html` left to the CI when the browser pane is hidden).
 
@@ -34,7 +34,7 @@ Brought up to date at the end of 2026-10-11, after the merge of phase 10A.
 | 8 · Drawing aids and Layers (L5–L10) | merged (#43) | `ui/snapping.js`: the Snapping menu, the sources of every sketch, midpoints and centres; Rename on a right click in Layers; rows and groups only when they hold something; Buffer in Constraints. §12 |
 | 9 · Terrain (L11–L14) | merged (#44) | the Terrain ribbon (Digital elevation models, Slope analysis, Other analysis), several GeoTIFF mosaicked, Aspect and Hillshade, contours as a computed layer exported to the DXF. §13 |
 | 10A · Layout (L15–L17, L20, L21) | merged (#45) | five tabs; the field set in the ribbon of Layout; *Advanced…* and *Modules…* as windows; Quick predesign on the right; roads and stations in the ribbon of Infrastructure. §14 |
-| 10B · Infrastructure (L18, L19, L21) | to do | §15 |
+| 10B · Infrastructure (L18, L19, L21; M1–M6) | branch `ux/infra-ribbon`, PR after #46 | the ribbon of Infrastructure sets roads (with the perimeter road), the fence (on / off, clearance, mitigation strip, mesh, height, gate) and stations; the mitigation strip inside the fence; the panel shows. §16 |
 | 11 · Explanations (L22) | to do | §15 |
 
 **Decided on 2026-10-11** (rows in `docs/decisions.md`): part A (A1–A4) from the user's layout («category e menu
@@ -294,3 +294,32 @@ after merging the user writes «fuso, fai pulizia» and the session runs the cle
 Traps of 10A: the test pages do not run `initTabs()`, so a test reads the tabs from `TABS` in `ui/tabs.js`; a
 `<dialog>` sits at the end of the body, so a test page that mounts the app's markup must mount `body > dialog` too;
 `shots.mjs` picks the tabs by their index (Report & exports is now the fifth, index 4).
+
+## 16. Phase 10B, Infrastructure (added on 2026-10-12)
+
+The handoff update merged as #46 (`main` = `b2beee3`). The details of L18, L19 and L21 were six decisions, M1–M6, all
+accepted («ok su tutto»): the mitigation strip against the fence on the inside, so that the clearance and the perimeter
+road start from its inner edge (M1); one field for its width, empty = none, no default borrowed (M2); mesh, height and
+gate from the toolkit of the country (`countries.<ISO>.fence`, `.gates`), each changeable, in 3D, report, bill of
+quantities and exports (M3); the strip on the map, in Layers, in the area summary and in every export, not in 3D (M4);
+the ribbon Roads · Fence · Stations (M5); the panel keeps figures, comparison with the toolkit, notices and lists, Join
+and Separate beside the lots (M6).
+
+On `ux/infra-ribbon`: `fenceSpec()`, `countryGates()`, `gateSpec()` in `infra.js` (the fence and gate as built; every
+gate of `layoutInfra()` carries their width and height, the 3D reads them), `clearances()` gives `strip`, `layoutInfra()`
+gives `strip`, `stripWidth`, `stripArea` and the cut of kind `strip`; `renderRibbon()` fills the ribbon (the toolkit as
+placeholders, everything off without a fence); `project.infra` gains `fenceMesh`, `fenceHeight`, `gate`, `gateWidth`,
+`mitigation` (null = the toolkit, or no strip). Exports: the item `mitigation-strip` (file `mitigation_strip`, DXF
+`PVP_MITIGATION_STRIP`), `mesh` and `height_m` on the fences, `height_m` and `type` on the gates. Checked: `infra.html`
+14 / 14 and `ui.html` 29 / 29 with new tests, every other page green but `scene3d.html` (hidden window); in the app at
+1366 px the ribbon of Infrastructure ends at 1173 px with an own gate width shown, the strip on the map between the fence
+and the buildable line, its Layers switch, the area summary and the panel.
+
+Traps: the ribbon holds two rows of 26 px (or a switch and two rows of 22 px): a third row of a `.rform` overflows onto
+the label of the group, so the fence is three columns; a long text in a `.ledger` row needs the `wrap` class. Decisions
+taken while building, to be confirmed by the user: the Italian «green strip to structures» (4 m) as the distance with a
+strip and no road, the fence → structures distance of a country without it measured from the strip; the perimeter road
+and the fence settings greyed out without a fence; 0 = empty; a gate of another width as high as the fence; the fence
+as built among the assumptions of the report.
+
+Next: phase 11 (an ⓘ in every group of the ribbon), then §6 from item 2.

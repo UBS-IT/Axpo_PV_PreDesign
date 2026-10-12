@@ -5,7 +5,7 @@ import { getSdk } from '../sdk.js';
 import { store } from '../state.js';
 import { last } from '../field.js';
 import { siteFrame } from '../areas.js';
-import { layoutInfra } from '../infra.js';
+import { layoutInfra, fenceSpec } from '../infra.js';
 import { toSdk } from '../geo/convert.js';
 import { classified } from '../categories.js';
 import { allDimensionParts } from '../dims.js';
@@ -16,7 +16,7 @@ export const DXF_LAYERS = {
   dimension: ['PVP_DIM', 2],
   'area-gross': ['PVP_AREA_GROSS', 30], 'area-net': ['PVP_AREA_NET', 3], 'area-connection': ['PVP_AREA_CONNECTION', 200],
   'area-exclusion': ['PVP_AREA_EXCLUSION', 1], 'area-linear': ['PVP_AREA_LINEAR', 6], 'area-obstacle': ['PVP_AREA_OBSTACLE', 34],
-  'area-access': ['PVP_AREA_ACCESS', 4], 'area-mitigation': ['PVP_AREA_MITIGATION', 82], 'area-agri': ['PVP_AREA_AGRI', 50],
+  'area-access': ['PVP_AREA_ACCESS', 4], 'area-mitigation': ['PVP_AREA_MITIGATION', 82], 'mitigation-strip': ['PVP_MITIGATION_STRIP', 82], 'area-agri': ['PVP_AREA_AGRI', 50],
   'area-reference': ['PVP_AREA_REFERENCE', 8], buildable: ['PVP_BUILDABLE', 92], tables: ['PVP_TABLES', 5], 'tables-half': ['PVP_TABLES_HALF', 150],
   fence: ['PVP_FENCE', 7], 'road-perimeter': ['PVP_ROAD_PERIMETER', 9], 'road-internal': ['PVP_ROAD_INTERNAL', 9], 'road-drawn': ['PVP_ROAD_DRAWN', 9],
   'road-axis': ['PVP_ROAD_AXIS', 253], station: ['PVP_STATION', 40], gate: ['PVP_GATE', 7], text: ['PVP_TEXT', 7], contour: ['PVP_CONTOURS', 33],
@@ -55,8 +55,11 @@ export function exportModel() {
           tilt_deg: f.technology === 'agri-tracker' ? 0 : f.tiltDeg, azimuth: f.azimuthDeg } }]);
     }
     L = layoutInfra(frame, area.pre, area.base);
+    const fs = fenceSpec(P);   // the fence as built: the ribbon of Infrastructure, else the toolkit of the country
     for (const fc of L.fences) local.push([new Polyline({ paths: fc.rings, spatialReference: frame.sr }),
-      { layer: 'fence', file: 'fences', label: fc.letter, attrs: { fence: fc.letter, lots: fc.lots.join(','), length_m: round(fc.length, 1) } }]);
+      { layer: 'fence', file: 'fences', label: fc.letter, attrs: { fence: fc.letter, lots: fc.lots.join(','), length_m: round(fc.length, 1), mesh: fs.mesh || '', height_m: fs.height ?? null } }]);
+    if (L.strip) local.push([L.strip, { layer: 'mitigation-strip', file: 'mitigation_strip',
+      attrs: { name: 'Mitigation along the fence', width_m: L.stripWidth, area_m2: round(L.stripArea, 0) } }]);
     if (L.road) local.push([L.road, { layer: 'road-perimeter', file: 'roads',
       attrs: { kind: 'perimeter', width_m: null, length_m: round(L.roadLength, 1), area_m2: round(S.areaOperator.execute(L.road), 0) } }]);
     const tw = f.tracks?.width || null;
@@ -71,7 +74,7 @@ export function exportModel() {
     for (const s of L.stations) local.push([s.footprint, { layer: 'station', file: 'stations', label: s.kind,
       attrs: { kind: s.kind, building: s.building.id, length_m: s.building.length, width_m: s.building.width, rot_deg: round(s.rot || 0, 1), inside: s.inside ? 1 : 0 } }]);
     for (const gt of L.gates) local.push([new Point({ x: gt.point[0], y: gt.point[1], spatialReference: frame.sr }),
-      { layer: 'gate', file: 'gates', label: gt.name || null, attrs: { name: gt.name || '', width_m: gt.width ?? null } }]);
+      { layer: 'gate', file: 'gates', label: gt.name || null, attrs: { name: gt.name || '', width_m: gt.width ?? null, height_m: gt.height ?? null, type: gt.type || '' } }]);
   }
   // dimensions (dims.js): one item per segment with its length as the label, the ticks as plain lines, in the local
   // frame of the site (true metres); none without a site frame

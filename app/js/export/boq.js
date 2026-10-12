@@ -54,12 +54,14 @@ export function boqSheets(model) {
     if (P.specificYield > 0) row(t('boq.energy'), r2(r.dcMWp * P.specificYield, 0), 'MWh/yr', t('boq.energyNote', { y: P.specificYield }));
   }
 
-  const fences = by('fence'), roads = model.items.filter(i => i.file === 'roads'), stations = by('station'), gates = by('gate');
+  const fences = by('fence'), roads = model.items.filter(i => i.file === 'roads'), stations = by('station'), gates = by('gate'), strips = by('mitigation-strip');
   if (fences.length || roads.length || stations.length || gates.length) {
     head('boq.sInfra');
-    for (const fc of fences) row(t('boq.fenceOf', { letter: fc.attrs.fence, lots: fc.attrs.lots }), r2(fc.attrs.length_m, 0), 'm');
+    const built = a => (a.mesh || a.height_m ? t('boq.fenceBuilt', { mesh: a.mesh || '—', h: a.height_m ?? '—' }) : '');
+    for (const fc of fences) row(t('boq.fenceOf', { letter: fc.attrs.fence, lots: fc.attrs.lots }), r2(fc.attrs.length_m, 0), 'm', built(fc.attrs));
     if (fences.length > 1) row(t('boq.fenceTotal'), r2(sum(fences, 'length_m'), 0), 'm');
     if (gates.length) row(t('boq.gates'), gates.length, t('boq.pcs'), gates[0].attrs.width_m ? t('boq.gateWidth', { w: gates[0].attrs.width_m }) : '');
+    for (const sp of strips) row(t('boq.strip'), r2(sp.attrs.area_m2 / 1e4, 2), 'ha', t('boq.stripWidth', { w: sp.attrs.width_m }));
     for (const kind of [...new Set(roads.map(x => x.attrs.kind))]) {
       const rs = roads.filter(x => x.attrs.kind === kind);
       row(t('boq.road', { kind: t('boq.road.' + kind.replace(/^drawn-/, 'drawn.')) }), r2(sum(rs, 'length_m'), 0), 'm', t('boq.roadArea', { a: Math.round(sum(rs, 'area_m2')) }));
@@ -84,7 +86,7 @@ export function boqSheets(model) {
     }
     sheets.push({ name: t('boq.sheetTables'), rows, bold: [0], widths: [6, 6, 10, 6, 9, 9, 14, 14], freeze: true });
   }
-  const infra = [...fences, ...roads, ...by('road-axis'), ...stations, ...gates];
+  const infra = [...fences, ...strips, ...roads, ...by('road-axis'), ...stations, ...gates];
   if (infra.length) {
     const rows = [['category', 'kind', 'name', 'length_m', 'area_m2', 'width_m', 'X', 'Y']];
     for (const it of infra) {

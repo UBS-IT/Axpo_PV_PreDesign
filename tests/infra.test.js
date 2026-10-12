@@ -5,7 +5,8 @@ import { loadSdk, getSdk } from '../app/js/sdk.js';
 import { loadCatalog } from '../app/js/catalog.js';
 import { store, defaultProject } from '../app/js/state.js';
 import { computeArea, siteFrame, crsState } from '../app/js/areas.js';
-import { layoutInfra, addStation, moveStation, placeAtAccess, suggestedRoad, clearances, nearestOnRings, rectangle, ringArea, lotsOf, joinLots, separateLots, addRoad, updateRoad, removeRoad, innerPoint } from '../app/js/infra.js';
+import { layoutInfra, addStation, moveStation, placeAtAccess, suggestedRoad, clearances, nearestOnRings, rectangle, ringArea, lotsOf, joinLots, separateLots, addRoad, updateRoad, removeRoad, innerPoint, fenceSpec, gateSpec, countryGates } from '../app/js/infra.js';
+import { heights3d } from '../app/js/view3d/geometry.js';
 import { makeLocalFrame } from '../app/js/geo/localframe.js';
 import { toGeoJSON, projectPointToWgs84 } from '../app/js/geo/convert.js';
 
@@ -67,6 +68,49 @@ await test('perimeter road: 1 + 4 + 1 m, road drawn and measured', () => {
 await test('the designer can override the clearance, and switch the fence off', () => {
   near(site([], { clearance: 10 }).buildableArea, 380 * 380, 1, 'custom 10 m');
   near(site([], { fence: false }).buildableArea, 400 * 400, 1, 'no fence');
+});
+
+await test('mitigation strip inside the fence (phase 10B): cut on its own, the clearance and the perimeter road move inwards', () => {
+  // 5 m of strip, then 4 m to the structures (IT: greenStripToStructures)
+  const a = site([], { mitigation: 5 });
+  near(a.buildableArea, 382 * 382, 1, 'strip 5 m + 4 m');
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
+  near(L.stripArea, 400 * 400 - 390 * 390, 1, 'strip area');
+  const c = clearances();
+  assert(L.stripWidth === 5 && c.strip === 5 && c.clearance === 4, 'strip and clearance: ' + JSON.stringify(c));
+  near(a.extras.filter(x => x.kind === 'strip').reduce((s, x) => s + x.area, 0), 400 * 400 - 390 * 390, 1, 'the strip is its own cut');
+  near(a.extras.filter(x => x.kind === 'fence').reduce((s, x) => s + x.area, 0), 390 * 390 - 382 * 382, 1, 'the band after it');
+  // with the perimeter road: strip 5, then 1 + 4 + 1 m
+  const b = site([], { mitigation: 5, perimeterRoad: true });
+  near(b.buildableArea, 378 * 378, 1, 'strip + road');
+  const Lb = layoutInfra(siteFrame(), b.pre, b.base);
+  near(getSdk().areaOperator.execute(Lb.road), 388 * 388 - 380 * 380, 1, 'road from 6 to 10 m inside the fence');
+  near(Lb.roadLength, 4 * 384, 0.5, 'road centre line');
+  // no fence, no strip; an empty width, no strip
+  near(site([], { mitigation: 5, fence: false }).buildableArea, 400 * 400, 1, 'no fence, no strip');
+  assert(!layoutInfra(siteFrame(), site().pre, site().base).strip, 'no width, no strip');
+  return `${(L.stripArea / 1e4).toFixed(2)} ha of strip, buildable ${(a.buildableArea / 1e4).toFixed(2)} ha`;
+});
+
+await test('the fence as built (phase 10B): mesh, height and gate from the toolkit or typed in, on every gate and in 3D, nothing borrowed', () => {
+  const [x, y] = wgs(30, -230);
+  const access = { id: 'acc', name: 'Main access', category: 'access', geometry: { type: 'Point', coordinates: [x, y] }, attrs: { type: 'site-access' }, source: 'test', sourceCategory: '' };
+  let a = site([access]);
+  let f = fenceSpec(), g = gateSpec();
+  assert(f.height === 2 && /welded mesh/.test(f.mesh) && g.id === 'GATE-IT-6' && g.width === 6 && g.height === 2 && !g.custom, 'the toolkit: ' + JSON.stringify([f, g]));
+  a = site([access], { fenceHeight: 2.5, fenceMesh: 'Invented mesh 1', gate: 'custom', gateWidth: 8 });
+  f = fenceSpec(); g = gateSpec();
+  assert(f.height === 2.5 && f.mesh === 'Invented mesh 1' && f.heightToolkit === 2 && g.custom && g.width === 8 && g.height === 2.5, 'typed in: ' + JSON.stringify([f, g]));
+  const L = layoutInfra(siteFrame(), a.pre, a.base);
+  assert(L.gates.length === 1 && L.gates[0].width === 8 && L.gates[0].height === 2.5, 'the gate on the fence: ' + JSON.stringify(L.gates[0]));
+  assert(heights3d(store.project, 'IT').fence === 2.5, 'the height of the 3D fence');
+  // a country without toolkit values
+  site();
+  crsState.iso = 'PL';
+  f = fenceSpec(); g = gateSpec();
+  assert(f.height == null && f.mesh == null && g.width == null && countryGates().length === 0, 'nothing borrowed: ' + JSON.stringify([f, g]));
+  crsState.iso = 'IT';
+  return `gate ${L.gates[0].width} m × ${L.gates[0].height} m`;
 });
 
 await test('the fence follows exclusions on the edge and ignores holes inside', () => {

@@ -913,8 +913,9 @@ function renderSummary() {
   rows.push(row(t('areas.sumExcluded'), Math.max(0, r.baseArea - r.buildableArea), '', '− '));
   const byKind = kind => (r.extras || []).filter(x => x.kind === kind).reduce((s, x) => s + x.area, 0);
   const MIN = 50;   // m²: smaller shares are not worth a row
-  const slope = byKind('slope'), fence = byKind('fence'), stations = byKind('station'), roadsDrawn = byKind('road');
+  const slope = byKind('slope'), strip = byKind('strip'), fence = byKind('fence'), stations = byKind('station'), roadsDrawn = byKind('road');
   if (slope >= MIN) rows.push(row(t('areas.ofSlope'), slope, 'sub', '', 'terrain'));
+  if (strip >= MIN) rows.push(row(t('areas.ofStrip'), strip, 'sub', '', 'infra'));
   if (fence >= MIN) rows.push(row(t('areas.ofFence'), fence, 'sub', '', 'infra'));
   if (roadsDrawn >= MIN) rows.push(row(t('areas.ofRoads'), roadsDrawn, 'sub', '', 'infra'));
   if (stations >= MIN) rows.push(row(t('areas.ofStations'), stations, 'sub', '', 'infra'));

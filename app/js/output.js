@@ -8,7 +8,7 @@ import { last } from './field.js';
 import { toGeoJSON } from './geo/convert.js';
 import { classified } from './categories.js';
 import { moduleLabel } from './modules.js';
-import { layoutInfra } from './infra.js';
+import { layoutInfra, fenceSpec } from './infra.js';
 import { exportReport } from './report.js';
 import { toast } from './ui/toast.js';
 import { stepProvider } from './ui/tabs.js';
@@ -114,12 +114,14 @@ export function buildGeoJSON() {
     const { Polyline, Point } = getSdk();
     const L = layoutInfra(r.frame, area.pre, area.base);
     const wgs84 = g => toGeoJSON(g);
-    for (const f of L.fences) feats.push({ type: 'Feature', geometry: wgs84(new Polyline({ paths: f.rings, spatialReference: r.frame.sr })), properties: { category: 'fence', fence: f.letter, lots: f.lots.join(','), length_m: Math.round(f.length) } });
+    const fs = fenceSpec();
+    if (L.strip) feats.push({ type: 'Feature', geometry: wgs84(L.strip), properties: { category: 'mitigation-strip', name: t('infra.strip'), width_m: L.stripWidth, area_m2: Math.round(L.stripArea) } });
+    for (const f of L.fences) feats.push({ type: 'Feature', geometry: wgs84(new Polyline({ paths: f.rings, spatialReference: r.frame.sr })), properties: { category: 'fence', fence: f.letter, lots: f.lots.join(','), length_m: Math.round(f.length), mesh: fs.mesh || '', height_m: fs.height ?? null } });
     for (const rd of L.roads) feats.push({ type: 'Feature', geometry: rd.geometry, properties: { category: 'road', kind: 'drawn-' + rd.kind, width_m: rd.width, length_m: Math.round(rd.length) } });
     if (L.road) feats.push({ type: 'Feature', geometry: wgs84(L.road), properties: { category: 'road', kind: 'perimeter', length_m: Math.round(L.roadLength) } });
     for (const g of r.roads || []) feats.push({ type: 'Feature', geometry: wgs84(g), properties: { category: 'road', kind: 'internal', width_m: store.project.field.tracks.width } });
     for (const s of L.stations) feats.push({ type: 'Feature', geometry: wgs84(s.footprint), properties: { category: 'station', kind: s.kind, building: s.building.id, length_m: s.building.length, width_m: s.building.width } });
-    for (const g of L.gates) feats.push({ type: 'Feature', geometry: wgs84(new Point({ x: g.point[0], y: g.point[1], spatialReference: r.frame.sr })), properties: { category: 'gate', access: g.name, width_m: g.width } });
+    for (const g of L.gates) feats.push({ type: 'Feature', geometry: wgs84(new Point({ x: g.point[0], y: g.point[1], spatialReference: r.frame.sr })), properties: { category: 'gate', access: g.name, width_m: g.width, height_m: g.height ?? null, type: g.type || '' } });
   }
   return feats.length ? { type: 'FeatureCollection', features: feats } : null;
 }
@@ -132,6 +134,7 @@ const KML_STYLE = {   // [r, g, b], fill opacity (0 = no fill)
   obstacle: [[150, 90, 40], 0.5], connection: [[139, 92, 246], 0], access: [[31, 153, 204], 0], mitigation: [[110, 170, 60], 0.35],
   agri: [[200, 170, 40], 0.3], reference: [[123, 138, 153], 0.05], buildable: [[45, 190, 126], 0.1], table: [[57, 69, 207], 0.85],
   fence: [[40, 40, 40], 0], road: [[150, 150, 150], 0.7], station: [[233, 120, 30], 0.9], gate: [[30, 30, 30], 0],
+  'mitigation-strip': [[110, 170, 60], 0.35],
 };
 const xml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const kmlColour = ([r, g, b], a) => [Math.round(a * 255), b, g, r].map(v => v.toString(16).padStart(2, '0')).join('');
@@ -157,7 +160,7 @@ export function buildKml(fc = buildGeoJSON()) {
   const styles = [...byCat.keys()].map(c => { const [rgb, a] = KML_STYLE[c] || KML_STYLE.reference;
     return `<Style id="s-${c}"><LineStyle><color>${kmlColour(rgb, 1)}</color><width>${c === 'fence' ? 2.5 : 1.5}</width></LineStyle><PolyStyle><color>${kmlColour(rgb, a)}</color><fill>${a > 0 ? 1 : 0}</fill></PolyStyle><IconStyle><color>${kmlColour(rgb, 1)}</color><scale>0.8</scale></IconStyle></Style>`; }).join('');
   const label = c => (c === 'table' ? t('res.tables') : c === 'buildable' ? t('res.buildable') : c === 'fence' ? t('infra.fence') : c === 'road' ? t('infra.roads')
-    : c === 'station' ? t('infra.stations') : c === 'gate' ? t('infra.gates') : t('cat.' + c));
+    : c === 'station' ? t('infra.stations') : c === 'gate' ? t('infra.gates') : c === 'mitigation-strip' ? t('infra.strip') : t('cat.' + c));
   const folders = [...byCat].map(([c, feats]) => {
     if (c === 'table') {   // one placemark for all the tables
       const all = feats.flatMap(f => polysOf(f.geometry));
