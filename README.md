@@ -63,7 +63,8 @@ the dependencies — Site area, Terrain Analysis, Layout, Infrastructure, Report
 active tab, which sets everything that can be set (Import, the drawing menu and tools; the elevation models, the
 slope analysis and the other images of the terrain; the field — technology, structure, module, expected build date,
 tilt, azimuth, pitch — with *Advanced…* and *Modules…* as windows and Quick predesign on the right; roads and
-stations; the working files, then the PDF report on the right),
+stations; the working files, then the PDF report on the right; every group with an ⓘ beside its name that says in a
+few lines what is done there),
 and the map between two docked panels that collapse to a narrow strip at their edge (the strip keeps the name and,
 for Layers, the count of the objects): **Layers** on the left (the layers of every tab with their visibility, the objects by category) and **Properties** on the
 right (what the settings give: the figures, how they compare with the toolkit, the notices and the lists of what is

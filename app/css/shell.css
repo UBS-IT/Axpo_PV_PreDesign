@@ -226,5 +226,15 @@ body.in-3d #geoSearch, body.in-3d #objSearch { display: none; }
 /* the fence of Infrastructure (phase 10B): the mesh and the gate narrower, the width of an own gate beside it */
 #infMesh, #infGate { width: 170px; }
 .rvals:has(#infFence) { gap: 3px; }   /* the switch and two values within the height of the ribbon */
+/* the ⓘ beside the name of a group and its popover (phase 11, L22) */
+.rgroup-foot { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 2px; }
+.rgroup-foot .rgroup-label { margin-top: 0; }
+.rinfo { display: inline-grid; place-items: center; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--mut); cursor: pointer; }
+.rinfo .icon { width: 12px; height: 12px; }
+.rinfo:hover, .rinfo[aria-expanded="true"] { color: var(--link); }
+.rinfo:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.rinfo-pop { position: fixed; inset: auto; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); color: var(--txt); box-shadow: var(--shadow-md); font-size: 12px; line-height: 1.45; }
+.rinfo-pop b { display: block; margin-bottom: 3px; font-weight: 600; }
+.rinfo-pop p { margin: 0; }
 #terContourStep { width: 76px; }
 #terLimitSel, #terTech { width: 190px; }
